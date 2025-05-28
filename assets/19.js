@@ -1,6 +1,6 @@
 
 
-app_version1 = "426"
+app_version1 = "427"
 app_version2 = "Dev"
 tcbx926n29 = app_version2 + " " + app_version1;
 
@@ -2912,7 +2912,7 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
     
     // Function to fetch and display shop data
     function fetchData() {
-        if (params.get("page") === "home") {
+        if (params.get("page") === "home" || params.get("page") === "orbs" && localStorage.experiment_2025_05_orbs_shop_home === "Treatment 1: Enabled") {
 
             fetchFirstHomeData();
 
@@ -2952,12 +2952,13 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
                                         if (apiCategory.hero_banner_asset.animated != null) {
                                             if (apiCategory.hero_banner_asset.static != null) {
                                                 category.querySelector("[data-shop-banner-banner-container]").innerHTML = `
-                                                    <img class="home-page-preview-banner" src="${apiCategory.hero_banner_asset.static}">
-                                                    <video autoplay muted class="home-page-preview-banner-video" style="position: absolute; left: 0px; bottom: 0px; z-index: 1;" src="${apiCategory.hero_banner_asset.animated}" loop></video>
+                                                    <img class="home-page-preview-banner" style="opacity: 0;" src="${apiCategory.hero_banner_asset.static}">
+                                                    <video disablepictureinpicture autoplay muted class="home-page-preview-banner-video" style="position: absolute; left: 0px; bottom: 0px; z-index: 1;" src="${apiCategory.hero_banner_asset.animated}" loop></video>
                                                 `;
                                             } else {
                                                 category.querySelector("[data-shop-banner-banner-container]").innerHTML = `
-                                                    <video autoplay muted class="home-page-preview-banner-video" style="position: absolute; left: 0px; bottom: 0px; width: 1280px; z-index: 1;" src="${apiCategory.hero_banner_asset.animated}" loop></video>
+                                                    <img class="home-page-preview-banner" style="opacity: 0;" src="">
+                                                    <video disablepictureinpicture autoplay muted class="home-page-preview-banner-video" style="position: absolute; left: 0px; bottom: 0px; width: 1280px; z-index: 1;" src="${apiCategory.hero_banner_asset.animated}" loop></video>
                                                 `;
                                             }
                                         } else if (apiCategory.hero_banner_asset.static != null) {
@@ -2980,6 +2981,10 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
                                         category.querySelector("[data-shop-category-logo-image]").src = `https://cdn.yapper.shop/assets/31.png`;
                                     }
                                     category.querySelector("[data-shop-category-logo-image]").alt = apiCategory.name;
+
+                                    if (apiCategory.sku_id === discord_categories.ORB) {
+                                        category.querySelector("[data-shop-banner-banner-container]").style.backgroundImage = 'linear-gradient(to bottom,rgba(39, 30, 173, 0.3) 60%,rgba(0, 0, 0, 0)80%)';
+                                    }
         
                                     category.querySelector("[data-shop-category-desc]").id = `${apiCategory.sku_id}-summary`;
                                     category.querySelector("[data-shop-category-desc]").textContent = apiCategory.summary;
@@ -14852,7 +14857,15 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
             if (localStorage.experiment_2025_02_orbs_shop === "Treatment 2: Orb Shop done like default" || localStorage.experiment_2025_02_orbs_shop === "Treatment 3: Default + New tag") {
                 url = api + COLLECTIBLES_SHOP;
                 apiUrl = new URL(url);
-                apiUrl.searchParams.append("tab", "orbs");
+                
+                if (localStorage.experiment_2025_05_orbs_shop_home === "Treatment 1: Enabled") {
+                    apiUrl.searchParams.append("tab", "orbs-home");
+                    createHomePageElement()
+                } else {
+                    apiUrl.searchParams.append("tab", "orbs");
+                    createMainShopElement()
+                }
+
                 if (localStorage.unreleased_discord_collectibles == "true") {
                     apiUrl.searchParams.append("include-unpublished", "true");
                 }
@@ -14862,7 +14875,6 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
             } else {
                 apiUrl = api + ORBS_SHOP;
             }
-            createMainPotionsElement()
             document.getElementById("top-bar-container").innerHTML = `
                 <h2 class="shop-tab-page-title">${getTextString("ORB_SHOP_TAB_PAGE_TITLE")}</h2>
                 <div id="open-help-modals-buttons-holder-new"></div>
@@ -17350,7 +17362,28 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
                     </div>
 
                     <div id="modalv3-account-account-details-container">
+                        <div class="modalv3-account-account-details">
+                            <div class="modalv3-account-banner-color" style="background-color: var(--background-secondary);"></div>
+                            <div class="modalv3-account-banner-image"></div>
+                            <div class="modalv3-account-banner-filler"></div>
 
+                            <div class="modalv3-account-avatar-preview-bg"></div>
+                            <div class="modalv3-account-avatar-preview" style="background-color: var(--background-secondary);"></div>
+                            <p class="modalv3-account-displayname">Loading...</p>
+
+                            <div class="modalv3-account-account-details-inners-padding">
+                                <div class="modalv3-account-account-details-inner">
+                                    <div class="modalv3-account-account-details-card">
+                                        <p class="modalv3-account-displayname-header">${getTextString("MODAL_V3_TAB_ACCOUNT_DISCORD_ACCOUNT_DISPLAY_NAME")}</p>
+                                        <p class="modalv3-account-displayname-text">Loading...</p>
+                                    </div>
+                                    <div class="modalv3-account-account-details-card">
+                                        <p class="modalv3-account-username-header">${getTextString("MODAL_V3_TAB_ACCOUNT_DISCORD_ACCOUNT_USERNAME")}</p>
+                                        <p class="modalv3-account-username-text">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -17437,7 +17470,27 @@ if(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigat
                 function renderAtMeAccountPage(atMe) {
                     if (atMe.message) {
                         accountDetails.innerHTML = `
-                            error
+                            <div class="modalv3-account-account-details">
+                                <div class="modalv3-account-banner-color" style="background-color: var(--background-secondary);"></div>
+                                <div class="modalv3-account-banner-image"></div>
+                                <div class="modalv3-account-banner-filler"></div>
+
+                                <div class="modalv3-account-avatar-preview-bg"></div>
+                                <div class="modalv3-account-avatar-preview" style="background-color: var(--background-secondary);"></div>
+                                <p class="modalv3-account-displayname">Error</p>
+                                <button class="modalv3-resync-profiles-button" onclick="loginToDiscord()">Log In with Discord</button>
+
+                                <div class="modalv3-account-account-details-inners-padding">
+                                    <div class="modalv3-account-account-details-inner">
+                                        <div class="modalv3-account-account-details-card">
+                                            <p class="modalv3-account-displayname-text">There was an error loading your account details.</p>
+                                        </div>
+                                        <div class="modalv3-account-account-details-card">
+                                            <p class="modalv3-account-username-text">Your token may have expired, please log in again.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         `;
                     } else {
                         accountDetails.innerHTML = `
