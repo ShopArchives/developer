@@ -1,6 +1,6 @@
 
 const appVersion = "7.0.0"
-const appType = "Pre-Release"
+const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
 
