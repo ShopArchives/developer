@@ -1,5 +1,5 @@
 
-const appVersion = "7.0.1"
+const appVersion = "7.0.2"
 const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);

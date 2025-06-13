@@ -421,6 +421,10 @@ body:has(.notice) .container {
     color: var(--text-primary);
 }
 
+.container:has(.category-browse-container) #searchInput {
+    display: none;
+}
+
 #dev-tools-icon {
     position: absolute;
     scale: 1.1;
@@ -2191,6 +2195,9 @@ body:has(.notice) .container {
 .review-user-container img {
     height: 100%;
     width: auto;
+}
+
+.review-user-container .review-avatar {
     border-radius: 50%;
 }
 
@@ -2277,14 +2284,14 @@ body:has(.notice) .container {
 }
 
 .review-avatar {
-    scale: 0.93;
+    scale: 0.83;
 }
 
 .review-avatar-decoration {
     position: absolute;
     top: 0;
     left: 0;
-    scale: 1.10;
+    scale: 1;
 }
 
 .review-nameplate-container {
