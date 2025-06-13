@@ -1,5 +1,5 @@
 
-const appVersion = "7.0.0"
+const appVersion = "7.0.1"
 const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
@@ -3577,6 +3577,7 @@ async function loadSite() {
                     document.getElementById('shop-tab-' + currentPage).classList.add("selected");
                     document.getElementById("page-title-topbar").textContent = pages[currentPage].title;
                     container.innerHTML = `${pages[currentPage].body}`;
+                    container.scrollTo(0,0);
                     document.title = `${pages[currentPage].title} | Shop Archives`;
                 }
             });
@@ -3587,6 +3588,7 @@ async function loadSite() {
             document.getElementById('shop-tab-' + key).classList.add("selected");
             document.getElementById("page-title-topbar").textContent = curerntPage.title;
             container.innerHTML = `${curerntPage.body}`;
+            container.scrollTo(0,0);
             document.title = `${curerntPage.title} | Shop Archives`;
         }
         console.log('Current page is: ' + currentPageCache);
