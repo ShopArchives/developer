@@ -104,7 +104,7 @@
                 <div class="topbar-content">
                     <p id="page-title-topbar">Page Title</p>
 
-                    <input type="text" id="searchInput" placeholder="Search Name or SKU ID...">
+                    <input class="hidden" type="text" id="searchInput" placeholder="Search Name or SKU ID...">
 
                     <svg class="has-tooltip hidden" data-tooltip="Dev Tools" onclick="toggleStaffDevTools()" id="dev-tools-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M1.99976 20.59V19.4C2.00352 19.1363 2.11135 18.8847 2.29976 18.7L4.69976 16.28C4.7932 16.1873 4.90402 16.114 5.02586 16.0642C5.14769 16.0145 5.27816 15.9893 5.40976 15.99H5.99976L14.9998 6.99002L14.1498 6.14002C14.0504 6.04381 13.9721 5.92804 13.9198 5.80002L12.4298 2.07002C12.3934 1.97916 12.3845 1.87962 12.4042 1.78374C12.4238 1.68787 12.4712 1.59987 12.5404 1.53066C12.6096 1.46146 12.6976 1.41408 12.7935 1.39442C12.8894 1.37475 12.9889 1.38365 13.0798 1.42002L16.8098 2.92002C16.9369 2.9694 17.0526 3.04427 17.1498 3.14002L17.7898 3.78002C17.8827 3.68629 17.9933 3.6119 18.1152 3.56113C18.237 3.51036 18.3678 3.48422 18.4998 3.48422C18.6318 3.48422 18.7625 3.51036 18.8843 3.56113C19.0062 3.6119 19.1168 3.68629 19.2098 3.78002L20.2098 4.78002C20.3035 4.87299 20.3779 4.98359 20.4287 5.10545C20.4794 5.22731 20.5056 5.35801 20.5056 5.49002C20.5056 5.62203 20.4794 5.75274 20.4287 5.8746C20.3779 5.99646 20.3035 6.10706 20.2098 6.20002L21.7898 7.78002C21.8835 7.87299 21.9579 7.98359 22.0087 8.10545C22.0594 8.2273 22.0856 8.35801 22.0856 8.49002C22.0856 8.62203 22.0594 8.75274 22.0087 8.8746C21.9579 8.99646 21.8835 9.10706 21.7898 9.20002L20.2098 10.78C20.1168 10.8738 20.0062 10.9481 19.8843 10.9989C19.7625 11.0497 19.6318 11.0758 19.4998 11.0758C19.3678 11.0758 19.237 11.0497 19.1152 10.9989C18.9933 10.9481 18.8827 10.8738 18.7898 10.78L16.9998 9.00002L7.99976 18V18.59C7.99601 18.8538 7.88818 19.1054 7.69976 19.29L5.29976 21.71C5.20632 21.8027 5.09551 21.876 4.97367 21.9258C4.85183 21.9756 4.72137 22.0008 4.58976 22H3.39976C3.13599 21.9963 2.88439 21.8884 2.69976 21.7L2.27976 21.3C2.18708 21.2066 2.11376 21.0958 2.06399 20.9739C2.01423 20.8521 1.989 20.7216 1.98976 20.59H1.99976Z" fill="currentColor"/>
@@ -248,7 +248,7 @@
                 <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"/>
                 </svg>
-                Log In with Discord
+                Login with Discord
             </button>
             <img class="ubar-avatar-preview" id="ubar-avatar" src="https://cdn.discordapp.com/avatars/1342635740768501886/e1fa77194318023a95bd71a439f6cad5.webp?size=128">
             <p class="ubar-displayname" id="ubar-displayname">Shop Archives</p>
@@ -293,6 +293,13 @@
         </script>
         <script src="/configs.js"></script>
         <script src="/scripts.js"></script>
+        <link rel="preload" href="https://cdn.yapper.shop/assets/fonts/097b737553f77c92.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="https://cdn.yapper.shop/assets/fonts/ggsansSemibold.ttf" as="font" type="font/ttf" crossorigin>
+        <link rel="preload" href="https://cdn.yapper.shop/assets/fonts/ggSansFour.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="https://cdn.yapper.shop/assets/fonts/ggSansFive.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="https://cdn.yapper.shop/assets/fonts/ggSansSix.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="https://cdn.yapper.shop/assets/fonts/ggSansSeven.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="https://cdn.yapper.shop/assets/fonts/ggSansEight.woff2" as="font" type="font/woff2" crossorigin>
     
     </body>
 

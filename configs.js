@@ -5,6 +5,9 @@ const endpoints = {
     VERIFY_ORIGIN: "/heartbeat",
     SERVER_EXPERIMENTS: "/experiments",
     USER: "/users/@me",
+    XP_EVENTS: "/xp-events",
+    XP_INVENTORY: "/xp-inventory",
+    XP_SHOP: "/claimables-shop",
 
     STABLE_LOGIN_CALLBACK: "/callback",
     DEV_LOGIN_CALLBACK: "/dev/callback",
@@ -22,7 +25,12 @@ const endpoints = {
     DISCORD_MISCELLANEOUS_CATEGORIES: "/discord-miscellaneous-categories",
     CATEGORY_MODAL_INFO: "/category/",
     CATEGORY_MODAL_REVIEW: "/review",
-    CATEGORY_MODAL_REVIEW_DELETE: "/reviews/"
+    CATEGORY_MODAL_REVIEW_DELETE: "/reviews/",
+
+
+    CLAIMABLES_PUBLISHED: "/claimables/published/",
+    CLAIMABLES_REDEEM: "/claimables/redeem/",
+    CLAIMABLES_PURCHASE: "/claimables/purchase/"
 };
 
 const redneredAPI = endpoints.MAIN + endpoints.VERSION;
@@ -101,7 +109,8 @@ const discord_categories = {
     RC_TEST: "1370467303782617118",
     LEAF: "1373015260595884082",
     NAMEPLATE_V2: "1377377712200744990",
-    SPELL: "1379220459316445257"
+    SPELL: "1379220459316445257",
+    NAMEPLATES_V3: "1382845914355470457"
 };
 
 const category_client_overrides = [
@@ -386,12 +395,16 @@ const reviews_system_types = [
 const settings = {
     "non_us_timezone": 0,
     "profile_effect_tweaks_fix": 0,
+    "reviews_filter_setting": 0,
     "dev": 0,
     "staff_force_leaks_dummy": 0,
     "staff_force_viewable_reviews_tab": 0,
     "staff_simulate_ban_type_1": 0,
     "staff_simulate_ban_type_2": 0,
-    "staff_simulate_guidelines_block": 0
+    "staff_simulate_guidelines_block": 0,
+    "staff_show_unpublished_xp_events": 0,
+    "staff_show_unpublished_xp_shop": 0,
+    "staff_allow_category_only_event_claiming_in_events_tab": 0
 };
 
 const leaks_dummy_data = {

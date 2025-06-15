@@ -1,5 +1,5 @@
 
-const appVersion = "7.0.2"
+const appVersion = "7.1.0"
 const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
@@ -11,6 +11,10 @@ let scrollToCache;
 let devtoolsOpenCache;
 let currentUserData;
 let usersXPBalance;
+let usersXPEventsCache;
+let usersXPInventoryCache;
+let XPShopCache;
+
 let discordProfileEffectsCache;
 let discordLeakedCategoriesCache;
 let discordCollectiblesShopHomeCache;
@@ -21,6 +25,7 @@ let discordMiscellaneousCategoriesCache;
 
 const overridesKey = 'experimentOverrides';
 const serverKey = 'serverExperiments';
+const currentExperimentOverrides = JSON.parse(localStorage.getItem(overridesKey));
 
 function loadOverrides() {
     try {
@@ -184,10 +189,10 @@ async function verifyOrigin() {
     } else {
         const data = await rawData.json();
 
-        if (data.message != "The official domain for Shop Archives is yapper.shop, any other domain is most likely a scam or copy." || window.location.hostname != 'yapper.shop' && window.location.hostname != 'dev.yapper.shop' && window.location.hostname != 'beta.yapper.shop') {
-            triggerSafetyBlock();
-            return
-        }
+        // if (data.message != "The official domain for Shop Archives is yapper.shop, any other domain is most likely a scam or copy." || window.location.hostname != 'yapper.shop' && window.location.hostname != 'dev.yapper.shop' && window.location.hostname != 'beta.yapper.shop') {
+        //     triggerSafetyBlock();
+        //     return
+        // }
 
         const brickWall = document.getElementById('brick-wall');
 
@@ -270,6 +275,11 @@ async function verifyOrigin() {
             syncOverridesWithServer();
         }
 
+        if (currentExperimentOverrides.find(exp => exp.codename === 'xp_system')?.treatment === 1) {
+            await fetchAndUpdateXpEvents();
+            await fetchAndUpdateXpInventory();
+        }
+
         await loadSite();
 
         setTimeout(() => {
@@ -282,6 +292,96 @@ async function verifyOrigin() {
 }
 
 verifyOrigin();
+
+async function fetchAndUpdateXpEvents() {
+    try {
+        url = redneredAPI + endpoints.USER + endpoints.XP_EVENTS;
+        apiUrl = new URL(url);
+        if (settingsStore.staff_show_unpublished_xp_events === 1) {
+            apiUrl.searchParams.append("include-unpublished", "true");
+        }
+
+        const xpEventsRaw = await fetch(apiUrl, {
+            method: "GET",
+            headers: {
+                "Authorization": localStorage.token
+            }
+        });
+
+        if (!xpEventsRaw.ok) {
+            createNotice(`There was an error fetching ${endpoints.USER + endpoints.XP_EVENTS}`, 4);
+        } else {
+            const xpEvents = await xpEventsRaw.json();
+
+            usersXPEventsCache = xpEvents;
+        }
+    } catch {}
+}
+
+async function fetchAndUpdateXpInventory() {
+    try {
+        const xpInventoryRaw = await fetch(redneredAPI + endpoints.USER + endpoints.XP_INVENTORY, {
+            method: "GET",
+            headers: {
+                "Authorization": localStorage.token
+            }
+        });
+
+        if (!xpInventoryRaw.ok) {
+            createNotice(`There was an error fetching ${endpoints.USER + endpoints.XP_INVENTORY}`, 4);
+        } else {
+            const xpInventory = await xpInventoryRaw.json();
+
+            usersXPInventoryCache = xpInventory;
+        }
+    } catch {}
+}
+
+async function fetchAndUpdateXpShop() {
+    try {
+        url = redneredAPI + endpoints.XP_SHOP;
+        apiUrl = new URL(url);
+        if (settingsStore.staff_show_unpublished_xp_shop === 1) {
+            apiUrl.searchParams.append("include-unpublished", "true");
+        }
+
+        const xpShopRaw = await fetch(apiUrl, {
+            method: "GET",
+            headers: {
+                "Authorization": localStorage.token
+            }
+        });
+
+        if (!xpShopRaw.ok) {
+            createNotice(`There was an error fetching ${endpoints.XP_SHOP}`, 4);
+        } else {
+            const xpShop = await xpShopRaw.json();
+
+            XPShopCache = xpShop;
+        }
+    } catch {}
+}
+
+async function fetchAndUpdateUserInfo() {
+    try {
+        const userRawData = await fetch(redneredAPI + endpoints.USER, {
+            method: "GET",
+            headers: {
+                "Authorization": localStorage.token
+            }
+        });
+
+        if (!userRawData.ok) {
+        } else {
+            const userData = await userRawData.json();
+
+            localStorage.setItem('currentUser', JSON.stringify(userData));
+
+            currentUserData = JSON.parse(localStorage.getItem('currentUser'));
+        }
+    } catch {}
+}
+
 
 async function loadSite() {
 
@@ -458,10 +558,10 @@ async function loadSite() {
     ];
 
 
-    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1 && currentUserData?.xp_balance) {
+    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1 && currentUserData) {
         let xpBalance = document.createElement("div");
 
-        usersXPBalance = currentUserData?.xp_balance;
+        usersXPBalance = currentUserData.xp_balance;
 
         xpBalance.classList.add('my-xp-value-container');
         xpBalance.addEventListener("click", () => {
@@ -551,12 +651,10 @@ async function loadSite() {
             priceContainer.classList.add('hide-nitro-icon');
         }
 
-        cardTag.innerHTML = `
-            <p class="shop-card-tag">ORBS EXCLUSIVES</p>
-        `;
+        let orbsExclusive = true;
 
         if (priceStandard != null) {
-            cardTag.innerHTML = ``;
+            orbsExclusive = false;
             let us_price = document.createElement("div");
     
             us_price.innerHTML = `
@@ -584,7 +682,67 @@ async function loadSite() {
         }
 
         if (!priceStandard && !priceOrb) {
-            cardTag.innerHTML = ``;
+            orbsExclusive = false;
+        }
+
+        if (orbsExclusive) {
+            createCardTag('ORBS EXCLUSIVES')
+        }
+
+        function createCardTag(text, type, toDate) {
+            let tag = document.createElement("p");
+            tag.classList.add('shop-card-tag');
+            tag.textContent = text;
+            cardTag.appendChild(tag);
+            if (type === 1) {
+                function updateTimer() {
+                    const now = new Date();
+                    const timeDiff = toDate - now;
+        
+                    if (timeDiff <= 0) {
+                        tag.textContent = `OFF SALE`;
+                        clearInterval(timerInterval);
+                    } else {
+                        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / 1000);
+                        tag.textContent = `${days} DAYS LEFT IN SHOP`;
+                    }
+                }
+        
+                const timerInterval = setInterval(updateTimer, 1000);
+                updateTimer();
+            } else if (type === 2) {
+                function updateTimer() {
+                    const now = new Date();
+                    const timeDiff = toDate - now;
+        
+                    if (timeDiff <= 0) {
+                        tag.textContent = `EXPIRED`;
+                        clearInterval(timerInterval);
+                    } else {
+                        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / 1000);
+                        tag.textContent = `EXPIRES IN ${days}D ${hours}H`;
+                    }
+                }
+        
+                const timerInterval = setInterval(updateTimer, 1000);
+                updateTimer();
+            }
+        }
+
+        const unpublishedAt = new Date(product.unpublished_at);
+                                
+        if (product.unpublished_at && !isNaN(unpublishedAt.getTime())) {
+            createCardTag(null, 1, unpublishedAt)
+        }
+
+        const expiresAt = new Date(product.expires_at);
+                                
+        if (product.expires_at && !isNaN(expiresAt.getTime())) {
+            createCardTag(null, 2, expiresAt)
         }
 
         const previewContainer = card.querySelector('[data-shop-card-preview-container]');
@@ -1066,9 +1224,7 @@ async function loadSite() {
                 `;
             }
         } else {
-            cardTag.innerHTML = `
-                <p class="shop-card-tag">UPDATE REQUIRED</p>
-            `;
+            createCardTag('UPDATE REQUIRED')
         }
 
         card.addEventListener("click", (event) => {
@@ -1146,7 +1302,6 @@ async function loadSite() {
                 if (tab === '1') {
                     modalInner.innerHTML = `
                         <div class="modalv2-left">
-                            <div class="shop-card-tag-container" data-shop-card-tag-container></div>
                             <div class="modalv2-preview-container"></div>
                             <div class="modalv2-bottom-container">
                                 <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${product.sku_id}')">${product.sku_id}</p>
@@ -1195,8 +1350,6 @@ async function loadSite() {
                         modalInner.querySelector('.options-preview-profile-username').textContent = currentUserData.username;
                     }
 
-                    const cardTag = modalInner.querySelector("[data-shop-card-tag-container]");
-
                     const priceContainer = modalInner.querySelector(".modalv2-price-container");
                     const priceContainer2 = modalInner.querySelector(".modalv2-price-container-crossed");
 
@@ -1204,10 +1357,6 @@ async function loadSite() {
                     let priceOrb = null;
                     let priceStandardCrossed = null;
                     let priceOrbCrossed = null;
-
-                    cardTag.innerHTML = `
-                        <p class="shop-card-tag">ORBS EXCLUSIVES</p>
-                    `;
 
                     if (currentUserData?.premium_type === 2 && product.prices) {
                         product.prices["4"]?.country_prices?.prices?.forEach(price => {
@@ -1229,7 +1378,6 @@ async function loadSite() {
                         });
 
                         if (priceStandard != null) {
-                            cardTag.innerHTML = ``;
                             let us_price = document.createElement("div");
         
                             us_price.innerHTML = `
@@ -1258,7 +1406,6 @@ async function loadSite() {
 
 
                         if (priceStandardCrossed != null) {
-                            cardTag.innerHTML = ``;
                             let us_price = document.createElement("div");
         
                             us_price.innerHTML = `
@@ -1304,7 +1451,6 @@ async function loadSite() {
                         });
 
                         if (priceStandard != null) {
-                            cardTag.innerHTML = ``;
                             let us_price = document.createElement("div");
         
                             us_price.innerHTML = `
@@ -1332,7 +1478,6 @@ async function loadSite() {
 
 
                         if (priceStandardCrossed != null) {
-                            cardTag.innerHTML = ``;
                             let us_price = document.createElement("div");
         
                             us_price.innerHTML = `
@@ -1358,10 +1503,6 @@ async function loadSite() {
     
                             priceContainer2.appendChild(orb_price);
                         }
-                    }
-
-                    if (!priceStandard && !priceOrb) {
-                        cardTag.innerHTML = ``;
                     }
 
                     const sku_id = modalInner.querySelector('.sku_id');
@@ -1954,6 +2095,8 @@ async function loadSite() {
                             applyVariant(product.variants[0]);
                         }
 
+                    } else {
+                        modalInner.querySelector('.modal2-profile-preview').remove();
                     }
 
                 } else {
@@ -1976,9 +2119,11 @@ async function loadSite() {
 
             document.body.appendChild(modal);
 
-            setTimeout(() => {
-                modal.classList.add('show');
-            }, 1);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.classList.add('show');
+                });
+            });
             
 
 
@@ -1989,9 +2134,11 @@ async function loadSite() {
 
             document.body.appendChild(modal_back);
 
-            setTimeout(() => {
-                modal_back.classList.add('show');
-            }, 1);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_back.classList.add('show');
+                });
+            });
 
 
             modal.addEventListener('click', (event) => {
@@ -2089,6 +2236,7 @@ async function loadSite() {
     
     async function renderShopData(data, output) {
         const searchInput = document.getElementById('searchInput');
+        searchInput.classList.remove('hidden');
         const paginationContainer = document.getElementById('pagination');
         const itemsPerPage = 5;
     
@@ -2211,6 +2359,46 @@ async function loadSite() {
                     category.appendChild(productsWrapper);
                 }
 
+
+                let categoryTags = document.createElement("div");
+                categoryTags.classList.add('shop-card-tag-container');
+                bannerContainer.appendChild(categoryTags)
+
+                const cardTag = categoryTags;
+
+                function createCategoryTag(text, type, toDate) {
+                    let tag = document.createElement("p");
+                    tag.classList.add('shop-card-tag');
+                    tag.textContent = text;
+                    cardTag.appendChild(tag);
+                    if (type === 1) {
+                        function updateTimer() {
+                            const now = new Date();
+                            const timeDiff = toDate - now;
+                        
+                            if (timeDiff <= 0) {
+                                tag.textContent = `NOT IN STORE`;
+                                clearInterval(timerInterval);
+                            } else {
+                                const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                                const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / 1000);
+                                tag.textContent = `${days} DAYS LEFT IN SHOP`;
+                            }
+                        }
+                    
+                        const timerInterval = setInterval(updateTimer, 1000);
+                        updateTimer();
+                    }
+                }
+
+                const unpublishedAt = new Date(categoryData.unpublished_at);
+
+                if (categoryData.unpublished_at && !isNaN(unpublishedAt.getTime())) {
+                    createCategoryTag(null, 1, unpublishedAt)
+                }
+
+
                 let categoryModalInfo;
                 let firstTimeOpeningModal = true;
 
@@ -2279,7 +2467,6 @@ async function loadSite() {
                             
                             <div id="category-modal-inner-content">
                                 <div class="category-modal-bottom-container">
-                                    <div class="shop-card-tag-container" data-shop-card-tag-container></div>
                                     <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${categoryData.sku_id}')">${categoryData.sku_id}</p>
                                     <h1>${categoryData.name}</h1>
                                     <p>${categoryData.summary ? categoryData.summary : ''}</p>
@@ -2311,7 +2498,6 @@ async function loadSite() {
                         if (tab === '1') {
                             modalInner.innerHTML = `
                                 <div class="category-modal-bottom-container">
-                                    <div class="shop-card-tag-container" data-shop-card-tag-container></div>
                                     <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${categoryData.sku_id}')">${categoryData.sku_id}</p>
                                     <h1>${categoryData.name}</h1>
                                     <p>${categoryData.summary ? categoryData.summary : ''}</p>
@@ -2361,7 +2547,6 @@ async function loadSite() {
                             }
 
                             const pricesDetailBlock = modalInner.querySelector('#price-detail-block');
-                            const cardTag = modalInner.querySelector("[data-shop-card-tag-container]");
 
                             if (pricesDetailBlock) {
                                 let standardUS = 0;
@@ -2369,10 +2554,6 @@ async function loadSite() {
 
                                 let nitroUS = 0;
                                 let nitroOrb = 0;
-
-                                cardTag.innerHTML = `
-                                    <p class="shop-card-tag">ORBS EXCLUSIVES</p>
-                                `;
                                 
                                 categoryData.products.forEach(product => {
                                     if (!product.prices) {
@@ -2455,16 +2636,10 @@ async function loadSite() {
                                 }
 
                                 if (standardOrb === 0) {
-                                    cardTag.innerHTML = ``;
                                     pricesDetailBlock.querySelector('#standardOrb').classList.add('hidden');
                                 }
                                 if (nitroOrb === 0) {
-                                    cardTag.innerHTML = ``;
                                     pricesDetailBlock.querySelector('#nitroOrb').classList.add('hidden');
-                                }
-
-                                if (standardUS != 0 || nitroUS != 0) {
-                                    cardTag.innerHTML = ``;
                                 }
                             }
 
@@ -2918,13 +3093,13 @@ async function loadSite() {
                                         <path d="M11.9999 22C14.2189 21.9983 16.3744 21.2585 18.1268 19.8972C19.8792 18.5359 21.129 16.6304 21.6795 14.4807C22.23 12.3311 22.0498 10.0594 21.1674 8.02335C20.285 5.98732 18.7504 4.30264 16.8053 3.23457C14.8602 2.16651 12.6151 1.77574 10.4236 2.12379C8.23202 2.47185 6.21848 3.53896 4.70001 5.15709C3.18155 6.77522 2.24443 8.85245 2.03621 11.0617C1.82799 13.2709 2.36051 15.4867 3.54991 17.36C3.67991 17.55 3.65991 17.8 3.50991 17.97L1.44991 20.34C1.32307 20.4844 1.24052 20.6623 1.21214 20.8523C1.18376 21.0424 1.21074 21.2366 1.28987 21.4117C1.36899 21.5869 1.49691 21.7355 1.6583 21.8398C1.81969 21.9442 2.00773 21.9998 2.19991 22H11.9999Z" fill="currentColor"/>
                                         </svg>
                                         <div class="text-container">
-                                            <h3>Log In with Discord to submit reviews.</h3>
+                                            <h3>Login with Discord to submit reviews.</h3>
                                         </div>
                                         <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
                                             <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"/>
                                             </svg>
-                                            Log In with Discord
+                                            Login with Discord
                                         </button>
                                     `;
                                 }
@@ -3206,11 +3381,12 @@ async function loadSite() {
                                         <p class="review-text-content">This category currently has no reviews.</p>
                                     `;
 
-                                    if (currentUserData && currentUserData.ban_config.ban_type === 0) {
+                                    if (categoryModalInfo.reviews_disabled === true) {
+                                    } else if (currentUserData && currentUserData.ban_config.ban_type === 0) {
                                         reviewDiv.querySelector('.review-text-content').textContent = 'This category currently has no reviews. You could be the first!';
                                     } else if (currentUserData && currentUserData.ban_config.ban_type >= 1) {
                                     } else {
-                                        reviewDiv.querySelector('.review-text-content').textContent = 'This category currently has no reviews. Log In with Discord and you could be the first!';
+                                        reviewDiv.querySelector('.review-text-content').textContent = 'This category currently has no reviews. Login with Discord and you could be the first!';
                                     }
 
                 
@@ -3220,10 +3396,53 @@ async function loadSite() {
 
                             fetchAndRenderReviews();
 
+                        } else if (tab === '5') {
+                            modalInner.innerHTML = `
+                                <div class="category-modal-xp-rewards-container">
+                                </div>
+                            `;
+                            usersXPEventsCache.forEach(promo => {
+                                if (promo.category_data?.sku_id === categoryData.sku_id && promo.already_claimed != true) {
+                                    let promoCard = document.createElement("div");
+
+                                    promoCard.classList.add('category-modal-xp-reward');
+                                    promoCard.classList.add('unclaimed');
+
+                                    promoCard.innerHTML = `
+                                        <h3>Claim your free ${promo.xp_reward.toLocaleString()} XP!</h3>
+                                        <p class="desc">You have ${promo.xp_reward.toLocaleString()} XP waiting for you.</p>
+                                        <button id="claim-xp-button">
+                                            Claim ${promo.xp_reward.toLocaleString()} XP
+                                            <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
+                                            </svg>
+                                        </button>
+                                    `;
+
+                                    promoCard.querySelector('#claim-xp-button').addEventListener('click', () => {
+                                        openClaimableClaimXPModal(promo.claimable_id);
+                                    });
+                                    
+                                    modalInner.querySelector('.category-modal-xp-rewards-container').appendChild(promoCard)
+                                } else if (promo.category_data?.sku_id === categoryData.sku_id && promo.already_claimed === true) {
+                                    let promoCard = document.createElement("div");
+
+                                    promoCard.classList.add('category-modal-xp-reward');
+
+                                    promoCard.innerHTML = `
+                                        <h3>Already Claimed.</h3>
+                                        <p class="desc">You already claimed this event reward for ${promo.xp_reward.toLocaleString()} XP.</p>
+                                    `;
+                                    
+                                    modalInner.querySelector('.category-modal-xp-rewards-container').appendChild(promoCard)
+                                }
+                            });
                         } else {
                             modalInner.innerHTML = ``;
                         }
                     }
+
+                    window.changeModalTab = changeModalTab;
 
                     if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1) {
                         modal.querySelector('#category-modal-tab-5').classList.remove('hidden');
@@ -3232,9 +3451,11 @@ async function loadSite() {
 
                     document.body.appendChild(modal);
         
-                    setTimeout(() => {
-                        modal.classList.add('show');
-                    }, 1);
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            modal.classList.add('show');
+                        });
+                    });
 
 
                     let modal_back = document.createElement("div");
@@ -3244,9 +3465,11 @@ async function loadSite() {
         
                     document.body.appendChild(modal_back);
         
-                    setTimeout(() => {
-                        modal_back.classList.add('show');
-                    }, 1);
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            modal_back.classList.add('show');
+                        });
+                    });
 
 
                     if (!categoryModalInfo) {
@@ -3268,6 +3491,20 @@ async function loadSite() {
                             categoryModalInfo = data;
                         }
                     }
+
+                    if (Array.isArray(usersXPEventsCache)) {
+                        usersXPEventsCache.forEach(promo => {
+                            if (promo.category_data?.sku_id === categoryData.sku_id) {
+                                const xpRewardsTab = modal.querySelector('#category-modal-tab-5');
+                                xpRewardsTab.classList.remove('disabled');
+                                xpRewardsTab.classList.remove('has-tooltip');
+                                xpRewardsTab.addEventListener("click", function () {
+                                    // Rewards
+                                    changeModalTab('5');
+                                });
+                            }
+                        });
+                    }
         
                     modal.querySelector('#category-modal-tab-1').addEventListener("click", function () {
                         // Details
@@ -3281,10 +3518,6 @@ async function loadSite() {
                         // Assets
                         changeModalTab('3');
                     });
-                    // modal.querySelector('#category-modal-tab-5').addEventListener("click", function () {
-                    //     // Rewards
-                    //     changeModalTab('5');
-                    // });
         
                     changeModalTab('1');
 
@@ -3378,7 +3611,7 @@ async function loadSite() {
     }
 
     async function renderShopBrowseData(data, output) {
-        output.scrollTo(0,0);
+        document.getElementById("article-content").scrollTo(0,0);
         output.innerHTML = ``;
         data.shop_blocks.forEach((categoryData) => {
             const category = document.createElement("div");
@@ -3465,6 +3698,22 @@ async function loadSite() {
 
                     category.appendChild(featuredBlock);
                 });
+            } else if (categoryData.type === category_types.WIDE_BANNER) {
+
+                category.classList.add('category-container');
+                category.classList.add('category-wide-banner-container');
+
+                if (categoryData.banner_text_color) category.style.color = categoryData.banner_text_color;
+                if (categoryData.disable_cta) category.classList.add('hide-click-button');
+
+                category.innerHTML = `
+                    <img src="${categoryData.banner_url}">
+                    <div class="text-container">
+                        <h2>${categoryData.title}</h2>
+                        <p>${categoryData.body}</p>
+                    </div>
+                    <button class="take-me-there-wide-banner-button" onclick="scrollToCache = '${categoryData.category_store_listing_id}'; addParams({scrollTo: '${categoryData.category_store_listing_id}'}); loadPage('2');">Take Me There</button>
+                `;
             }
 
             output.appendChild(category);
@@ -3505,6 +3754,340 @@ async function loadSite() {
         `;
     }
     
+
+
+
+
+    async function openClaimableClaimXPModal(claimableId) {
+        let modal = document.createElement("div");
+
+        modal.classList.add('modalv2');
+
+
+        let modal_back = document.createElement("div");
+
+        modal_back.classList.add('modalv2-back');
+        modal_back.id = 'modalv2-back';
+
+        document.body.appendChild(modal_back);
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                modal_back.classList.add('show');
+            });
+        });
+
+        modal_back.style.zIndex = '400';
+
+
+        let data;
+
+        if (localStorage.token) {
+            const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId, {
+                method: 'GET',
+                headers: {
+                    "Authorization": localStorage.token
+                }
+            });
+
+            if (!dataClaimable.ok) {
+                return
+            }
+
+            const data1 = await dataClaimable.json();
+
+            data = data1;
+        } else {
+            const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId, {
+                method: 'GET'
+            });
+
+            if (!dataClaimable.ok) {
+                return
+            }
+
+            const data1 = await dataClaimable.json();
+
+            data = data1;
+        }
+
+        modal.innerHTML = `
+            <div class="modalv2-inner xp-modal">
+                
+                <div class="xp-modal-inner" id="modalv2-inner-content">
+                    <div class="xp-modal-banner">
+                        <div class="xp-modal-flower"></div>
+                        <div class="xp-modal-star var1"></div>
+                        <div class="xp-modal-star var2"></div>
+                        <div class="xp-modal-star var3"></div>
+                        <div class="xp-modal-star var4"></div>
+                        <div class="xp-modal-star var5"></div>
+                        <p>${data.xp_reward.toLocaleString()} XP</p>
+                    </div>
+                    <h2>Congratulations!</h2>
+                    <p>You have ${data.xp_reward.toLocaleString()} XP waiting for you.</p>
+                    <p class="redeem-xp-error-output"></p>
+                    <button class="claim-xp-button" id="claim-xp-button">
+                        Claim ${data.xp_reward.toLocaleString()} XP
+                        <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div data-modal-top-product-buttons>
+                    <div class="has-tooltip" data-tooltip="Close" data-close-product-card-button>
+                        <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modal.querySelector('#claim-xp-button').addEventListener('click', async () => {
+            modal.querySelector('.redeem-xp-error-output').textContent = '';
+            modal.querySelector('#claim-xp-button').disabled = true;
+            const response = await fetch(redneredAPI + endpoints.CLAIMABLES_REDEEM + data.id, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "Authorization": localStorage.token
+                }
+            });
+            if (!response.ok) {
+                const data = await response.json();
+                modal.querySelector('.redeem-xp-error-output').textContent = data.message;
+                console.error(response)
+                modal.querySelector('#claim-xp-button').disabled = false;
+                return
+            }
+            await fetchAndUpdateXpEvents();
+            await fetchAndUpdateXpInventory();
+            await fetchAndUpdateUserInfo();
+            animateXPNumber('my-xp-balance', usersXPBalance + data.xp_reward);
+            try {
+                animateXPNumber('my-xp-balance-modalv3', usersXPBalance + data.xp_reward);
+            } catch {
+            }
+            try {
+                changeModalTab('5');
+            } catch {
+            }
+            try {
+                refreshXPEventsList();
+            } catch {
+            }
+            modal.classList.remove('show');
+            modal_back.classList.remove('show');
+            setTimeout(() => {
+                modal.remove();
+                modal_back.remove();
+            }, 300);
+        });
+
+        document.body.appendChild(modal);
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                modal.classList.add('show');
+            });
+        });
+        
+
+        modal.style.zIndex = '401';
+
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.classList.remove('show');
+                modal_back.classList.remove('show');
+                setTimeout(() => {
+                    modal.remove();
+                    modal_back.remove();
+                }, 300);
+            }
+        });
+
+        modal.querySelector("[data-close-product-card-button]").addEventListener('click', () => {
+            modal.classList.remove('show');
+            modal_back.classList.remove('show');
+            setTimeout(() => {
+                modal.remove();
+                modal_back.remove();
+            }, 300);
+        });
+    }
+
+    window.openClaimableClaimXPModal = openClaimableClaimXPModal;
+
+
+
+    async function openClaimablePurchaseModal(claimableId) {
+        let modal = document.createElement("div");
+
+        modal.classList.add('modalv2');
+
+
+        let modal_back = document.createElement("div");
+
+        modal_back.classList.add('modalv2-back');
+        modal_back.id = 'modalv2-back';
+
+        document.body.appendChild(modal_back);
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                modal_back.classList.add('show');
+            });
+        });
+
+        modal_back.style.zIndex = '400';
+
+
+        let data;
+
+        if (localStorage.token) {
+            const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId, {
+                method: 'GET',
+                headers: {
+                    "Authorization": localStorage.token
+                }
+            });
+
+            if (!dataClaimable.ok) {
+                return
+            }
+
+            const data1 = await dataClaimable.json();
+
+            data = data1;
+        } else {
+            const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId, {
+                method: 'GET'
+            });
+
+            if (!dataClaimable.ok) {
+                return
+            }
+
+            const data1 = await dataClaimable.json();
+
+            data = data1;
+        }
+
+        modal.innerHTML = `
+            <div class="modalv2-inner xp-purchase-modal">
+                
+                <div class="xp-purchase-modal-inner" id="modalv2-inner-content">
+                    <div class="xp-modal-banner">
+                        <div class="xp-modal-flower"></div>
+                        <div class="xp-modal-star var1"></div>
+                        <div class="xp-modal-star var2"></div>
+                        <div class="xp-modal-star var3"></div>
+                        <div class="xp-modal-star var4"></div>
+                        <div class="xp-modal-star var5"></div>
+                    </div>
+                    <div class="xp-purchase-modal-inner-content">
+                        <h3>Claim Perk</h3>
+                        <div class="xp-purchase-modal-details-container">
+                            <p>${data.name}</p>
+                        </div>
+                        <div class="disclaimer">
+                            <p>By clicking 'Claim for ${data.xp_price.toLocaleString()} XP', you agree to the</p><a class="link" href="https://yapper.shop/legal-information/?page=tos">Digital Currency Terms.</a>
+                        </div>
+                        <div class="disclaimer">
+                            <p>Claiming this item means you have a limited licence to use this item on Shop Archives. This item is non-refundable.</p>
+                        </div>
+                        <p class="redeem-xp-error-output"></p>
+                        <button class="claim-xp-perk-button" id="claim-xp-button">
+                            Claim for ${data.xp_price.toLocaleString()} XP
+                            <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div data-modal-top-product-buttons>
+                    <div class="has-tooltip" data-tooltip="Close" data-close-product-card-button>
+                        <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modal.querySelector('#claim-xp-button').addEventListener('click', async () => {
+            modal.querySelector('.redeem-xp-error-output').textContent = '';
+            modal.querySelector('#claim-xp-button').disabled = true;
+            const response = await fetch(redneredAPI + endpoints.CLAIMABLES_PURCHASE + data.id, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    "Authorization": localStorage.token
+                }
+            });
+            if (!response.ok) {
+                const data = await response.json();
+                modal.querySelector('.redeem-xp-error-output').textContent = data.message;
+                console.error(response)
+                modal.querySelector('#claim-xp-button').disabled = false;
+                return
+            }
+            await fetchAndUpdateXpEvents();
+            await fetchAndUpdateXpInventory();
+            await fetchAndUpdateUserInfo();
+            await loadXpShopData();
+            animateXPNumber('my-xp-balance', usersXPBalance - data.xp_price);
+            try {
+                animateXPNumber('my-xp-balance-modalv3', usersXPBalance - data.xp_price);
+            } catch {
+            }
+            try {
+                changeModalTab('5');
+            } catch {
+            }
+            try {
+                refreshXPEventsList();
+            } catch {
+            }
+            modal.classList.remove('show');
+            modal_back.classList.remove('show');
+            setTimeout(() => {
+                modal.remove();
+                modal_back.remove();
+            }, 300);
+        });
+
+        document.body.appendChild(modal);
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                modal.classList.add('show');
+            });
+        });
+
+        modal.style.zIndex = '401';
+
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.classList.remove('show');
+                modal_back.classList.remove('show');
+                setTimeout(() => {
+                    modal.remove();
+                    modal_back.remove();
+                }, 300);
+            }
+        });
+
+        modal.querySelector("[data-close-product-card-button]").addEventListener('click', () => {
+            modal.classList.remove('show');
+            modal_back.classList.remove('show');
+            setTimeout(() => {
+                modal.remove();
+                modal_back.remove();
+            }, 300);
+        });
+    }
+
+    window.openClaimablePurchaseModal = openClaimablePurchaseModal;
     
     
     
@@ -3600,7 +4183,10 @@ async function loadSite() {
             await setDiscordLeakedCategoriesCache();
         }
 
+        const searchInput = document.getElementById('searchInput');
+
         if (currentPageCache === "home") {
+            searchInput.classList.add('hidden');   
             const output = document.getElementById('categories-container');
             if (!discordCollectiblesShopHomeCache) {
                 const rawData = await fetch(redneredAPI + endpoints.DISCORD_COLLECTIBLES_HOME);
@@ -3618,6 +4204,7 @@ async function loadSite() {
                 renderShopBrowseData(discordCollectiblesShopHomeCache, output);
             }
         } else if (currentPageCache === "leaks") {
+            searchInput.classList.remove('hidden');    
             const leaksTab = document.getElementById('shop-tab-1');
             localStorage.latest_discord_leaked_categories_version = discordLeakedCategoriesCache.version;
             leaksTab.classList.add('hide-new-tag');
@@ -3626,6 +4213,7 @@ async function loadSite() {
 
             renderShopData(discordLeakedCategoriesCache.categories, output);
         } else if (currentPageCache === "catalog") {
+            searchInput.classList.remove('hidden');   
             const output = document.getElementById('categories-container');
             if (!discordCollectiblesCategoriesCache) {
                 const rawData = await fetch(redneredAPI + endpoints.DISCORD_COLLECTIBLES_CATEGORIES);
@@ -3643,6 +4231,7 @@ async function loadSite() {
                 renderShopData(discordCollectiblesCategoriesCache, output);
             }
         } else if (currentPageCache === "orbs") {
+            searchInput.classList.remove('hidden');   
             const output = document.getElementById('categories-container');
             if (!discordOrbsCategoriesCache) {
                 const rawData = await fetch(redneredAPI + endpoints.DISCORD_ORBS_CATEGORIES);
@@ -3660,6 +4249,7 @@ async function loadSite() {
                 renderShopData(discordOrbsCategoriesCache, output);
             }
         } else if (currentPageCache === "miscellaneous") {
+            searchInput.classList.remove('hidden');
             const output = document.getElementById('categories-container');
             if (!discordMiscellaneousCategoriesCache) {
                 url = redneredAPI + endpoints.DISCORD_MISCELLANEOUS_CATEGORIES;
@@ -3787,9 +4377,6 @@ async function loadSite() {
                 <div class="side-tabs-button" id="modal-v3-tab-xp_shop" onclick="setModalv3InnerContent('xp_shop')">
                     <p>Shop</p>
                 </div>
-                <div class="side-tabs-button" id="modal-v3-tab-xp_inventory" onclick="setModalv3InnerContent('xp_inventory')">
-                    <p>Inventory</p>
-                </div>
             `;
         }
 
@@ -3806,9 +4393,11 @@ async function loadSite() {
             `;
         }
 
-        setTimeout(() => {
-            modal.classList.add('show');
-        }, 1);
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                modal.classList.add('show');
+            });
+        });
 
         setModalv3InnerContent('account');
 
@@ -3823,11 +4412,17 @@ async function loadSite() {
         });
 
         document.querySelector("[data-discord-like-settings-close-button]").addEventListener('click', (event) => {
+            closeModalV3()
+        });
+
+        function closeModalV3() {
             modal.classList.remove('show');
             setTimeout(() => {
                 modal.remove();
             }, 300);
-        });
+        }
+
+        window.closeModalV3 = closeModalV3;
     }
 
     window.openNewDiscordLikeSettings = openNewDiscordLikeSettings;
@@ -3907,13 +4502,13 @@ async function loadSite() {
             } else {
                 tabPageOutput.querySelector('#discord-account-container').innerHTML = `
                     <h2 class="modalv3-content-card-header">You are curently not logged in.</h2>
-                    <p class="modalv3-content-card-summary">Log In with Discord to view your account details.</p>
+                    <p class="modalv3-content-card-summary">Login with Discord to view your account details.</p>
 
                     <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
                         <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"/>
                         </svg>
-                        Log In with Discord
+                        Login with Discord
                     </button>
                 `;
             }
@@ -4289,10 +4884,185 @@ async function loadSite() {
 
                 <hr>
 
+                <div class="xp-balance-modalv3-container">
+                    <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="#D9D9D9"></path>
+                    </svg>                            
+                    <p id="my-xp-balance-modalv3">${currentUserData.xp_balance.toLocaleString()}</p>
+                </div>
+
+                <hr class="inv">
+
                 <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Coming in update 7.1</h2>
+                    <h2 class="modalv3-content-card-header">Active Events</h2>
+                    <p class="modalv3-content-card-summary">Events are a sweet way to earn free XP, keep an eye out for new events!</p>
+
+                    <div class="modalv3-xp-events-container" id="xp-events-unclaimed">
+
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="modalv3-content-card-1">
+                    <h2 class="modalv3-content-card-header">Claimed Events</h2>
+                    <p class="modalv3-content-card-summary">Past events that you've claimed.</p>
+
+                    <div class="modalv3-xp-events-container" id="xp-events-claimed">
+
+                    </div>
                 </div>
             `;
+
+            const xpBalance = tabPageOutput.querySelector('.xp-balance-modalv3-container');
+
+            usersXPBalance = currentUserData.xp_balance;
+
+            xpBalance.classList.add('has-tooltip');
+            xpBalance.setAttribute('data-tooltip', 'You have '+usersXPBalance.toLocaleString()+' XP');
+
+
+            const unclaimedOutput = tabPageOutput.querySelector('#xp-events-unclaimed');
+            const claimedOutput = tabPageOutput.querySelector('#xp-events-claimed');
+
+            if (usersXPEventsCache) {
+                refreshXPEventsList()
+            }
+
+            function refreshXPEventsList() {
+                unclaimedOutput.innerHTML = ``;
+                claimedOutput.innerHTML = ``;
+                let unclaimedCoint = 0;
+                let claimedCoint = 0;
+                usersXPEventsCache.forEach(promo => {
+
+                    let renderedDate;
+
+                    let promoCard = document.createElement("div");
+
+                    if (promo.already_claimed != true && promo.category_data === null || promo.already_claimed != true && settingsStore.staff_allow_category_only_event_claiming_in_events_tab === 1) {
+
+                        unclaimedCoint += 1;
+
+                        promoCard.classList.add('modalv3-xp-reward');
+                        promoCard.classList.add('unclaimed');
+
+                        promoCard.innerHTML = `
+                            <div id="xp-event-expires-at"></div>
+                            <h3>${promo.name}</h3>
+                            <p class="desc">You have ${promo.xp_reward.toLocaleString()} XP waiting for you.</p>
+                            <button id="claim-xp-button">
+                                Claim ${promo.xp_reward.toLocaleString()} XP
+                                <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
+                                </svg>
+                            </button>
+                        `;
+
+                        promoCard.querySelector('#claim-xp-button').addEventListener('click', () => {
+                            openClaimableClaimXPModal(promo.claimable_id);
+                        });
+                        
+                        unclaimedOutput.appendChild(promoCard)
+                    } else if (promo.already_claimed != true && promo.category_data != null) {
+
+                        unclaimedCoint += 1;
+
+                        promoCard.classList.add('modalv3-xp-reward');
+                        promoCard.classList.add('unclaimed');
+
+                        promoCard.innerHTML = `
+                            <div id="xp-event-expires-at"></div>
+                            <h3>${promo.name}</h3>
+                            <p class="desc">You have ${promo.xp_reward.toLocaleString()} XP waiting for you, visit the category to claim it.</p>
+                            <button id="take-me-there-xp-button">
+                                Take Me There
+                            </button>
+                        `;
+
+                        promoCard.querySelector('#take-me-there-xp-button').addEventListener('click', () => {
+                            closeModalV3();
+                            addParams({page: promo.category_data.page});
+                            currentOpenModalId = promo.category_data.sku_id;
+                            loadPage(promo.category_data.page, true);
+                        });
+                        
+                        unclaimedOutput.appendChild(promoCard)
+                    } else if (promo.already_claimed === true) {
+
+                        claimedCoint += 1;
+
+                        promoCard.classList.add('modalv3-xp-reward');
+
+                        promoCard.innerHTML = `
+                            <div id="xp-event-expires-at"></div>
+                            <h3>${promo.name}</h3>
+                            <p class="desc">You already claimed this event reward for ${promo.xp_reward.toLocaleString()} XP.</p>
+                        `;
+                        
+                        claimedOutput.appendChild(promoCard)
+                    }
+
+                    const expiresAt = new Date(promo.expires_at);
+                            
+                    if (promo.expires_at && !isNaN(expiresAt.getTime())) {
+                    
+                        function updateTimer() {
+                            const now = new Date();
+                            const timeDiff = expiresAt - now;
+                    
+                            if (timeDiff <= 0) {
+                                promoCard.classList.add("hidden");
+                                clearInterval(timerInterval);
+                            } else {
+                                const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                                const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                                const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+                                const date = `ENDS IN ${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+                                renderedDate = date.replace(" 0d 0h 0m", "").replace(" 0d 0h", "").replace(" 0d", "")
+
+                                promoCard.querySelector('#xp-event-expires-at').innerHTML = `
+                                    <p class="xp-event-expires-at-text">${renderedDate}</p>
+                                `;
+                            }
+                        }
+                    
+                        const timerInterval = setInterval(updateTimer, 1000);
+                        updateTimer();
+                    }
+                });
+
+                if (claimedCoint === 0) {
+                    let promoCard = document.createElement("div");
+
+                    promoCard.classList.add('modalv3-xp-reward');
+
+                    promoCard.innerHTML = `
+                        <h3>Nothing yet...</h3>
+                        <p class="desc">Looks like you haven't claimed any event rewards yet. When you do, they'll show up here.</p>
+                    `;
+                    
+                    claimedOutput.appendChild(promoCard)
+                }
+
+                if (unclaimedCoint === 0) {
+                    let promoCard = document.createElement("div");
+
+                    promoCard.classList.add('modalv3-xp-reward');
+
+                    promoCard.innerHTML = `
+                        <h3>All is quiet...</h3>
+                        <p class="desc">There are no events happening right now, check back later.</p>
+                    `;
+                    
+                    unclaimedOutput.appendChild(promoCard)
+                }
+            }
+
+            window.refreshXPEventsList = refreshXPEventsList;
 
         } else if (tab === "xp_shop") {
             tabPageOutput.innerHTML = `
@@ -4300,10 +5070,170 @@ async function loadSite() {
 
                 <hr>
 
+                <div class="xp-balance-modalv3-container">
+                    <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="#D9D9D9"></path>
+                    </svg>                            
+                    <p id="my-xp-balance-modalv3">${currentUserData.xp_balance.toLocaleString()}</p>
+                </div>
+
+                <hr class="inv">
+
                 <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Coming in update 7.1</h2>
+                    <h2 class="modalv3-content-card-header">Featured Perks</h2>
+                    <p class="modalv3-content-card-summary">Top picks from us we think you might like.</p>
+
+                    <div class="modalv3-xp-featured-cards-container">
+                        <div class="xp-featured-card">
+                            <div class="xp-card-button-pad"></div>
+                            <div class="xp-card-button-pad"></div>
+                        </div>
+                        <div class="xp-featured-card">
+                            <div class="xp-card-button-pad"></div>
+                            <div class="xp-card-button-pad"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="modalv3-content-card-1">
+                    <h2 class="modalv3-content-card-header">Additional Perks</h2>
+                    <div class="modalv3-xp-shop-cards-container">
+                        <div class="xp-featured-card">
+                            <div class="xp-card-button-pad"></div>
+                            <div class="xp-card-button-pad"></div>
+                        </div>
+                        <div class="xp-featured-card">
+                            <div class="xp-card-button-pad"></div>
+                            <div class="xp-card-button-pad"></div>
+                        </div>
+                    </div>
                 </div>
             `;
+
+            const xpBalance = tabPageOutput.querySelector('.xp-balance-modalv3-container');
+
+            usersXPBalance = currentUserData.xp_balance;
+
+            xpBalance.classList.add('has-tooltip');
+            xpBalance.setAttribute('data-tooltip', 'You have '+usersXPBalance.toLocaleString()+' XP');
+
+
+            const featuredXpOutput = tabPageOutput.querySelector('.modalv3-xp-featured-cards-container');
+            const shopXpOutput = tabPageOutput.querySelector('.modalv3-xp-shop-cards-container');
+
+            loadXpShopData();
+
+            async function loadXpShopData() {
+                
+                if (!XPShopCache) {
+                    await fetchAndUpdateXpShop();
+                    renderXpShop(XPShopCache)
+                } else {
+                    renderXpShop(XPShopCache)
+                }
+
+            }
+            
+            window.loadXpShopData = loadXpShopData;
+
+            function renderXpShop(data) {
+                featuredXpOutput.innerHTML = ``;
+                shopXpOutput.innerHTML = ``;
+                data.featured.forEach(xpItem => {
+                    let xpCard = document.createElement("div");
+
+                    xpCard.classList.add('xp-featured-card')
+
+                    xpCard.innerHTML = `
+                        <h3>${xpItem.name}</h3>
+                        <p>${xpItem.summary}</p>
+                        <div class="xp-card-button-pad"></div>
+                        <div class="xp-card-bottom">
+                            <h3 class="xp-already-claimed-text hidden">Already Claimed</h3>
+                            <button id="claim-item-for-xp-button">
+                                Claim for ${xpItem.price} XP
+                                <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    const button = xpCard.querySelector('#claim-item-for-xp-button');
+                    const alreadyClaimedText = xpCard.querySelector('.xp-already-claimed-text');
+
+                    let alreadyClaimed = null;
+                    usersXPInventoryCache.forEach(claimed => {
+                        if (claimed.id === xpItem.id) {
+                            alreadyClaimed = true;
+                        }
+                    });
+
+                    if (!alreadyClaimed) {
+                        if (xpItem.price > currentUserData.xp_balance) {
+                            button.disabled = true;
+                            button.classList.add('has-tooltip');
+                            button.setAttribute('data-tooltip', 'Insufficient XP');
+                        } else {
+                            button.addEventListener('click', () => {
+                                openClaimablePurchaseModal(xpItem.id);
+                            });
+                        }
+                    } else {
+                        alreadyClaimedText.classList.remove('hidden');
+                        button.classList.add('hidden');
+                    }
+
+                    featuredXpOutput.appendChild(xpCard);
+                });
+                data.shop.forEach(xpItem => {
+                    let xpCard = document.createElement("div");
+
+                    xpCard.classList.add('xp-shop-card')
+
+                    xpCard.innerHTML = `
+                        <h3>${xpItem.name}</h3>
+                        <p>${xpItem.summary}</p>
+                        <div class="xp-card-button-pad"></div>
+                        <div class="xp-card-bottom">
+                            <h3 class="xp-already-claimed-text hidden">Already Claimed</h3>
+                            <button id="claim-item-for-xp-button">
+                                Claim for ${xpItem.price} XP
+                                <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    `;
+                    const button = xpCard.querySelector('#claim-item-for-xp-button');
+                    const alreadyClaimedText = xpCard.querySelector('.xp-already-claimed-text');
+
+                    let alreadyClaimed = null;
+                    usersXPInventoryCache.forEach(claimed => {
+                        if (claimed.id === xpItem.id) {
+                            alreadyClaimed = true;
+                        }
+                    });
+
+                    if (!alreadyClaimed) {
+                        if (xpItem.price > currentUserData.xp_balance) {
+                            button.disabled = true;
+                            button.classList.add('has-tooltip');
+                            button.setAttribute('data-tooltip', 'Insufficient XP');
+                        } else {
+                            button.addEventListener('click', () => {
+                                openClaimablePurchaseModal(xpItem.id);
+                            });
+                        }
+                    } else {
+                        alreadyClaimedText.classList.remove('hidden');
+                        button.classList.add('hidden');
+                    }
+
+                    shopXpOutput.appendChild(xpCard);
+                });
+            }
 
         } else if (tab === "xp_inventory") {
             tabPageOutput.innerHTML = `
@@ -4523,6 +5453,39 @@ async function loadSite() {
                             </div>
                         </div>
                     </div>
+                    <div class="setting">
+                        <div class="setting-info">
+                            <div class="setting-title">XP: Unpublished Xp Events</div>
+                            <div class="setting-description">Pretty self explanatory</div>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="staff_show_unpublished_xp_events_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-info">
+                            <div class="setting-title">XP: Unpublished Xp Shop</div>
+                            <div class="setting-description">same for this</div>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="staff_show_unpublished_xp_shop_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-info">
+                            <div class="setting-title">XP: Bypass Category Requirement</div>
+                            <div class="setting-description">Allows you to claim category only events from the events tab</div>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="staff_allow_category_only_event_claiming_in_events_tab_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
 
@@ -4550,6 +5513,23 @@ async function loadSite() {
 
             devtoolsContainer.querySelector('#staff_simulate_guidelines_block_toggle').addEventListener("click", () => {
                 toggleSetting('staff_simulate_guidelines_block');
+                updateToggleStates();
+            });
+
+            devtoolsContainer.querySelector('#staff_show_unpublished_xp_events_toggle').addEventListener("click", () => {
+                toggleSetting('staff_show_unpublished_xp_events');
+                updateToggleStates();
+                fetchAndUpdateXpEvents();
+            });
+
+            devtoolsContainer.querySelector('#staff_show_unpublished_xp_shop_toggle').addEventListener("click", () => {
+                toggleSetting('staff_show_unpublished_xp_shop');
+                updateToggleStates();
+                fetchAndUpdateXpShop();
+            });
+
+            devtoolsContainer.querySelector('#staff_allow_category_only_event_claiming_in_events_tab_toggle').addEventListener("click", () => {
+                toggleSetting('staff_allow_category_only_event_claiming_in_events_tab');
                 updateToggleStates();
             });
 
@@ -4617,7 +5597,7 @@ function triggerSessionExpiredBlock() {
                 <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"/>
                 </svg>
-                Log In with Discord
+                Login with Discord
             </button>
             <button class="log-in-with-discord-button" style="background-color: var(--color-primary);" onclick="logoutOfDiscord();">
                 Continue as Guest
@@ -4630,19 +5610,22 @@ function triggerSessionExpiredBlock() {
 
 function createNotice(text, type) {
     const notice = document.getElementById('notice-container');
-    notice.innerHTML = `
+    let noticeDiv = document.createElement("div");
+
+    noticeDiv.innerHTML = `
         <div class="notice">
             <p>${text}</p>
-            <svg class="closeIcon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+            <svg class="closeIcon" onclick="this.parentElement.remove();" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
         </div>
     `;
-    notice.querySelector('.closeIcon').addEventListener("click", () => {
-        notice.remove();
-    });
+
+    notice.appendChild(noticeDiv);
     if (type === 1) {
         notice.classList.add('neutral');
     } else if (type === 2) {
         notice.classList.add('brand');
+    } else if (type === 4) {
+        notice.classList.add('danger');
     } else {
         notice.classList.add('default');
     }
@@ -4844,6 +5827,10 @@ function animateXPNumber(elementId, targetValue, duration = 1000) {
 
         if (document.querySelector('.my-xp-value-container')) {
             document.querySelector('.my-xp-value-container').setAttribute('data-tooltip', 'You have '+usersXPBalance.toLocaleString()+' XP');
+        }
+
+        if (document.querySelector('.xp-balance-modalv3-container')) {
+            document.querySelector('.xp-balance-modalv3-container').setAttribute('data-tooltip', 'You have '+usersXPBalance.toLocaleString()+' XP');
         }
         
         // Continue animation if not complete

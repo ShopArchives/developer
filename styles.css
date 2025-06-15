@@ -11,11 +11,13 @@
     --notice-default: #00451C;
     --notice-neutral: #41424A;
     --notice-brand: #615DED;
+    --notice-danger: #75141C;
 
     --color-brand: #615DED;
     --color-red: #D52E3B;
     --color-green: #008740;
     --color-primary: #2E2E33;
+    --color-premium: linear-gradient(90deg, #8A3EC1 0%, #AE5B89 100%);
 
     --text-invert: #FFFFFF;
     --text-default: #DFE0E2;
@@ -40,6 +42,8 @@
     --toggle-box-bg: #45464e;
 
     --modal-block-bg: #2c2d32b0;
+    --modal-block-xp-bg: linear-gradient(135deg, #374ba1a2 0%, #764ba2bb 100%);
+    --modal-xp-bg: linear-gradient(135deg, #374ba1 0%, #764ba2 100%);
     --server-tag-bg: #393A41;
 
     --discord-like-settings-bg: #36373E;
@@ -153,7 +157,6 @@ body {
     color: white;
     background-color: var(--background-primary);
     font-family: gg sans, sans-serif;
-    /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
 }
 
 p, h1, h2, h3, h4, h5, h6, a {
@@ -178,6 +181,10 @@ p, h1, h2, h3, h4, h5, h6, a {
 
 .brand .notice {
     background-color: var(--notice-brand);
+}
+
+.danger .notice {
+    background-color: var(--notice-danger);
 }
 
 .staff-devtools {
@@ -421,10 +428,6 @@ body:has(.notice) .container {
     color: var(--text-primary);
 }
 
-.container:has(.category-browse-container) #searchInput {
-    display: none;
-}
-
 #dev-tools-icon {
     position: absolute;
     scale: 1.1;
@@ -455,10 +458,6 @@ body:has(.notice) .container {
     width: 21px;
     height: 21px;
     margin-right: 5px;
-}
-
-.xp-balance {
-    transition: color 0.2s ease;
 }
 
 .sidebar-button {
@@ -668,6 +667,55 @@ body:has(.notice) .container {
     background-color: white;
     color: black;
 }
+
+
+.category-wide-banner-container {
+    position: relative;
+    width: fit-content;
+    max-width: 1200px;
+    height: fit-content;
+    border-radius: 20px;
+    padding: 0;
+    background-color: var(--background-secondary);
+}
+
+.category-wide-banner-container img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 17px;
+    display: block;
+}
+
+.category-wide-banner-container .text-container {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: currentColor;
+    max-width: 40%;
+}
+
+.hide-click-button .take-me-there-wide-banner-button {
+    display: none;
+}
+
+.take-me-there-wide-banner-button {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    height: auto;
+    width: auto;
+    padding: 10px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: white;
+    color: black;
+}
+
+
 
 
 
@@ -1218,16 +1266,24 @@ body:has(.notice) .container {
     width: 20px;
 }
 
-.shop-card-tag {
+.shop-card-tag-container {
     position: absolute;
-    padding: 0px 5px 0px 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
     right: 10px;
     top: 10px;
+    z-index: 50;
+}
+
+.shop-card-tag {
+    padding: 0px 5px 0px 5px;
     background-color: white;
     border-radius: 999px;
     font-size: 15px;
     color: black;
-    z-index: 50;
+    width: fit-content;
+    margin-left: auto;
 }
 
 .category-modal .shop-card-tag-container {
@@ -1431,6 +1487,7 @@ body:has(.notice) .container {
 
 
 /* Modals */
+
 
 /* Modal V2 | Item */
 
@@ -2544,6 +2601,316 @@ body:has(.notice) .container {
 
 
 
+.category-modal-xp-rewards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    height: 90%;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: 10px;
+    margin-top: 70px;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.category-modal-xp-reward {
+    position: relative;
+    background: var(--modal-block-bg);
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+    padding: 15px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.category-modal-xp-reward.unclaimed {
+    background: var(--modal-block-xp-bg);
+}
+
+.category-modal-xp-reward .desc {
+    color: var(--text-secondary);
+}
+
+.category-modal-xp-reward button {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    display: flex;
+    padding: 10px 15px;
+    background: var(--color-premium);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: auto;
+    box-shadow: none;
+    box-sizing: border-box;
+    transition: box-shadow 0.2s ease;
+}
+
+.category-modal-xp-reward button:hover {
+    box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.3);
+}
+
+.category-modal-xp-reward button svg {
+    height: 15px;
+    width: auto;
+    scale: 1.3;
+    margin-left: 10px;
+}
+
+
+
+
+/* XP Modal */
+
+.xp-modal {
+    width: 420px;
+    height: auto;
+    overflow: hidden;
+    background: var(--modal-xp-bg);
+    flex-direction: column;
+}
+
+.xp-modal-inner {
+    text-align: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+}
+
+.xp-modal-inner h2 {
+    font-family: gg sans six;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.xp-modal-inner p {
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+.xp-modal-inner .redeem-xp-error-output {
+    color: var(--text-feedback-critical);
+}
+
+.claim-xp-button {
+    position: relative;
+    display: flex;
+    padding: 10px 15px;
+    background: var(--color-premium);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: auto;
+    box-shadow: none;
+    box-sizing: border-box;
+    transition: box-shadow 0.2s ease;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 15px;
+}
+
+.claim-xp-button:hover {
+    box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.3);
+}
+
+.claim-xp-button svg {
+    height: 15px;
+    width: auto;
+    scale: 1.3;
+    margin-left: 10px;
+}
+
+
+.xp-modal-banner {
+    height: 144px;
+    width: 100%;
+    position: relative;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(180deg, #121b795d 0%, #0f0f1c62 100%);
+}
+
+
+.xp-modal-banner p {
+    font-family: ABC Ginto Nord;
+    position: relative;
+    z-index: 1;
+    font-size: 35px;
+    width: fit-content;
+}
+
+.xp-modal-flower {
+    position: absolute;
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjI4IiBoZWlnaHQ9IjIyOSIgdmlld0JveD0iMCAwIDIyOCAyMjkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIG9wYWNpdHk9IjAuNiIgZmlsdGVyPSJ1cmwoI2ZpbHRlcjBfZl85MF81NTMpIj4KPHBhdGggZD0iTTEyMS4zMiAyOS43NTcyQzEwNi4yNDkgNy43MDI4NSA4MC4xMTgzIDEwLjA3NDMgODAuMTE4MyAxMC4wNzQzQzgwLjExODMgMTAuMDc0MyA3OC40MjkgMjUuNTk0IDc3LjkyNzUgMjcuNzgxQzc3Ljg0ODMgMjguMDk3MiA3Ny42ODk5IDI4LjMzNDMgNzcuNDUyNCAyOC41MTg4Qzc3LjE2MjEgMjguNTk3OCA3Ni44NzE3IDI4LjU3MTUgNzYuNTgxNCAyOC40Mzk3Qzc0LjUyMjYgMjcuNDkxMSA2MS4xOTM0IDE5LjMyMjkgNjEuMTkzNCAxOS4zMjI5QzYxLjE5MzQgMTkuMzIyOSA0Mi44NDkxIDM3LjA4MjMgNTEuNTMyOSA2My44Nzk1QzYxLjUzNjUgOTQuNzg3MiAxMTguMjg1IDExMS4xNzYgMTE4LjI4NSAxMTEuMTc2QzExOC4yODUgMTExLjE3NiAxMzkuNjY0IDU2LjU4MDcgMTIxLjMyIDI5LjczMDhWMjkuNzU3MloiIGZpbGw9InVybCgjcGFpbnQwX3JhZGlhbF85MF81NTMpIi8+CjxwYXRoIGQ9Ik0xOTcuMzY0IDkxLjUyMTdDMjE0LjM4OCA3MC45MTY1IDIwNC44MzQgNDYuNTQzNSAyMDQuODM0IDQ2LjU0MzVDMjA0LjgzNCA0Ni41NDM1IDE4OS40NDYgNDkuMjU3NSAxODcuMTc2IDQ5LjM2MjhDMTg2Ljg1OSA0OS4zNjI4IDE4Ni41NjkgNDkuMjgzOCAxODYuMzMxIDQ5LjA5OTRDMTg2LjE3MyA0OC44NjIyIDE4Ni4xMiA0OC41NDYgMTg2LjE0NiA0OC4yMjk4QzE4Ni40NjMgNDUuOTkwMSAxOTAuNjMzIDMwLjk0NDcgMTkwLjYzMyAzMC45NDQ3QzE5MC42MzMgMzAuOTQ0NyAxNjguNDYyIDE4LjI5NzEgMTQ1LjA3NiAzNC4wODAzQzExOC4xMjcgNTIuMjg3NiAxMTguMTU0IDExMS4yNTcgMTE4LjE1NCAxMTEuMjU3QzExOC4xNTQgMTExLjI1NyAxNzYuNjQ0IDExNi41NTMgMTk3LjM2NCA5MS40OTUzVjkxLjUyMTdaIiBmaWxsPSJ1cmwoI3BhaW50MV9yYWRpYWxfOTBfNTUzKSIvPgo8cGF0aCBkPSJNMTYxLjkyMyAxNzkuODY5QzE4Ni44NjYgMTg5LjUxMyAyMDcuMDMxIDE3Mi43ODEgMjA3LjAzMSAxNzIuNzgxQzIwNy4wMzEgMTcyLjc4MSAxOTkuNjE0IDE1OS4wNTMgMTk4Ljc5NiAxNTYuOTQ1QzE5OC42OTEgMTU2LjY1NSAxOTguNjkxIDE1Ni4zMzkgMTk4Ljc5NiAxNTYuMDQ5QzE5OC45ODEgMTU1LjgzOCAxOTkuMjQ1IDE1NS42NTQgMTk5LjU2MiAxNTUuNjAxQzIwMS44MDUgMTU1LjIwNiAyMTcuNDA0IDE1NC40MTUgMjE3LjQwNCAxNTQuNDE1QzIxNy40MDQgMTU0LjQxNSAyMjIuNDQ2IDEyOS40MSAyMDAuMDkgMTEyLjIzQzE3NC4zMDIgOTIuNDE1NiAxMTguMjQgMTExLjAxOCAxMTguMjQgMTExLjAxOEMxMTguMjQgMTExLjAxOCAxMzEuNjIyIDE2OC4xMTcgMTYxLjk0OSAxNzkuODY5SDE2MS45MjNaIiBmaWxsPSJ1cmwoI3BhaW50Ml9yYWRpYWxfOTBfNTUzKSIvPgo8cGF0aCBkPSJNNTMuODE1IDE2MS40NTNDMjcuMDc3MyAxNjIuMjcgMTMuNjQyNSAxMzkuNzk0IDEzLjY0MjUgMTM5Ljc5NEMxMy42NDI1IDEzOS43OTQgMjUuMjI5NyAxMjkuMzA3IDI2LjcwNzggMTI3LjU5NEMyNi45MTg5IDEyNy4zNTcgMjcuMDI0NSAxMjcuMDY3IDI3LjAyNDUgMTI2Ljc3N0MyNi45MTg5IDEyNi41MTQgMjYuNzM0MiAxMjYuMjc3IDI2LjQ0MzggMTI2LjExOUMyNC40NjQyIDEyNS4wMTIgMTAgMTE5LjA4MyAxMCAxMTkuMDgzQzEwIDExOS4wODMgMTMuNTg5NyA5My44NDA3IDQwLjQwNjYgODUuMDY2NEM3MS4zNDEgNzQuOTQ4MiAxMTguMDA3IDExMS4wOTkgMTE4LjAwNyAxMTEuMDk5QzExOC4wMDcgMTExLjA5OSA4Ni4zNTk1IDE2MC41MDQgNTMuODQxNCAxNjEuNTA2TDUzLjgxNSAxNjEuNDUzWiIgZmlsbD0idXJsKCNwYWludDNfcmFkaWFsXzkwXzU1MykiLz4KPHBhdGggZD0iTTE0NS43NjYgMTg3Ljc1QzEzOC4xMTEgMjEzLjMzNSAxMTIuNTA4IDIxOSAxMTIuNTA4IDIxOUMxMTIuNTA4IDIxOSAxMDYuMTc0IDIwNC43MTkgMTA1LjAxMiAyMDIuNzk1QzEwNC44NTQgMjAyLjUzMiAxMDQuNTkgMjAyLjMyMSAxMDQuMzI2IDIwMi4yNDJDMTA0LjAzNiAyMDIuMjQyIDEwMy43NDUgMjAyLjM3NCAxMDMuNTA4IDIwMi41ODRDMTAxLjgxOSAyMDQuMTEzIDkxLjYzMDIgMjE1Ljk0MyA5MS42MzAyIDIxNS45NDNDOTEuNjMwMiAyMTUuOTQzIDY4Ljc0NjEgMjA0LjYxMyA2OC44NTE3IDE3Ni40MkM2OC45ODM3IDE0My45MzEgMTE4LjA1MSAxMTEuMSAxMTguMDUxIDExMS4xQzExOC4wNTEgMTExLjEgMTU1LjA1NiAxNTYuNjMxIDE0NS43NjYgMTg3Ljc3NlYxODcuNzVaIiBmaWxsPSJ1cmwoI3BhaW50NF9yYWRpYWxfOTBfNTUzKSIvPgo8cGF0aCBkPSJNMTE5LjE5MiAxMjcuNTE0QzEyNi45NjIgMTI3LjUxNCAxMzMuMjYgMTIxLjIyNiAxMzMuMjYgMTEzLjQ3QzEzMy4yNiAxMDUuNzE0IDEyNi45NjIgOTkuNDI1OSAxMTkuMTkyIDk5LjQyNTlDMTExLjQyMiA5OS40MjU5IDEwNS4xMjQgMTA1LjcxNCAxMDUuMTI0IDExMy40N0MxMDUuMTI0IDEyMS4yMjYgMTExLjQyMiAxMjcuNTE0IDExOS4xOTIgMTI3LjUxNFoiIGZpbGw9IiNFNEY3Q0QiLz4KPHBhdGggZD0iTTYxLjM1MDIgMTI1LjMyNkM2NC4wMTc5IDEyNS4zMjYgNjYuMTgwNCAxMjMuMTY3IDY2LjE4MDQgMTIwLjUwNEM2Ni4xODA0IDExNy44NDEgNjQuMDE3OSAxMTUuNjgyIDYxLjM1MDIgMTE1LjY4MkM1OC42ODI2IDExNS42ODIgNTYuNTIgMTE3Ljg0MSA1Ni41MiAxMjAuNTA0QzU2LjUyIDEyMy4xNjcgNTguNjgyNiAxMjUuMzI2IDYxLjM1MDIgMTI1LjMyNloiIGZpbGw9IiNFNEY3Q0QiLz4KPHBhdGggZD0iTTE2MC4yMDcgNzYuOTczNEMxNjIuODc1IDc2Ljk3MzQgMTY1LjAzNyA3NC44MTQ2IDE2NS4wMzcgNzIuMTUxNUMxNjUuMDM3IDY5LjQ4ODQgMTYyLjg3NSA2Ny4zMjk2IDE2MC4yMDcgNjcuMzI5NkMxNTcuNTM5IDY3LjMyOTYgMTU1LjM3NyA2OS40ODg0IDE1NS4zNzcgNzIuMTUxNUMxNTUuMzc3IDc0LjgxNDYgMTU3LjUzOSA3Ni45NzM0IDE2MC4yMDcgNzYuOTczNFoiIGZpbGw9IiNFNEY3Q0QiLz4KPHBhdGggZD0iTTE3MC45OTEgMTQzLjA4OEMxNzMuNjU5IDE0My4wODggMTc1LjgyMiAxNDAuOTI5IDE3NS44MjIgMTM4LjI2NkMxNzUuODIyIDEzNS42MDMgMTczLjY1OSAxMzMuNDQ0IDE3MC45OTEgMTMzLjQ0NEMxNjguMzI0IDEzMy40NDQgMTY2LjE2MSAxMzUuNjAzIDE2Ni4xNjEgMTM4LjI2NkMxNjYuMTYxIDE0MC45MjkgMTY4LjMyNCAxNDMuMDg4IDE3MC45OTEgMTQzLjA4OFoiIGZpbGw9IiNFNEY3Q0QiLz4KPHBhdGggZD0iTTEwNy4wNjYgMTc0LjM2NEMxMDkuNzMzIDE3NC4zNjQgMTExLjg5NiAxNzIuMjA1IDExMS44OTYgMTY5LjU0MkMxMTEuODk2IDE2Ni44NzkgMTA5LjczMyAxNjQuNzIgMTA3LjA2NiAxNjQuNzJDMTA0LjM5OCAxNjQuNzIgMTAyLjIzNSAxNjYuODc5IDEwMi4yMzUgMTY5LjU0MkMxMDIuMjM1IDE3Mi4yMDUgMTA0LjM5OCAxNzQuMzY0IDEwNy4wNjYgMTc0LjM2NFoiIGZpbGw9IiNFNEY3Q0QiLz4KPHBhdGggZD0iTTkzLjM1NTYgNjUuNjQ3NkM5Ni4wMjMzIDY1LjY0NzYgOTguMTg1OCA2My40ODg4IDk4LjE4NTggNjAuODI1N0M5OC4xODU4IDU4LjE2MjYgOTYuMDIzMyA1Ni4wMDM4IDkzLjM1NTYgNTYuMDAzOEM5MC42ODggNTYuMDAzOCA4OC41MjU0IDU4LjE2MjYgODguNTI1NCA2MC44MjU3Qzg4LjUyNTQgNjMuNDg4OCA5MC42ODggNjUuNjQ3NiA5My4zNTU2IDY1LjY0NzZaIiBmaWxsPSIjRTRGN0NEIi8+CjxwYXRoIGQ9Ik0xMzQuMDc5IDE0OC41OTNDMTM2Ljc0NyAxNDguNTkzIDEzOC45MDkgMTQ2LjQzNCAxMzguOTA5IDE0My43NzFDMTM4LjkwOSAxNDEuMTA4IDEzNi43NDcgMTM4Ljk0OSAxMzQuMDc5IDEzOC45NDlDMTMxLjQxMiAxMzguOTQ5IDEyOS4yNDkgMTQxLjEwOCAxMjkuMjQ5IDE0My43NzFDMTI5LjI0OSAxNDYuNDM0IDEzMS40MTIgMTQ4LjU5MyAxMzQuMDc5IDE0OC41OTNaIiBmaWxsPSIjRTRGN0NEIi8+CjxwYXRoIGQ9Ik05My4zNzM5IDE0MS4wNTdDOTYuMDQxNSAxNDEuMDU3IDk4LjIwNDEgMTM4Ljg5OCA5OC4yMDQxIDEzNi4yMzVDOTguMjA0MSAxMzMuNTcyIDk2LjA0MTUgMTMxLjQxMyA5My4zNzM5IDEzMS40MTNDOTAuNzA2MiAxMzEuNDEzIDg4LjU0MzcgMTMzLjU3MiA4OC41NDM3IDEzNi4yMzVDODguNTQzNyAxMzguODk4IDkwLjcwNjIgMTQxLjA1NyA5My4zNzM5IDE0MS4wNTdaIiBmaWxsPSIjRTRGN0NEIi8+CjxwYXRoIGQ9Ik0xNTMuMDMyIDExMS44NjFDMTU1LjcgMTExLjg2MSAxNTcuODYzIDEwOS43MDIgMTU3Ljg2MyAxMDcuMDM5QzE1Ny44NjMgMTA0LjM3NiAxNTUuNyAxMDIuMjE3IDE1My4wMzIgMTAyLjIxN0MxNTAuMzY1IDEwMi4yMTcgMTQ4LjIwMiAxMDQuMzc2IDE0OC4yMDIgMTA3LjAzOUMxNDguMjAyIDEwOS43MDIgMTUwLjM2NSAxMTEuODYxIDE1My4wMzIgMTExLjg2MVoiIGZpbGw9IiNFNEY3Q0QiLz4KPHBhdGggZD0iTTEyNS44NzMgODQuMjc1MUMxMjguNTQgODQuMjc1MSAxMzAuNzAzIDgyLjExNjIgMTMwLjcwMyA3OS40NTMxQzEzMC43MDMgNzYuNzkwMSAxMjguNTQgNzQuNjMxMiAxMjUuODczIDc0LjYzMTJDMTIzLjIwNSA3NC42MzEyIDEyMS4wNDIgNzYuNzkwMSAxMjEuMDQyIDc5LjQ1MzFDMTIxLjA0MiA4Mi4xMTYyIDEyMy4yMDUgODQuMjc1MSAxMjUuODczIDg0LjI3NTFaIiBmaWxsPSIjRTRGN0NEIi8+CjxwYXRoIGQ9Ik04OC4xOCAxMDIuNzE5QzkwLjg0NzcgMTAyLjcxOSA5My4wMTAyIDEwMC41NiA5My4wMTAyIDk3Ljg5NzFDOTMuMDEwMiA5NS4yMzQgOTAuODQ3NyA5My4wNzUyIDg4LjE4IDkzLjA3NTJDODUuNTEyNCA5My4wNzUyIDgzLjM0OTkgOTUuMjM0IDgzLjM0OTkgOTcuODk3MUM4My4zNDk5IDEwMC41NiA4NS41MTI0IDEwMi43MTkgODguMTggMTAyLjcxOVoiIGZpbGw9IiNFNEY3Q0QiLz4KPHBhdGggZD0iTTg4LjUxNyA5Ny4xODg2TDg3LjgyMjUgOTguNjA5NEwxNzAuNjU3IDEzOC45NTlMMTcxLjM1MiAxMzcuNTM4TDg4LjUxNyA5Ny4xODg2WiIgZmlsbD0iI0U0RjdDRCIvPgo8cGF0aCBkPSJNMTI1LjA2NCA3OS4yNzI2TDEwNi4yNzggMTY5LjM1M0wxMDcuODI5IDE2OS42NzVMMTI2LjYxNCA3OS41OTQ4TDEyNS4wNjQgNzkuMjcyNloiIGZpbGw9IiNFNEY3Q0QiLz4KPHBhdGggZD0iTTE1Mi45MjcgMTA2LjI5NEw2MS4yNDI5IDExOS43NjFMNjEuNDczNCAxMjEuMzI1TDE1My4xNTggMTA3Ljg1OEwxNTIuOTI3IDEwNi4yOTRaIiBmaWxsPSIjRTRGN0NEIi8+CjxwYXRoIGQ9Ik0xNTkuNzA5IDcxLjYxNzVMOTIuODU2MiAxMzUuNjg0TDkzLjk1MjkgMTM2LjgyNUwxNjAuODA2IDcyLjc1OEwxNTkuNzA5IDcxLjYxNzVaIiBmaWxsPSIjRTRGN0NEIi8+CjxwYXRoIGQ9Ik05NC4wNTAyIDYwLjQyMjlMOTIuNjI4MiA2MS4xMTg3TDEzMy4zNjYgMTQ0LjA5NUwxMzQuNzg4IDE0My40TDk0LjA1MDIgNjAuNDIyOVoiIGZpbGw9IiNFNEY3Q0QiLz4KPC9nPgo8ZGVmcz4KPGZpbHRlciBpZD0iZmlsdGVyMF9mXzkwXzU1MyIgeD0iMC40IiB5PSIwLjQiIHdpZHRoPSIyMjcuMiIgaGVpZ2h0PSIyMjguMiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9InNSR0IiPgo8ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCIvPgo8ZmVCbGVuZCBtb2RlPSJub3JtYWwiIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJzaGFwZSIvPgo8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSI0LjgiIHJlc3VsdD0iZWZmZWN0MV9mb3JlZ3JvdW5kQmx1cl85MF81NTMiLz4KPC9maWx0ZXI+CjxyYWRpYWxHcmFkaWVudCBpZD0icGFpbnQwX3JhZGlhbF85MF81NTMiIGN4PSIwIiBjeT0iMCIgcj0iMSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIGdyYWRpZW50VHJhbnNmb3JtPSJ0cmFuc2xhdGUoNjQuNTk3NCAxOS4xNzY2KSByb3RhdGUoLTI2LjA3MTEpIHNjYWxlKDEwMy41MTIgMTAzLjQwMykiPgo8c3RvcCBvZmZzZXQ9IjAuNTYiIHN0b3AtY29sb3I9IiNCRkVDODciLz4KPHN0b3Agb2Zmc2V0PSIwLjU5IiBzdG9wLWNvbG9yPSIjQjlFODdBIi8+CjxzdG9wIG9mZnNldD0iMC42OCIgc3RvcC1jb2xvcj0iI0E1REI0RiIvPgo8c3RvcCBvZmZzZXQ9IjAuNzciIHN0b3AtY29sb3I9IiM5NkQxMkQiLz4KPHN0b3Agb2Zmc2V0PSIwLjg2IiBzdG9wLWNvbG9yPSIjOEFDQTE1Ii8+CjxzdG9wIG9mZnNldD0iMC45MyIgc3RvcC1jb2xvcj0iIzg0QzYwNyIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4MkM1MDIiLz4KPC9yYWRpYWxHcmFkaWVudD4KPHJhZGlhbEdyYWRpZW50IGlkPSJwYWludDFfcmFkaWFsXzkwXzU1MyIgY3g9IjAiIGN5PSIwIiByPSIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgZ3JhZGllbnRUcmFuc2Zvcm09InRyYW5zbGF0ZSgxOTEuNjcgMzMuODU0Mikgcm90YXRlKDQ3LjY4MSkgc2NhbGUoMTAzLjQ0OSAxMDMuNDY1KSI+CjxzdG9wIG9mZnNldD0iMC41NiIgc3RvcC1jb2xvcj0iI0JGRUM4NyIvPgo8c3RvcCBvZmZzZXQ9IjAuNTkiIHN0b3AtY29sb3I9IiNCOUU4N0EiLz4KPHN0b3Agb2Zmc2V0PSIwLjY4IiBzdG9wLWNvbG9yPSIjQTVEQjRGIi8+CjxzdG9wIG9mZnNldD0iMC43NyIgc3RvcC1jb2xvcj0iIzk2RDEyRCIvPgo8c3RvcCBvZmZzZXQ9IjAuODYiIHN0b3AtY29sb3I9IiM4QUNBMTUiLz4KPHN0b3Agb2Zmc2V0PSIwLjkzIiBzdG9wLWNvbG9yPSIjODRDNjA3Ii8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzgyQzUwMiIvPgo8L3JhZGlhbEdyYWRpZW50Pgo8cmFkaWFsR3JhZGllbnQgaWQ9InBhaW50Ml9yYWRpYWxfOTBfNTUzIiBjeD0iMCIgY3k9IjAiIHI9IjEiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiBncmFkaWVudFRyYW5zZm9ybT0idHJhbnNsYXRlKDIxNC45NDEgMTU2LjE5NCkgcm90YXRlKDExOS40MjIpIHNjYWxlKDEwMy40MTEgMTAzLjUwMykiPgo8c3RvcCBvZmZzZXQ9IjAuNTYiIHN0b3AtY29sb3I9IiNCRkVDODciLz4KPHN0b3Agb2Zmc2V0PSIwLjU5IiBzdG9wLWNvbG9yPSIjQjlFODdBIi8+CjxzdG9wIG9mZnNldD0iMC42OCIgc3RvcC1jb2xvcj0iI0E1REI0RiIvPgo8c3RvcCBvZmZzZXQ9IjAuNzciIHN0b3AtY29sb3I9IiM5NkQxMkQiLz4KPHN0b3Agb2Zmc2V0PSIwLjg2IiBzdG9wLWNvbG9yPSIjOEFDQTE1Ii8+CjxzdG9wIG9mZnNldD0iMC45MyIgc3RvcC1jb2xvcj0iIzg0QzYwNyIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4MkM1MDIiLz4KPC9yYWRpYWxHcmFkaWVudD4KPHJhZGlhbEdyYWRpZW50IGlkPSJwYWludDNfcmFkaWFsXzkwXzU1MyIgY3g9IjAiIGN5PSIwIiByPSIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgZ3JhZGllbnRUcmFuc2Zvcm09InRyYW5zbGF0ZSgxMS44NzYgMTIxLjg4NCkgcm90YXRlKDgwLjA0MzIpIHNjYWxlKDEwMy4zNzMgMTAzLjU0MSkiPgo8c3RvcCBvZmZzZXQ9IjAuNTYiIHN0b3AtY29sb3I9IiNCRkVDODciLz4KPHN0b3Agb2Zmc2V0PSIwLjU5IiBzdG9wLWNvbG9yPSIjQjlFODdBIi8+CjxzdG9wIG9mZnNldD0iMC42OCIgc3RvcC1jb2xvcj0iI0E1REI0RiIvPgo8c3RvcCBvZmZzZXQ9IjAuNzciIHN0b3AtY29sb3I9IiM5NkQxMkQiLz4KPHN0b3Agb2Zmc2V0PSIwLjg2IiBzdG9wLWNvbG9yPSIjOEFDQTE1Ii8+CjxzdG9wIG9mZnNldD0iMC45MyIgc3RvcC1jb2xvcj0iIzg0QzYwNyIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiM4MkM1MDIiLz4KPC9yYWRpYWxHcmFkaWVudD4KPHJhZGlhbEdyYWRpZW50IGlkPSJwYWludDRfcmFkaWFsXzkwXzU1MyIgY3g9IjAiIGN5PSIwIiByPSIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgZ3JhZGllbnRUcmFuc2Zvcm09InRyYW5zbGF0ZSg5My44MDcxIDIxNS4xOTUpIHJvdGF0ZSg4LjM5NTc2KSBzY2FsZSgxMDMuNTQyIDEwMy4zNzIpIj4KPHN0b3Agb2Zmc2V0PSIwLjU2IiBzdG9wLWNvbG9yPSIjQkZFQzg3Ii8+CjxzdG9wIG9mZnNldD0iMC41OSIgc3RvcC1jb2xvcj0iI0I5RTg3QSIvPgo8c3RvcCBvZmZzZXQ9IjAuNjgiIHN0b3AtY29sb3I9IiNBNURCNEYiLz4KPHN0b3Agb2Zmc2V0PSIwLjc3IiBzdG9wLWNvbG9yPSIjOTZEMTJEIi8+CjxzdG9wIG9mZnNldD0iMC44NiIgc3RvcC1jb2xvcj0iIzhBQ0ExNSIvPgo8c3RvcCBvZmZzZXQ9IjAuOTMiIHN0b3AtY29sb3I9IiM4NEM2MDciLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjODJDNTAyIi8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    width: 200px;
+    height: 200px;
+    animation: spinning_sakura_xp 60s linear infinite;
+}
+
+@keyframes spinning_sakura_xp {
+    0% {transform: rotateZ(0deg);}
+    100% {transform: rotateZ(360deg);}
+}
+
+.xp-modal-star {
+    position: absolute;
+    background-image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTYwIiBoZWlnaHQ9IjE2MCIgdmlld0JveD0iMCAwIDE2MCAxNjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGZpbHRlcj0idXJsKCNmaWx0ZXIwX2ZfOTFfNjMwKSI+CjxwYXRoIGQ9Ik04MCAzMEw5My41MDQ1IDY2LjQ5NTVMMTMwIDgwTDkzLjUwNDUgOTMuNTA0NUw4MCAxMzBMNjYuNDk1NSA5My41MDQ1TDMwIDgwTDY2LjQ5NTUgNjYuNDk1NUw4MCAzMFoiIGZpbGw9IiNEOUQ5RDkiLz4KPC9nPgo8cGF0aCBkPSJNODAgMzBMOTMuNTA0NSA2Ni40OTU1TDEzMCA4MEw5My41MDQ1IDkzLjUwNDVMODAgMTMwTDY2LjQ5NTUgOTMuNTA0NUwzMCA4MEw2Ni40OTU1IDY2LjQ5NTVMODAgMzBaIiBmaWxsPSIjRDlEOUQ5Ii8+CjxkZWZzPgo8ZmlsdGVyIGlkPSJmaWx0ZXIwX2ZfOTFfNjMwIiB4PSIwLjI5OTk5OSIgeT0iMC4yOTk5OTkiIHdpZHRoPSIxNTkuNCIgaGVpZ2h0PSIxNTkuNCIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9InNSR0IiPgo8ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCIvPgo8ZmVCbGVuZCBtb2RlPSJub3JtYWwiIGluPSJTb3VyY2VHcmFwaGljIiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJzaGFwZSIvPgo8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSIxNC44NSIgcmVzdWx0PSJlZmZlY3QxX2ZvcmVncm91bmRCbHVyXzkxXzYzMCIvPgo8L2ZpbHRlcj4KPC9kZWZzPgo8L3N2Zz4K);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+.xp-modal-star.var1 {
+    top: 15px;
+    left: 15px;
+    height: 70px;
+    width: 70px;
+    animation: star-1-anim 7s ease-in-out infinite;
+}
+
+.xp-modal-star.var2 {
+    top: 60px;
+    right: 15px;
+    height: 50px;
+    width: 50px;
+    animation: star-1-anim 5s ease-in-out infinite;
+}
+
+.xp-modal-star.var3 {
+    top: 15px;
+    right: 70px;
+    height: 60px;
+    width: 60px;
+    animation: star-2-anim 8s ease-in-out infinite;
+}
+
+.xp-modal-star.var4 {
+    top: 80px;
+    left: 15px;
+    height: 50px;
+    width: 50px;
+    animation: star-2-anim 6s ease-in-out infinite;
+}
+
+.xp-modal-star.var5 {
+    top: 65px;
+    left: 75px;
+    height: 50px;
+    width: 50px;
+    animation: star-3-anim 4s ease-in-out infinite;
+}
+
+@keyframes star-1-anim {
+    0% {transform: translateY(5px) rotate(10deg);}
+    50% {transform: translateY(-5px) rotate(10deg);}
+    100% {transform: translateY(5px) rotate(10deg);}
+}
+
+@keyframes star-2-anim {
+    0% {transform: translateY(5px);}
+    50% {transform: translateY(-5px);}
+    100% {transform: translateY(5px);}
+}
+
+@keyframes star-3-anim {
+    0% {transform: translateY(5px) rotate(-5deg);}
+    50% {transform: translateY(-5px) rotate(-5deg);}
+    100% {transform: translateY(5px) rotate(-5deg);}
+}
+
+
+
+
+
+.xp-purchase-modal {
+    width: 420px;
+    height: auto;
+    overflow: hidden;
+    background: var(--background-primary);
+    flex-direction: column;
+}
+
+.xp-purchase-modal-inner {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+}
+
+.xp-purchase-modal-inner-content {
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.xp-purchase-modal-details-container {
+    width: 100%;
+    height: auto;
+    background-color: var(--background-tertiary);
+    border-radius: 5px;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.redeem-xp-error-output {
+    color: var(--text-feedback-critical);
+}
+
+.xp-purchase-modal .disclaimer {
+    font-size: 13px;
+    display: flex;
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+.xp-purchase-modal .disclaimer .link {
+    color: currentColor;
+    margin-left: 3px;
+    text-decoration: underline;
+}
+
+.claim-xp-perk-button {
+    position: relative;
+    display: flex;
+    padding: 10px 15px;
+    background: var(--color-green);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: auto;
+    box-shadow: none;
+    box-sizing: border-box;
+    transition: box-shadow 0.2s ease;
+    margin-left: auto;
+    margin-top: 10px;
+}
+
+.claim-xp-perk-button:hover {
+    box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.3);
+}
+
+.claim-xp-perk-button svg {
+    height: 15px;
+    width: auto;
+    scale: 1.3;
+    margin-left: 10px;
+}
+
+
+
+
 
 [data-modal-top-product-buttons] {
     position: absolute;
@@ -2804,7 +3171,7 @@ body:has(.notice) .container {
 .container_c2b141 {
     position: absolute;
     top: 20px;
-    left: 850px;
+    right: 100px;
     color: var(--modalv3-card-text);
     height: 50px;
     width: 34px;
@@ -3144,6 +3511,171 @@ body:has(.notice) .container {
     color: var(--text-tertiary);
 }
 
+
+/* XP Evenets Tab */
+
+
+
+.modalv3-xp-events-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.modalv3-xp-reward {
+    position: relative;
+    background: var(--modal-block-bg);
+    width: 100%;
+    height: auto;
+    border-radius: 5px;
+    padding: 15px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.modalv3-xp-reward.unclaimed {
+    background: var(--modal-block-xp-bg);
+}
+
+.modalv3-xp-reward .desc {
+    color: var(--text-secondary);
+}
+
+.modalv3-xp-reward button {
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    transform: translateY(-50%);
+    display: flex;
+    padding: 10px 15px;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: auto;
+    box-shadow: none;
+    box-sizing: border-box;
+    transition: box-shadow 0.2s ease;
+}
+
+.modalv3-xp-reward #claim-xp-button {
+    background: var(--color-premium);
+}
+
+.modalv3-xp-reward #take-me-there-xp-button {
+    background: var(--color-brand);
+}
+
+.modalv3-xp-reward button:hover {
+    box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.3);
+}
+
+.modalv3-xp-reward button svg {
+    height: 15px;
+    width: auto;
+    scale: 1.3;
+    margin-left: 10px;
+}
+
+.xp-event-expires-at-text {
+    padding: 2px;
+    padding-left: 5px;
+    padding-right: 5px;
+    margin: 0;
+    margin-bottom: 5px;
+    background-color: white;
+    color: black;
+    border-radius: 5px;
+    width: fit-content;
+    height: 20px;
+    font-family: gg sans seven;
+}
+
+
+.xp-balance-modalv3-container {
+    display: flex;
+    left: 5px;
+    width: fit-content;
+    padding: 7px;
+    background-color: var(--input-secondary);
+    border-radius: 5px;
+    color: var(--text-primary);
+}
+
+.xp-balance-modalv3-container svg {
+    width: 21px;
+    height: 21px;
+    margin-right: 5px;
+}
+
+
+
+.modalv3-xp-featured-cards-container, .modalv3-xp-shop-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.xp-featured-card, .xp-shop-card {
+    position: relative;
+    background-color: var(--background-secondary);
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.xp-featured-card p, .xp-shop-card p {
+    color: var(--text-secondary);
+    max-width: 350px;
+}
+
+.xp-card-button-pad {
+    height: 40px;
+}
+
+
+.xp-card-bottom {
+    position: absolute;
+    bottom: 10px;
+}
+
+.xp-already-claimed-text {
+    bottom: 10px;
+}
+
+.xp-featured-card button, .xp-shop-card button {
+    position: relative;
+    display: flex;
+    padding: 10px 15px;
+    background: var(--color-brand);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: auto;
+    box-shadow: none;
+    box-sizing: border-box;
+    transition: box-shadow 0.2s ease;
+    margin-top: 5px;
+}
+
+.xp-featured-card button:hover, .xp-shop-card button:hover {
+    box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.3);
+}
+
+.xp-featured-card button svg, .xp-shop-card button svg {
+    height: 15px;
+    width: auto;
+    scale: 1.3;
+    margin-left: 10px;
+}
+
+
+
+
+
+
 /* Experiments Tab */
 
 #modalv3-experiment-output {
@@ -3274,6 +3806,11 @@ textarea:focus {
 
 .inv {
     opacity: 0;
+}
+
+button:not(.nav-btn):disabled {
+    box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.3);
+    cursor: not-allowed;
 }
 
 .hidden {
