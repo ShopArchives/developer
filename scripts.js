@@ -1,5 +1,5 @@
 
-const appVersion = "7.1.0"
+const appVersion = "7.1.1"
 const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
@@ -275,7 +275,7 @@ async function verifyOrigin() {
             syncOverridesWithServer();
         }
 
-        if (currentExperimentOverrides.find(exp => exp.codename === 'xp_system')?.treatment === 1) {
+        if (currentExperimentOverrides && currentExperimentOverrides.find(exp => exp.codename === 'xp_system')?.treatment === 1) {
             await fetchAndUpdateXpEvents();
             await fetchAndUpdateXpInventory();
         }
