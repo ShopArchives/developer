@@ -2308,6 +2308,8 @@ body:has(.notice) .container {
     font-family: gg sans five;
     margin: 5px;
     z-index: 2;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .review-rating-container {

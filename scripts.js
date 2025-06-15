@@ -1,5 +1,5 @@
 
-const appVersion = "7.1.1"
+const appVersion = "7.1.2"
 const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
@@ -273,11 +273,6 @@ async function verifyOrigin() {
             localStorage.setItem('serverExperiments', JSON.stringify(expData));
 
             syncOverridesWithServer();
-        }
-
-        if (currentExperimentOverrides && currentExperimentOverrides.find(exp => exp.codename === 'xp_system')?.treatment === 1) {
-            await fetchAndUpdateXpEvents();
-            await fetchAndUpdateXpInventory();
         }
 
         await loadSite();
@@ -578,6 +573,9 @@ async function loadSite() {
         `;
         
         document.querySelector('.topbar-content').appendChild(xpBalance);
+
+        await fetchAndUpdateXpEvents();
+        await fetchAndUpdateXpInventory();
     }
 
     if (currentUserData) {
@@ -2442,13 +2440,13 @@ async function loadSite() {
                                     </svg>
                                     <p>Assets</p>
                                 </div>
-                                <div class="tab disabled has-tooltip" data-tooltip="Reviews have been disabled for this category" id="category-modal-tab-4">
+                                <div class="tab disabled" id="category-modal-tab-4">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path fill="currentColor" d="M8 3C7.44771 3 7 3.44772 7 4V5C7 5.55228 7.44772 6 8 6H16C16.5523 6 17 5.55228 17 5V4C17 3.44772 16.5523 3 16 3H15.1245C14.7288 3 14.3535 2.82424 14.1002 2.52025L13.3668 1.64018C13.0288 1.23454 12.528 1 12 1C11.472 1 10.9712 1.23454 10.6332 1.64018L9.8998 2.52025C9.64647 2.82424 9.27121 3 8.8755 3H8Z"></path><path fill-rule="evenodd" clip-rule="evenodd" fill="currentColor" d="M19 4.49996V4.99996C19 6.65681 17.6569 7.99996 16 7.99996H8C6.34315 7.99996 5 6.65681 5 4.99996V4.49996C5 4.22382 4.77446 3.99559 4.50209 4.04109C3.08221 4.27826 2 5.51273 2 6.99996V19C2 20.6568 3.34315 22 5 22H19C20.6569 22 22 20.6568 22 19V6.99996C22 5.51273 20.9178 4.27826 19.4979 4.04109C19.2255 3.99559 19 4.22382 19 4.49996ZM8 12C7.44772 12 7 12.4477 7 13C7 13.5522 7.44772 14 8 14H16C16.5523 14 17 13.5522 17 13C17 12.4477 16.5523 12 16 12H8ZM7 17C7 16.4477 7.44772 16 8 16H13C13.5523 16 14 16.4477 14 17C14 17.5522 13.5523 18 13 18H8C7.44772 18 7 17.5522 7 17Z"></path>
                                     </svg>
                                     <p>Reviews</p>
                                 </div>
-                                <div class="tab hidden disabled has-tooltip" data-tooltip="There are currently no XP rewards for this category" id="category-modal-tab-5">
+                                <div class="tab hidden disabled" id="category-modal-tab-5">
                                     <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
                                     </svg>
@@ -2740,11 +2738,10 @@ async function loadSite() {
                                     sku_id.classList.remove('clicked');
                                 }, 500);
                             });
-        
+                            
+                            const reviewsTab = modal.querySelector('#category-modal-tab-4');
                             if (categoryModalInfo.reviews_disabled != true || settingsStore.staff_force_viewable_reviews_tab === 1) {
-                                const reviewsTab = modal.querySelector('#category-modal-tab-4');
                                 reviewsTab.classList.remove('disabled');
-                                reviewsTab.classList.remove('has-tooltip');
                                 reviewsTab.addEventListener("click", function () {
                                     // Reviews
                                     changeModalTab('4');
@@ -2768,6 +2765,9 @@ async function loadSite() {
                                     modalInner.querySelector('#average-rating').textContent = average;
                                 }
                                   
+                            } else {
+                                reviewsTab.classList.add('has-tooltip');
+                                reviewsTab.setAttribute('data-tooltip', 'Reviews have been disabled for this category');
                             }
         
                         } else if (tab === '2') {
@@ -3493,15 +3493,17 @@ async function loadSite() {
                     }
 
                     if (Array.isArray(usersXPEventsCache)) {
+                        const xpRewardsTab = modal.querySelector('#category-modal-tab-5');
                         usersXPEventsCache.forEach(promo => {
                             if (promo.category_data?.sku_id === categoryData.sku_id) {
-                                const xpRewardsTab = modal.querySelector('#category-modal-tab-5');
                                 xpRewardsTab.classList.remove('disabled');
-                                xpRewardsTab.classList.remove('has-tooltip');
                                 xpRewardsTab.addEventListener("click", function () {
                                     // Rewards
                                     changeModalTab('5');
                                 });
+                            } else {
+                                xpRewardsTab.classList.add('has-tooltip');
+                                xpRewardsTab.setAttribute('data-tooltip', 'There are currently no XP rewards for this category');
                             }
                         });
                     }
