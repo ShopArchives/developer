@@ -2386,14 +2386,42 @@ body:has(.notice) .container {
     height: 100%;
     display: block;
     margin-left: auto;
+    mask-image: linear-gradient(to left,#000 50%,rgba(0,0,0,0)100%);
 }
 
 .review-nameplate-container img {
     position: absolute;
     height: 100%;
     right: 0;
-    
+    mask-image: linear-gradient(to left,#000 50%,rgba(0,0,0,0)100%);
 }
+
+
+
+.review-banner-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 50%;
+    opacity: 0.3;
+    z-index: 1;
+    transition: opacity 0.5s ease;
+
+}
+
+.review-banner-container:has(img) {
+    mask-image: linear-gradient(to right,#000 50%,rgba(0,0,0,0)100%);
+}
+
+.review-banner-container img {
+    position: absolute;
+    height: 100%;
+    left: 0;
+    mask-image: linear-gradient(to right,#000 50%,rgba(0,0,0,0)100%);
+}
+
+
 
 
 .review-server-tag-container-container {

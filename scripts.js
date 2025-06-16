@@ -1,5 +1,5 @@
 
-const appVersion = "7.1.3"
+const appVersion = "7.1.4"
 const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
@@ -25,7 +25,6 @@ let discordMiscellaneousCategoriesCache;
 
 const overridesKey = 'experimentOverrides';
 const serverKey = 'serverExperiments';
-const currentExperimentOverrides = JSON.parse(localStorage.getItem(overridesKey));
 
 function loadOverrides() {
     try {
@@ -3125,6 +3124,7 @@ async function loadSite() {
                                         reviewDiv.innerHTML = `
                                             <div class="shop-modal-review-moderation-buttons" data-modal-top-product-buttons></div>
                                             <div class="review-nameplate-container"></div>
+                                            <div class="review-banner-container"></div>
                                             <div class="review-user-container">
                                                 <div class="review-avatar-container">
                                                     <img class="review-avatar" src="https://cdn.yapper.shop/assets/31.png" onerror="this.parentElement.remove();">
@@ -3294,7 +3294,15 @@ async function loadSite() {
                                         } else {
                                             userBadgesElement.remove();
                                         }
+                                        
+
+                                        if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'user_banner_on_reviews')?.treatment === 1 && review.user.banner) {
+                                            let bannerPreview = document.createElement("img");
+                                            
+                                            bannerPreview.src = `https://cdn.discordapp.com/banners/${review.user.id}/${review.user.banner}.png?size=300`;
     
+                                            reviewDiv.querySelector('.review-banner-container').appendChild(bannerPreview);
+                                        }
     
                                         if (review.user.collectibles?.nameplate) {
                                             if (review.user.collectibles.nameplate.sa_override_src) {

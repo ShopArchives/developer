@@ -302,6 +302,22 @@ const nameplate_palettes = {
 
 const experiments = [
     {
+        title: `User Banner on Reviews`,
+        codename: `user_banner_on_reviews`,
+        release_config: {
+            year: `2025`,
+            month: `06`
+        },
+        treatments: [
+            {
+                title: `Not Eligible`
+            },
+            {
+                title: `Show users banners on reviews`
+            }
+        ]
+    },
+    {
         title: `Published Items Category`,
         codename: `published_items_category`,
         release_config: {
