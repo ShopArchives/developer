@@ -1,5 +1,5 @@
 
-const appVersion = "7.1.2"
+const appVersion = "7.1.3"
 const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
@@ -2236,18 +2236,19 @@ async function loadSite() {
         const searchInput = document.getElementById('searchInput');
         searchInput.classList.remove('hidden');
         const paginationContainer = document.getElementById('pagination');
-        const itemsPerPage = 5;
+        let itemsPerPage = settingsStore.category_page_limit || 5;
     
         let filteredData = data;
         let currentPage = 1;
     
         const renderPage = (page) => {
+            itemsPerPage = settingsStore.category_page_limit || 5;
             currentPage = page;
             output.innerHTML = '';
             const pageData = paginate(filteredData, page, itemsPerPage);
             output.scrollTo(0,0);
 
-            if (data.length <= 5) {
+            if (data.length <= settingsStore.category_page_limit) {
                 paginationContainer.classList.add('hidden');
             }
     
@@ -3559,6 +3560,8 @@ async function loadSite() {
     
             scrollToCategoryFromUrl();
         };
+
+        window.renderPage = renderPage;
     
         const scrollToCategoryFromUrl = () => {
             const targetSkuId = currentOpenModalId;
@@ -3975,6 +3978,18 @@ async function loadSite() {
             data = data1;
         }
 
+        let disclaimer2;
+
+        if (data.id === 2) {
+            disclaimer2 = "Once you've claimed this item, your Discord server tag will be applied to all your existing and future reviews. Note that if you don't have a Discord server tag applied on your profile, this item is useless."
+        } else if (data.id === 4) {
+            disclaimer2 = "Once you've claimed this item, you'll be able to write reviews with up to 200 characters."
+        } else if (data.id === 5) {
+            disclaimer2 = "Once you've claimed this item, your Discord avatar decoration will be applied to all your existing and future reviews. Note that if you don't have a Discord avatar decoration applied on your profile, this item is useless."
+        } else if (data.id === 19) {
+            disclaimer2 = "Once you've claimed this item, your Discord nameplate will be applied to all your existing and future reviews. Note that if you don't have a Discord nameplate applied on your profile, this item is useless."
+        }
+
         modal.innerHTML = `
             <div class="modalv2-inner xp-purchase-modal">
                 
@@ -3993,10 +4008,13 @@ async function loadSite() {
                             <p>${data.name}</p>
                         </div>
                         <div class="disclaimer">
-                            <p>By clicking 'Claim for ${data.xp_price.toLocaleString()} XP', you agree to the</p><a class="link" href="https://yapper.shop/legal-information/?page=tos">Digital Currency Terms.</a>
+                            <p>By clicking 'Claim for ${data.xp_price.toLocaleString()} XP', you agree to the <a class="link" href="https://yapper.shop/legal-information/?page=tos">Digital Currency Terms.</a></p>
                         </div>
                         <div class="disclaimer">
                             <p>Claiming this item means you have a limited licence to use this item on Shop Archives. This item is non-refundable.</p>
+                        </div>
+                        <div class="disclaimer2">
+                            <p>${disclaimer2}</p>
                         </div>
                         <p class="redeem-xp-error-output"></p>
                         <button class="claim-xp-perk-button" id="claim-xp-button">
@@ -4786,8 +4804,40 @@ async function loadSite() {
                             </div>
                         </div>
                     </div>
+                    <div class="setting">
+                        <div class="setting-info">
+                            <div class="setting-title">Category page limit</div>
+                            <div class="setting-description">How many categories are shown on a page. Large values may cause lag on low-end devices.</div>
+                        </div>
+                        <div class="toggle-container">
+                            <select id="category_page_limit_select" class="modalv3-experiment-treatment-container">
+                                <option value="1">1</option>
+                                <option value="3">3</option>
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="999">No Limit</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             `;
+
+            const selectEl = document.querySelector('#category_page_limit_select');
+
+            for (const option of selectEl.options) {
+                if (option.value === String(settingsStore.category_page_limit)) {
+                    option.selected = true;
+                    break;
+                }
+            }
+
+            selectEl.addEventListener('change', () => {
+                const selectedValue = selectEl.value;
+                changeSetting('category_page_limit', Number(selectedValue));
+                try {
+                    loadPage(currentPageCache, true);
+                } catch {}
+            });
 
             defaultThemes.forEach((theme) => {
                 let themeCard = document.createElement("div");
@@ -5143,7 +5193,8 @@ async function loadSite() {
             function renderXpShop(data) {
                 featuredXpOutput.innerHTML = ``;
                 shopXpOutput.innerHTML = ``;
-                data.featured.forEach(xpItem => {
+
+                function renderXpItemCard(xpItem, type) {
                     let xpCard = document.createElement("div");
 
                     xpCard.classList.add('xp-featured-card')
@@ -5173,7 +5224,28 @@ async function loadSite() {
                     });
 
                     if (!alreadyClaimed) {
-                        if (xpItem.price > currentUserData.xp_balance) {
+                        if (!currentUserData.collectibles && xpItem.id === "19") {
+                            button.disabled = true;
+                            button.innerHTML = `
+                                Unavailable
+                            `;
+                            button.classList.add('has-tooltip');
+                            button.setAttribute('data-tooltip', 'You don\'t have a Nameplate on your profile');
+                        } else if (!currentUserData.primary_guild && xpItem.id === "2") {
+                            button.disabled = true;
+                            button.innerHTML = `
+                                Unavailable
+                            `;
+                            button.classList.add('has-tooltip');
+                            button.setAttribute('data-tooltip', 'You don\'t have a Server Tag on your profile');
+                        } else if (!currentUserData.avatar_decoration_data && xpItem.id === "5") {
+                            button.disabled = true;
+                            button.innerHTML = `
+                                Unavailable
+                            `;
+                            button.classList.add('has-tooltip');
+                            button.setAttribute('data-tooltip', 'You don\'t have an Avatar Decoration on your profile');
+                        } else if (xpItem.price > currentUserData.xp_balance) {
                             button.disabled = true;
                             button.classList.add('has-tooltip');
                             button.setAttribute('data-tooltip', 'Insufficient XP');
@@ -5187,53 +5259,18 @@ async function loadSite() {
                         button.classList.add('hidden');
                     }
 
-                    featuredXpOutput.appendChild(xpCard);
+                    if (type === "featured") {
+                        featuredXpOutput.appendChild(xpCard);
+                    } else if (type === "shop") {
+                        shopXpOutput.appendChild(xpCard);
+                    }
+                }
+
+                data.featured.forEach(xpItem => {
+                    renderXpItemCard(xpItem, "featured");
                 });
                 data.shop.forEach(xpItem => {
-                    let xpCard = document.createElement("div");
-
-                    xpCard.classList.add('xp-shop-card')
-
-                    xpCard.innerHTML = `
-                        <h3>${xpItem.name}</h3>
-                        <p>${xpItem.summary}</p>
-                        <div class="xp-card-button-pad"></div>
-                        <div class="xp-card-bottom">
-                            <h3 class="xp-already-claimed-text hidden">Already Claimed</h3>
-                            <button id="claim-item-for-xp-button">
-                                Claim for ${xpItem.price} XP
-                                <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    `;
-                    const button = xpCard.querySelector('#claim-item-for-xp-button');
-                    const alreadyClaimedText = xpCard.querySelector('.xp-already-claimed-text');
-
-                    let alreadyClaimed = null;
-                    usersXPInventoryCache.forEach(claimed => {
-                        if (claimed.id === xpItem.id) {
-                            alreadyClaimed = true;
-                        }
-                    });
-
-                    if (!alreadyClaimed) {
-                        if (xpItem.price > currentUserData.xp_balance) {
-                            button.disabled = true;
-                            button.classList.add('has-tooltip');
-                            button.setAttribute('data-tooltip', 'Insufficient XP');
-                        } else {
-                            button.addEventListener('click', () => {
-                                openClaimablePurchaseModal(xpItem.id);
-                            });
-                        }
-                    } else {
-                        alreadyClaimedText.classList.remove('hidden');
-                        button.classList.add('hidden');
-                    }
-
-                    shopXpOutput.appendChild(xpCard);
+                    renderXpItemCard(xpItem, "shop");
                 });
             }
 

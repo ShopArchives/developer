@@ -2838,8 +2838,8 @@ body:has(.notice) .container {
 
 
 .xp-purchase-modal {
-    width: 420px;
-    height: auto;
+    width: 400px;
+    height: 500px;
     overflow: hidden;
     background: var(--background-primary);
     flex-direction: column;
@@ -2852,7 +2852,7 @@ body:has(.notice) .container {
 }
 
 .xp-purchase-modal-inner-content {
-    padding: 10px;
+    padding: 20px;
     box-sizing: border-box;
 }
 
@@ -2872,18 +2872,31 @@ body:has(.notice) .container {
 .xp-purchase-modal .disclaimer {
     font-size: 13px;
     display: flex;
-    margin-top: 3px;
-    margin-bottom: 3px;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.xp-purchase-modal .disclaimer p {
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .xp-purchase-modal .disclaimer .link {
     color: currentColor;
-    margin-left: 3px;
     text-decoration: underline;
 }
 
+.xp-purchase-modal .disclaimer2 {
+    font-size: 12px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    color: var(--text-secondary);
+}
+
 .claim-xp-perk-button {
-    position: relative;
+    position: absolute;
     display: flex;
     padding: 10px 15px;
     background: var(--color-green);
@@ -2895,8 +2908,8 @@ body:has(.notice) .container {
     box-shadow: none;
     box-sizing: border-box;
     transition: box-shadow 0.2s ease;
-    margin-left: auto;
-    margin-top: 10px;
+    right: 20px;
+    bottom: 20px;
 }
 
 .claim-xp-perk-button:hover {
