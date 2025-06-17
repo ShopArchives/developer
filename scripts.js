@@ -1,5 +1,5 @@
 
-const appVersion = "7.1.4"
+const appVersion = "7.1.5"
 const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
@@ -3300,6 +3300,9 @@ async function loadSite() {
                                             let bannerPreview = document.createElement("img");
                                             
                                             bannerPreview.src = `https://cdn.discordapp.com/banners/${review.user.id}/${review.user.banner}.png?size=300`;
+                                            bannerPreview.addEventListener("error", function () {
+                                                this.remove();
+                                            });
     
                                             reviewDiv.querySelector('.review-banner-container').appendChild(bannerPreview);
                                         }
@@ -3503,18 +3506,21 @@ async function loadSite() {
 
                     if (Array.isArray(usersXPEventsCache)) {
                         const xpRewardsTab = modal.querySelector('#category-modal-tab-5');
-                        usersXPEventsCache.forEach(promo => {
-                            if (promo.category_data?.sku_id === categoryData.sku_id) {
-                                xpRewardsTab.classList.remove('disabled');
-                                xpRewardsTab.addEventListener("click", function () {
-                                    // Rewards
-                                    changeModalTab('5');
-                                });
-                            } else {
-                                xpRewardsTab.classList.add('has-tooltip');
-                                xpRewardsTab.setAttribute('data-tooltip', 'There are currently no XP rewards for this category');
-                            }
-                        });
+                        const hasMatchingPromo = usersXPEventsCache.some(promo =>
+                            promo.category_data?.sku_id === categoryData.sku_id
+                        );
+                    
+                        if (hasMatchingPromo) {
+                            xpRewardsTab.classList.remove('disabled');
+                            xpRewardsTab.classList.remove('has-tooltip');
+                            xpRewardsTab.removeAttribute('data-tooltip');
+                            xpRewardsTab.addEventListener("click", function () {
+                                changeModalTab('5');
+                            });
+                        } else {
+                            xpRewardsTab.classList.add('has-tooltip');
+                            xpRewardsTab.setAttribute('data-tooltip', 'There are currently no XP rewards for this category');
+                        }
                     }
         
                     modal.querySelector('#category-modal-tab-1').addEventListener("click", function () {
