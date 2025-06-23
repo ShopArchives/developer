@@ -1,5 +1,5 @@
 
-const appVersion = "7.1.5"
+const appVersion = "7.1.6"
 const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
@@ -235,6 +235,10 @@ async function verifyOrigin() {
             localStorage.setItem('currentUser', JSON.stringify(userData));
 
             currentUserData = JSON.parse(localStorage.getItem('currentUser'));
+        }
+
+        if (currentUserData && currentUserData.admin_level >= 1) {
+            changeSetting('dev', 1);
         }
 
         // Fetch & Sync Server experiments
@@ -2263,11 +2267,17 @@ async function loadSite() {
                 if (categoryData.sku_id === "3") {
                     categoryBanner = "https://cdn.yapper.shop/assets/43.png"
                 }
+    
+                const bannerContainer = document.createElement('div');
+                bannerContainer.classList.add('banner-container');
+                bannerContainer.style.backgroundImage = `url(${categoryBanner})`;
+
+                const categoryClientDataId = category_client_overrides.findIndex(cat => cat.sku_id === categoryData.sku_id);
 
                 let modalBanner;
 
-                if (categoryData.sku_id === discord_categories.ORB) {
-                    modalBanner = `https://cdn.discordapp.com/app-assets/1096190356233670716/1336165352392097853.png?size=4096`;
+                if (category_client_overrides[categoryClientDataId]?.modal_hero_banner) {
+                    modalBanner = category_client_overrides[categoryClientDataId].modal_hero_banner;
                 } else if (categoryData.hero_banner_asset?.static) {
                     modalBanner = categoryData.hero_banner_asset?.static;
                 } else if (categoryData.hero_banner) {
@@ -2275,12 +2285,6 @@ async function loadSite() {
                 } else if (categoryData.banner) {
                     modalBanner = `https://cdn.discordapp.com/app-assets/1096190356233670716/${categoryData.banner}.png?size=4096`;
                 }
-    
-                const bannerContainer = document.createElement('div');
-                bannerContainer.classList.add('banner-container');
-                bannerContainer.style.backgroundImage = `url(${categoryBanner})`;
-
-                const categoryClientDataId = category_client_overrides.findIndex(cat => cat.sku_id === categoryData.sku_id);
 
                 if (categoryData.logo && category_client_overrides[categoryClientDataId]?.addLogo) {
                     if (category_client_overrides[categoryClientDataId]?.banner_verification && category_client_overrides[categoryClientDataId]?.banner_verification === categoryData.banner || !category_client_overrides[categoryClientDataId].banner_verification) {
@@ -3193,6 +3197,13 @@ async function loadSite() {
                                             dateContainer.querySelector('.review-date').textContent = `${formatted}`;
                                             dateContainer.querySelector('.inv').textContent = `${formatted}`;
                                         }
+
+                                        // if (settingsStore.dev === 1) {
+                                        //     reviewDiv.querySelector('.review-user-display-name-container').classList.add('clickable');
+                                        //     reviewDiv.addEventListener("click", () => {
+                                        //         setDevSidebarTab(2);
+                                        //     });
+                                        // }
 
                                         if (currentUserData?.id === review.user.id || currentUserData?.types.admin_level >= 1) {
                                             let deleteReviewIcon = document.createElement("div");
@@ -5440,13 +5451,13 @@ async function loadSite() {
 
     window.setModalv3InnerContent = setModalv3InnerContent;
 
-    function toggleStaffDevTools() {
+    function setDevSidebarTab(tab) {
 
         const devtoolsContainer = document.querySelector('.staff-devtools-container');
 
-        if (!devtoolsOpenCache) {
+        if (devtoolsOpenCache != 1 && tab === 1) {
 
-            devtoolsOpenCache = true;
+            devtoolsOpenCache = 1;
 
             devtoolsContainer.innerHTML = `
                 <div class="staff-devtools">
@@ -5607,13 +5618,22 @@ async function loadSite() {
                     }
                 }
             }
+        } else if (devtoolsOpenCache != 2 && tab === 2) {
+
+            devtoolsOpenCache = 2;
+
+            devtoolsContainer.innerHTML = `
+                <div class="staff-devtools">
+                    <h2>Built in user editor will go here</h2>
+                </div>
+            `;
         } else {
-            devtoolsOpenCache = false;
+            devtoolsOpenCache = 0;
             devtoolsContainer.innerHTML = ``;
         }
     }
 
-    window.toggleStaffDevTools = toggleStaffDevTools;
+    window.setDevSidebarTab = setDevSidebarTab;
 
     if (settingsStore.dev === 1) {
         document.getElementById('dev-tools-icon').classList.remove('hidden');

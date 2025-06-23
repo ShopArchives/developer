@@ -577,6 +577,7 @@ body:has(.notice) .container {
     flex-direction: column;
     align-items: center;
     padding: 0 20px;
+    z-index: 1;
 }
 
 .banner-container {
@@ -1068,6 +1069,7 @@ body:has(.notice) .container {
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
+    z-index: 22;
 }
 
 .nameplate-user-name {
@@ -1075,7 +1077,12 @@ body:has(.notice) .container {
     height: 20px;
     margin-top: 15px;
     margin-left: 60px;
+    max-width: 150px;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 22;
 }
 
 
@@ -1348,18 +1355,6 @@ body:has(.notice) .container {
     border: 2px solid var(--card-outer);
     z-index: 1;
     animation: shop-fetching-anim 4s infinite;
-}
-
-.shop-category-card-holder-loading {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-    justify-content: center; /* Center the grid horizontally */
-    max-width: 1200px; /* Limit the width of the card holder */
-    margin: 0 auto; /* Center the card holder container */
-    padding: 20px 0; /* Add some space between the banner and cards */
-    padding-left: 20px;
-    padding-right: 20px;
 }
 
 @keyframes shop-fetching-anim {
