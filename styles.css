@@ -552,6 +552,10 @@ body:has(.notice) .container {
     box-sizing: border-box;
 }
 
+.mobile .content {
+    padding-bottom: 50px;
+}
+
 .content h2 {
     margin-top: 0;
 }
