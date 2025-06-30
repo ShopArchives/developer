@@ -1,5 +1,5 @@
 
-const appVersion = "7.1.8"
+const appVersion = "7.1.9"
 const appType = "Dev"
 
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
@@ -7,6 +7,7 @@ document.getElementById('logo-container').setAttribute('data-tooltip', appType+'
 // Cache
 let currentPageCache;
 let currentOpenModalId;
+let isMobileCache;
 let scrollToCache;
 let devtoolsOpenCache;
 let currentUserData;
@@ -25,6 +26,12 @@ let discordMiscellaneousCategoriesCache;
 
 const overridesKey = 'experimentOverrides';
 const serverKey = 'serverExperiments';
+
+const isMobile = navigator.userAgentData && navigator.userAgentData.mobile;
+if (isMobile) {
+    isMobileCache = true;
+    document.body.classList.add('mobile');
+}
 
 function loadOverrides() {
     try {
@@ -2896,7 +2903,26 @@ async function loadSite() {
                             const reviewInputContainer = modalInner.querySelector('.write-review-input-container');
 
                             function refreshReviewBar() {
-                                if (currentUserData) {
+                                if (isMobileCache) {
+                                    reviewInputContainer.classList.add('normal');
+                                    reviewInputContainer.innerHTML = `
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <g clip-path="url(#clip0_66_360)">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M18.0939 13.525C18.4939 12.825 19.5239 12.825 19.9139 13.525L23.8739 20.425C24.2539 21.085 23.7539 21.895 22.9639 21.895H15.0439C14.2539 21.895 13.7439 21.085 14.1339 20.415L18.0939 13.515V13.525ZM18.5539 15.395H19.4539C19.7539 15.395 19.9739 15.655 19.9539 15.945L19.7339 17.965C19.7239 18.125 19.5639 18.225 19.4039 18.195C19.1401 18.1391 18.8676 18.1391 18.6039 18.195C18.4439 18.225 18.2839 18.125 18.2739 17.965L18.0639 15.945C18.0569 15.8753 18.0646 15.8048 18.0866 15.7383C18.1085 15.6717 18.1443 15.6105 18.1914 15.5587C18.2386 15.5068 18.2961 15.4654 18.3603 15.4372C18.4244 15.409 18.4938 15.3946 18.5639 15.395H18.5539ZM19.0039 20.895C19.2691 20.895 19.5235 20.7896 19.711 20.6021C19.8985 20.4146 20.0039 20.1602 20.0039 19.895C20.0039 19.6298 19.8985 19.3754 19.711 19.1879C19.5235 19.0004 19.2691 18.895 19.0039 18.895C18.7387 18.895 18.4843 19.0004 18.2968 19.1879C18.1092 19.3754 18.0039 19.6298 18.0039 19.895C18.0039 20.1602 18.1092 20.4146 18.2968 20.6021C18.4843 20.7896 18.7387 20.895 19.0039 20.895Z" fill="currentColor"/>
+                                        <path d="M10.4238 2.12421C12.6154 1.77616 14.8606 2.1665 16.8057 3.23456C18.7507 4.30263 20.2856 5.98766 21.168 8.02362C22.0095 9.96556 22.2098 12.1215 21.749 14.1818L20.2764 11.7082C19.7305 10.764 18.2893 10.7639 17.7295 11.7082V11.6945L12.1875 21.0031C11.9898 21.3304 11.9593 21.6822 12.0508 21.9982C12.0339 21.9983 12.0169 22.0002 12 22.0002H2.2002C2.00802 21.9999 1.8196 21.9444 1.6582 21.84C1.49684 21.7357 1.36915 21.5864 1.29004 21.4113C1.21109 21.2364 1.18366 21.0425 1.21191 20.8527C1.2403 20.6627 1.32336 20.4844 1.4502 20.34L3.50977 17.9699C3.65977 17.7999 3.6798 17.5496 3.5498 17.3596C2.3606 15.4863 1.82794 13.2708 2.03613 11.0617C2.24434 8.85254 3.18182 6.77552 4.7002 5.15741C6.21866 3.53928 8.23227 2.47226 10.4238 2.12421Z" fill="currentColor"/>
+                                        </g>
+                                        <defs>
+                                        <clipPath id="clip0_66_360">
+                                        <rect width="24" height="24" fill="white"/>
+                                        </clipPath>
+                                        </defs>
+                                        </svg>
+                                        <div class="text-container">
+                                            <h3>Can't submit reviews on mobile.</h3>
+                                            <p>Open Shop Archives on a desktop device to submit reviews.</p>
+                                        </div>
+                                    `;
+                                } else if (currentUserData) {
 
                                     let hasReviewAlready;
 
@@ -3429,6 +3455,8 @@ async function loadSite() {
                                     } else if (currentUserData && currentUserData.ban_config.ban_type === 0) {
                                         reviewDiv.querySelector('.review-text-content').textContent = 'This category currently has no reviews. You could be the first!';
                                     } else if (currentUserData && currentUserData.ban_config.ban_type >= 1) {
+                                    } else if (isMobileCache) {
+                                        reviewDiv.querySelector('.review-text-content').textContent = 'This category currently has no reviews. Open Shop Archives on a desktop device to submit reviews!';
                                     } else {
                                         reviewDiv.querySelector('.review-text-content').textContent = 'This category currently has no reviews. Login with Discord and you could be the first!';
                                     }
@@ -4392,7 +4420,7 @@ async function loadSite() {
                                     <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path>
                                 </svg>
                             </div>
-                            <div class="keybind_c2b141" aria-hidden="true">ESC</div>
+                            <div class="keybind_c2b141 remove-on-mobile" aria-hidden="true">ESC</div>
                         </div>
                     </div>
                 </div>
@@ -4402,15 +4430,18 @@ async function loadSite() {
         document.body.appendChild(modal);
 
         document.getElementById("modalv3-side-tabs-container").innerHTML = `
-            <div class="side-tabs-category-text-container">
-                <p>USER SETTINGS</p>
+            <div class="remove-on-mobile">
+                <div class="side-tabs-category-text-container">
+                    <p>USER SETTINGS</p>
+                </div>
+
+                <div class="side-tabs-button" id="modal-v3-tab-account" onclick="setModalv3InnerContent('account')">
+                    <p>Account</p>
+                </div>
             </div>
 
-            <div class="side-tabs-button" id="modal-v3-tab-account" onclick="setModalv3InnerContent('account')">
-                <p>Account</p>
-            </div>
+            <hr class="remove-on-mobile">
 
-            <hr>
             <div class="side-tabs-category-text-container">
                 <p>APP SETTINGS</p>
             </div>
@@ -4470,7 +4501,11 @@ async function loadSite() {
             });
         });
 
-        setModalv3InnerContent('account');
+        if (isMobileCache) {
+            setModalv3InnerContent('appearance');
+        } else {
+            setModalv3InnerContent('account');
+        }
 
 
         document.addEventListener("keydown", function (event) {
@@ -5717,6 +5752,19 @@ async function loadSite() {
 
 }
 window.loadSite = loadSite;
+
+const removeonMobileObserver = new MutationObserver(() => {
+    if (isMobileCache) {
+        const elements = document.querySelectorAll('.remove-on-mobile');
+        elements.forEach(el => {
+            el.remove();
+        });
+    }
+});
+removeonMobileObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+});
 
 function triggerSafetyBlock() {
     console.warn('%cWarning!', 'color: lightblue; font-weight: bold; font-size: 30px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;');

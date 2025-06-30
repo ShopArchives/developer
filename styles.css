@@ -546,9 +546,10 @@ body:has(.notice) .container {
 .content {
     flex: 1;
     padding-top: 50px;
-    overflow: hidden;
     overflow-y: auto;
     width: 100%;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .content h2 {
@@ -742,6 +743,7 @@ body:has(.notice) .container {
     left: 50%;
     transform: translateX(-50%);
     text-align: center;
+    width: 80%;
 }
 
 .shop-category-text-holder p {
@@ -3206,6 +3208,7 @@ body:has(.notice) .container {
 }
 
 
+
 .container_c2b141 {
     position: absolute;
     top: 20px;
@@ -3216,6 +3219,10 @@ body:has(.notice) .container {
     text-align: center;
     cursor: pointer;
     z-index: 5;
+}
+
+.mobile .container_c2b141 {
+    right: 10px;
 }
 
 .container_c2b141:hover {
