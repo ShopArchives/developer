@@ -1,4 +1,7 @@
 
+const appVersion = "7.1.11";
+const appType = "Dev";
+
 const endpoints = {
     MAIN: "https://api.yapper.shop/",
     VERSION: "v3",
@@ -331,7 +334,7 @@ const experiments = [
                 title: `Not Eligible`
             },
             {
-                title: `Show users banners on reviews`
+                title: `Enabled`
             }
         ]
     },

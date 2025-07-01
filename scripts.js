@@ -1,7 +1,3 @@
-
-const appVersion = "7.1.10"
-const appType = "Dev"
-
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
 
 // Cache
@@ -2501,10 +2497,16 @@ async function loadSite() {
                                     <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${categoryData.sku_id}')">${categoryData.sku_id}</p>
                                     <h1>${categoryData.name}</h1>
                                     <p>${categoryData.summary ? categoryData.summary : ''}</p>
-                                    <div class="category-modal-quick-info-d-container">
-                                        <p>Prices</p>
-                                        <p>Products</p>
-                                        <p>Community Rating</p>
+                                    <div class="category-modal-quick-info-container">
+                                        <div class="outer-block">
+                                            <p>Prices</p>
+                                        </div>
+                                        <div class="outer-block">
+                                            <p>Products</p>
+                                        </div>
+                                        <div class="outer-block">
+                                            <p>Community Rating</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2532,40 +2534,43 @@ async function loadSite() {
                                     <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${categoryData.sku_id}')">${categoryData.sku_id}</p>
                                     <h1>${categoryData.name}</h1>
                                     <p>${categoryData.summary ? categoryData.summary : ''}</p>
-                                    <div class="category-modal-quick-info-d-container">
-                                        <p class="quick-info-prices-title">Prices</p>
-                                        <p>Products</p>
-                                        <p>Community Rating</p>
-                                    </div>
                                     <div class="category-modal-quick-info-container">
-                                        <div class="block" id="price-detail-block-container">
-                                            <div class="price-titles">
-                                                <p>Standard</p>
-                                                <p>Nitro</p>
-                                            </div>
-                                            <div id="price-detail-block">
-                                                
-                                            </div>
-                                        </div>
-                                        <div class="block">
-                                            <div id="products-details-block">
-                                                
+                                        <div class="outer-block">
+                                            <p class="quick-info-prices-title">Prices</p>
+                                            <div class="block" id="price-detail-block-container">
+                                                <div class="price-titles">
+                                                    <p>Standard</p>
+                                                    <p>Nitro</p>
+                                                </div>
+                                                <div id="price-detail-block">
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="block">
-                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <g clip-path="url(#clip0_58_258)">
-                                                <path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="#FFEC3E"/>
-                                                </g>
-                                                <defs>
-                                                <clipPath id="clip0_58_258">
-                                                <rect width="24" height="24" fill="white"/>
-                                                </clipPath>
-                                                </defs>
-                                            </svg>
-                                            <h2 id="average-rating">N/A</h2>
-                                            <h2>/</h2>
-                                            <h1>5</h1>
+                                        <div class="outer-block">
+                                            <p>Products</p>
+                                            <div class="block">
+                                                <div id="products-details-block">
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="outer-block">
+                                            <p>Community Rating</p>
+                                            <div class="block">
+                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <g clip-path="url(#clip0_58_258)">
+                                                    <path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="#FFEC3E"/>
+                                                    </g>
+                                                    <defs>
+                                                    <clipPath id="clip0_58_258">
+                                                    <rect width="24" height="24" fill="white"/>
+                                                    </clipPath>
+                                                    </defs>
+                                                </svg>
+                                                <h2 id="average-rating">N/A</h2>
+                                                <h2>/</h2>
+                                                <h1>5</h1>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -3202,279 +3207,313 @@ async function loadSite() {
                                 if (Array.isArray(categoryModalInfo.reviews) && categoryModalInfo.reviews.length != 0) {
                                     categoryModalInfo.reviews.forEach(review => {
                                         let reviewDiv = document.createElement("div");
-                
                                         reviewDiv.classList.add('category-modal-review-container');
-                                        if (review.types.system != 0) {
-                                            const type = reviews_system_types.find(type => type.id === review.types.system).codename;
-                                            reviewDiv.style.backgroundColor = `var(--bg-feedback-${type})`;
-                                            reviewDiv.classList.add(`bg-feedback-${type}`);
+                
+                                        if (review.types.flag != 0 && review.user.id != currentUserData?.id) {
+                                            reviewDiv.innerHTML = `
+                                                <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                                    <path fill="currentColor" d="M1.3 21.3a1 1 0 1 0 1.4 1.4l20-20a1 1 0 0 0-1.4-1.4l-20 20ZM3.16 16.05c.18.24.53.26.74.05l.72-.72c.18-.18.2-.45.05-.66a15.7 15.7 0 0 1-1.43-2.52.48.48 0 0 1 0-.4c.4-.9 1.18-2.37 2.37-3.72C7.13 6.38 9.2 5 12 5c.82 0 1.58.12 2.28.33.18.05.38 0 .52-.13l.8-.8c.25-.25.18-.67-.15-.79A9.79 9.79 0 0 0 12 3C4.89 3 1.73 10.11 1.11 11.7a.83.83 0 0 0 0 .6c.25.64.9 2.15 2.05 3.75Z" class=""></path>
+                                                    <path fill="currentColor" d="M8.18 10.81c-.13.43.36.65.67.34l2.3-2.3c.31-.31.09-.8-.34-.67a4 4 0 0 0-2.63 2.63ZM12.85 15.15c-.31.31-.09.8.34.67a4.01 4.01 0 0 0 2.63-2.63c.13-.43-.36-.65-.67-.34l-2.3 2.3Z" class=""></path>
+                                                    <path fill="currentColor" d="M9.72 18.67a.52.52 0 0 0-.52.13l-.8.8c-.25.25-.18.67.15.79 1.03.38 2.18.61 3.45.61 7.11 0 10.27-7.11 10.89-8.7a.83.83 0 0 0 0-.6c-.25-.64-.9-2.15-2.05-3.75a.49.49 0 0 0-.74-.05l-.72.72a.51.51 0 0 0-.05.66 15.7 15.7 0 0 1 1.43 2.52c.06.13.06.27 0 .4-.4.9-1.18 2.37-2.37 3.72C16.87 17.62 14.8 19 12 19c-.82 0-1.58-.12-2.28-.33Z" class=""></path>
+                                                </svg>
+                                                <p class="review-text-content">This review has been censored due to inappropriate language.</p>
+                                                <div style="flex: 1;"></div>
+                                                <button class="generic-brand-button">
+                                                    Show
+                                                </button>
+                                            `;
+                                            reviewDiv.style.display = 'inline-flex';
+                                            reviewDiv.style.alignItems = 'center';
+                                            reviewDiv.querySelector('.generic-brand-button').addEventListener("click", function () {
+                                                revealReview();
+                                                reviewDiv.style.display = 'unset';
+                                                reviewDiv.style.alignItems = 'unset';
+                                            });
+                                            if (!currentUserData) reviewDiv.querySelector('.generic-brand-button').remove();
+                                        } else {
+                                            revealReview();
                                         }
-                                        reviewDiv.innerHTML = `
-                                            <div class="shop-modal-review-moderation-buttons" data-modal-top-product-buttons></div>
-                                            <div class="review-nameplate-container"></div>
-                                            <div class="review-banner-container"></div>
-                                            <div class="review-user-container">
-                                                <div class="review-avatar-container">
-                                                    <img class="review-avatar" src="https://cdn.yapper.shop/assets/31.png" onerror="this.parentElement.remove();">
-                                                    <img class="review-avatar-decoration" src="https://cdn.yapper.shop/assets/31.png">
-                                                </div>
 
-                                                <div class="review-user-display-name-container">
-                                                    <p class="inv"></p>
-                                                    <p class="review-user-display-name"></p>
-                                                </div>
+                                        function revealReview() {
+                                            if (review.types.system != 0) {
+                                                const type = reviews_system_types.find(type => type.id === review.types.system).codename;
+                                                reviewDiv.style.backgroundColor = `var(--bg-feedback-${type})`;
+                                                reviewDiv.classList.add(`bg-feedback-${type}`);
+                                            }
+                                            reviewDiv.innerHTML = `
+                                                <div class="shop-modal-review-moderation-buttons"></div>
+                                                <div class="review-nameplate-container"></div>
+                                                <div class="review-banner-container"></div>
+                                                <div class="review-user-container">
+                                                    <div class="review-avatar-container">
+                                                        <img class="review-avatar" src="https://cdn.yapper.shop/assets/31.png" onerror="this.parentElement.remove();">
+                                                        <img class="review-avatar-decoration" src="https://cdn.yapper.shop/assets/31.png">
+                                                    </div>
 
-                                                <div class="review-system-tag-container has-tooltip" data-tooltip="Official Shop Archives Message">
-                                                    <p class="inv">SYSTEM</p>
-                                                    <p class="review-system-tag">SYSTEM</p>
-                                                </div>
+                                                    <div class="review-user-display-name-container">
+                                                        <p class="inv"></p>
+                                                        <p class="review-user-display-name"></p>
+                                                    </div>
 
-                                                <div class="review-server-tag-container-container">
-                                                    <div class="review-server-tag-container">
-                                                        <img class="server-tag-img" src="https://cdn.yapper.shop/assets/31.png">
-                                                        <div class="server-tag-title-container">
-                                                            <p class="server-tag-title"></p>
-                                                            <p class="inv"></p>
+                                                    <div class="review-system-tag-container has-tooltip" data-tooltip="Official Shop Archives Message">
+                                                        <p class="inv">SYSTEM</p>
+                                                        <p class="review-system-tag">SYSTEM</p>
+                                                    </div>
+
+                                                    <div class="review-server-tag-container-container">
+                                                        <div class="review-server-tag-container">
+                                                            <img class="server-tag-img" src="https://cdn.yapper.shop/assets/31.png">
+                                                            <div class="server-tag-title-container">
+                                                                <p class="server-tag-title"></p>
+                                                                <p class="inv"></p>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <div class="review-badges-container-container">
-                                                    <div class="review-badges-container">
+                                                    <div class="review-badges-container-container">
+                                                        <div class="review-badges-container">
+                                                        </div>
                                                     </div>
-                                                </div>
 
-                                                <div class="review-rating-container">
-                                                    <div class="possible-stars">
-                                                
+                                                    <div class="review-rating-container">
+                                                        <div class="possible-stars">
+
+                                                        </div>
+                                                        <div class="star-rating">
+
+                                                        </div>
                                                     </div>
-                                                    <div class="star-rating">
-                                                        
+
+                                                    <div class="review-date-container">
+                                                        <p class="inv">today</p>
+                                                        <p class="review-date">today</p>
                                                     </div>
+
                                                 </div>
-
-                                                <div class="review-date-container">
-                                                    <p class="inv">today</p>
-                                                    <p class="review-date">today</p>
-                                                </div>
-
-                                            </div>
-                                            <p class="review-text-content"></p>
-                                        `;
-
-                                        const date = new Date(review.created_at);
-
-                                        const day = String(date.getDate()).padStart(2, '0');
-                                        const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth is 0-indexed
-                                        const year = date.getFullYear();
-
-                                        const dateContainer = reviewDiv.querySelector(".review-date-container");
-
-                                        if (settingsStore.non_us_timezone === 1) {
-                                            const formatted = `${day}/${month}/${year}`;
-
-                                            dateContainer.querySelector('.review-date').textContent = `${formatted}`;
-                                            dateContainer.querySelector('.inv').textContent = `${formatted}`;
-                                        } else {
-                                            const formatted = `${month}/${day}/${year}`;
-                                            
-                                            dateContainer.querySelector('.review-date').textContent = `${formatted}`;
-                                            dateContainer.querySelector('.inv').textContent = `${formatted}`;
-                                        }
-
-                                        // if (settingsStore.dev === 1) {
-                                        //     reviewDiv.querySelector('.review-user-display-name-container').classList.add('clickable');
-                                        //     reviewDiv.addEventListener("click", () => {
-                                        //         setDevSidebarTab(2);
-                                        //     });
-                                        // }
-
-                                        if (currentUserData?.id === review.user.id || currentUserData?.types.admin_level >= 1) {
-                                            let deleteReviewIcon = document.createElement("div");
-
-                                            deleteReviewIcon.innerHTML = `
-                                                <svg class="modalv2_top_icon has-tooltip" data-tooltip="Delete Review" style="color: var(--color-red);" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M14.25 1c.41 0 .75.34.75.75V3h5.25c.41 0 .75.34.75.75v.5c0 .41-.34.75-.75.75H3.75A.75.75 0 0 1 3 4.25v-.5c0-.41.34-.75.75-.75H9V1.75c0-.41.34-.75.75-.75h4.5Z" class=""></path><path fill="currentColor" fill-rule="evenodd" d="M5.06 7a1 1 0 0 0-1 1.06l.76 12.13a3 3 0 0 0 3 2.81h8.36a3 3 0 0 0 3-2.81l.75-12.13a1 1 0 0 0-1-1.06H5.07ZM11 12a1 1 0 1 0-2 0v6a1 1 0 1 0 2 0v-6Zm3-1a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1Z" clip-rule="evenodd" class=""></path></svg>
+                                                <p class="review-text-content"></p>
                                             `;
 
-                                            deleteReviewIcon.addEventListener("click", function () {
-                                                reviewDeleteHandle();
-                                            });
+                                            const date = new Date(review.created_at);
 
-                                            async function reviewDeleteHandle() {
-                                                const status = await deleteReviewById(review.id);
+                                            const day = String(date.getDate()).padStart(2, '0');
+                                            const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth is 0-indexed
+                                            const year = date.getFullYear();
 
-                                                if (status.error && status.message) {
-                                                } else {
-                                                    await fetchCategoryData();
-                                                    fetchAndRenderReviews();
-                                                    refreshReviewBar();
-                                                }
-                                            }
+                                            const dateContainer = reviewDiv.querySelector(".review-date-container");
 
-                                            reviewDiv.querySelector(".shop-modal-review-moderation-buttons").appendChild(deleteReviewIcon);
-                                        }
-    
-                                        if (review.user.avatar) {
-    
-                                            const avatarPreview = reviewDiv.querySelector('.review-avatar');
-    
-                                            avatarPreview.src = userAvatar = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.webp?size=128';
-    
-                                            if (review.user.avatar.includes('a_')) {
-                                                reviewDiv.addEventListener("mouseenter", () => {
-                                                    avatarPreview.src = userAvatar = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.gif?size=128';
-                                                });
-                                                reviewDiv.addEventListener("mouseleave", () => {
-                                                    avatarPreview.src = userAvatar = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.webp?size=128';
-                                                });
-                                            }
-    
-                                        }
+                                            if (settingsStore.non_us_timezone === 1) {
+                                                const formatted = `${day}/${month}/${year}`;
 
-                                        if (!review.user.types.system) {
-                                            reviewDiv.querySelector('.review-system-tag-container').remove();
-                                        }
-    
-                                        if (review.user.avatar_decoration_data?.asset) {
-    
-                                            const decoPreview = reviewDiv.querySelector('.review-avatar-decoration');
-    
-                                            decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration_data.asset}.png?size=4096&passthrough=false`;
-    
-                                            reviewDiv.addEventListener("mouseenter", () => {
-                                                decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration_data.asset}.png?size=4096&passthrough=true`;
-                                            });
-                                            reviewDiv.addEventListener("mouseleave", () => {
-                                                decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration_data.asset}.png?size=4096&passthrough=false`;
-                                            });
-    
-                                        }
-    
-                                        const serverTagAsset = reviewDiv.querySelector('.review-server-tag-container-container');
-    
-                                        if (review.user.primary_guild) {
-    
-                                            serverTagAsset.querySelector('.server-tag-img').src = `https://cdn.discordapp.com/clan-badges/${review.user.primary_guild.identity_guild_id}/${review.user.primary_guild.badge}.png?size=24`;
-    
-                                            serverTagAsset.querySelector('.server-tag-title').textContent = review.user.primary_guild.tag;
-                                            serverTagAsset.querySelector('.inv').textContent = review.user.primary_guild.tag;
-    
-                                        } else {
-                                            serverTagAsset.remove();
-                                        }
-    
-                                        const userBadgesElement = reviewDiv.querySelector('.review-badges-container-container');
-                                        const userBadgesInnerElement = reviewDiv.querySelector('.review-badges-container');
-    
-                                        if (Array.isArray(review.user.badges) && review.user.badges.length != 0) {
-                                            review.user.badges.forEach(badge => {
-                                                const badgeImg = document.createElement("img");
-                                                badgeImg.src = `https://cdn.yapper.shop/assets/badges/${badge.id}.png`;
-                                                badgeImg.setAttribute('data-tooltip', badge.name);
-                                                badgeImg.classList.add("badge");
-                                                badgeImg.classList.add("has-tooltip");
-                                                
-                                                if (badge.support) {
-                                                    const badgeLink = document.createElement("a");
-                                                    badgeLink.href = badge.support;
-                                                    badgeLink.target = "_blank";
-                                                    badgeLink.rel = "noopener noreferrer";
-                                                    badgeLink.appendChild(badgeImg);
-                                                    userBadgesInnerElement.appendChild(badgeLink);
-                                                } else {
-                                                    userBadgesInnerElement.appendChild(badgeImg);
-                                                }
-                                            });
-                                        } else {
-                                            userBadgesElement.remove();
-                                        }
-                                        
-
-                                        if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'user_banner_on_reviews')?.treatment === 1 && review.user.banner) {
-                                            let bannerPreview = document.createElement("img");
-                                            
-                                            bannerPreview.src = `https://cdn.discordapp.com/banners/${review.user.id}/${review.user.banner}.png?size=300`;
-                                            bannerPreview.addEventListener("error", function () {
-                                                this.remove();
-                                            });
-    
-                                            reviewDiv.querySelector('.review-banner-container').appendChild(bannerPreview);
-                                        }
-    
-                                        if (review.user.collectibles?.nameplate) {
-                                            if (review.user.collectibles.nameplate.sa_override_src) {
-                                                let nameplatePreview = document.createElement("img");
-                                                
-                                                nameplatePreview.src = review.user.collectibles.nameplate.sa_override_src;
-    
-                                                reviewDiv.querySelector('.review-nameplate-container').appendChild(nameplatePreview);
+                                                dateContainer.querySelector('.review-date').textContent = `${formatted}`;
+                                                dateContainer.querySelector('.inv').textContent = `${formatted}`;
                                             } else {
-                                                let nameplatePreview = document.createElement("video");
-                                                
-                                                nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${review.user.collectibles.nameplate.asset}asset.webm`;
-                                                nameplatePreview.disablePictureInPicture = true;
-                                                nameplatePreview.muted = true;
-                                                nameplatePreview.loop = true;
-                                                nameplatePreview.playsInline = true;
-    
-                                                reviewDiv.addEventListener("mouseenter", () => {
-                                                    nameplatePreview.play();
-                                                });
-                                                reviewDiv.addEventListener("mouseleave", () => {
-                                                    nameplatePreview.pause();
+                                                const formatted = `${month}/${day}/${year}`;
+
+                                                dateContainer.querySelector('.review-date').textContent = `${formatted}`;
+                                                dateContainer.querySelector('.inv').textContent = `${formatted}`;
+                                            }
+
+                                            if (currentUserData?.id === review.user.id || currentUserData?.types.admin_level >= 1) {
+                                                let deleteReviewIcon = document.createElement("div");
+
+                                                deleteReviewIcon.innerHTML = `
+                                                    <svg class="modalv2_top_icon has-tooltip" data-tooltip="Delete Review" style="color: var(--color-red);" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M14.25 1c.41 0 .75.34.75.75V3h5.25c.41 0 .75.34.75.75v.5c0 .41-.34.75-.75.75H3.75A.75.75 0 0 1 3 4.25v-.5c0-.41.34-.75.75-.75H9V1.75c0-.41.34-.75.75-.75h4.5Z" class=""></path><path fill="currentColor" fill-rule="evenodd" d="M5.06 7a1 1 0 0 0-1 1.06l.76 12.13a3 3 0 0 0 3 2.81h8.36a3 3 0 0 0 3-2.81l.75-12.13a1 1 0 0 0-1-1.06H5.07ZM11 12a1 1 0 1 0-2 0v6a1 1 0 1 0 2 0v-6Zm3-1a1 1 0 0 1 1 1v6a1 1 0 1 1-2 0v-6a1 1 0 0 1 1-1Z" clip-rule="evenodd" class=""></path></svg>
+                                                `;
+
+                                                deleteReviewIcon.addEventListener("click", function () {
+                                                    reviewDeleteHandle();
                                                 });
 
-                                                const bgcolor = nameplate_palettes[review.user.collectibles.nameplate.palette].darkBackground;
-    
-                                                reviewDiv.querySelector('.review-nameplate-container').style.backgroundImage = `linear-gradient(90deg, #00000000 0%, ${bgcolor} 200%)`;
-    
-                                                reviewDiv.querySelector('.review-nameplate-container').appendChild(nameplatePreview);
+                                                async function reviewDeleteHandle() {
+                                                    const status = await deleteReviewById(review.id);
+
+                                                    if (status.error && status.message) {
+                                                    } else {
+                                                        await fetchCategoryData();
+                                                        fetchAndRenderReviews();
+                                                        refreshReviewBar();
+                                                    }
+                                                }
+
+                                                reviewDiv.querySelector(".shop-modal-review-moderation-buttons").appendChild(deleteReviewIcon);
                                             }
-                                        }
-    
-                                        if (review.rating != null) {
-                                            for (let i = 0; i < 5; i++) {
-                                                let starRate = document.createElement("div");
-        
-                                                starRate.innerHTML = `
-                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                        <g clip-path="url(#clip0_58_258)">
-                                                        <path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="#575757"></path>
-                                                        </g>
-                                                        <defs>
-                                                        <clipPath id="clip0_58_258">
-                                                        <rect width="24" height="24" fill="white"></rect>
-                                                        </clipPath>
-                                                        </defs>
+
+                                            if (review.types.flag != 0 && review.user.id === currentUserData?.id) {
+                                                let hiddenReviewIcon = document.createElement("div");
+
+                                                hiddenReviewIcon.innerHTML = `
+                                                    <svg class="modalv2_top_icon has-tooltip" data-tooltip="This review may be hidden to some users" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                                        <path fill="currentColor" d="M1.3 21.3a1 1 0 1 0 1.4 1.4l20-20a1 1 0 0 0-1.4-1.4l-20 20ZM3.16 16.05c.18.24.53.26.74.05l.72-.72c.18-.18.2-.45.05-.66a15.7 15.7 0 0 1-1.43-2.52.48.48 0 0 1 0-.4c.4-.9 1.18-2.37 2.37-3.72C7.13 6.38 9.2 5 12 5c.82 0 1.58.12 2.28.33.18.05.38 0 .52-.13l.8-.8c.25-.25.18-.67-.15-.79A9.79 9.79 0 0 0 12 3C4.89 3 1.73 10.11 1.11 11.7a.83.83 0 0 0 0 .6c.25.64.9 2.15 2.05 3.75Z" class=""></path>
+                                                        <path fill="currentColor" d="M8.18 10.81c-.13.43.36.65.67.34l2.3-2.3c.31-.31.09-.8-.34-.67a4 4 0 0 0-2.63 2.63ZM12.85 15.15c-.31.31-.09.8.34.67a4.01 4.01 0 0 0 2.63-2.63c.13-.43-.36-.65-.67-.34l-2.3 2.3Z" class=""></path>
+                                                        <path fill="currentColor" d="M9.72 18.67a.52.52 0 0 0-.52.13l-.8.8c-.25.25-.18.67.15.79 1.03.38 2.18.61 3.45.61 7.11 0 10.27-7.11 10.89-8.7a.83.83 0 0 0 0-.6c-.25-.64-.9-2.15-2.05-3.75a.49.49 0 0 0-.74-.05l-.72.72a.51.51 0 0 0-.05.66 15.7 15.7 0 0 1 1.43 2.52c.06.13.06.27 0 .4-.4.9-1.18 2.37-2.37 3.72C16.87 17.62 14.8 19 12 19c-.82 0-1.58-.12-2.28-.33Z" class=""></path>
                                                     </svg>
                                                 `;
-        
-                                                reviewDiv.querySelector('.possible-stars').appendChild(starRate);
+
+                                                reviewDiv.querySelector(".shop-modal-review-moderation-buttons").appendChild(hiddenReviewIcon);
                                             }
-        
-                                            for (let i = 0; i < review.rating; i++) {
-                                                let starRate = document.createElement("div");
-        
-                                                starRate.innerHTML = `
-                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                        <g clip-path="url(#clip0_58_258)">
-                                                        <path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="#FFEC3E"></path>
-                                                        </g>
-                                                        <defs>
-                                                        <clipPath id="clip0_58_258">
-                                                        <rect width="24" height="24" fill="white"></rect>
-                                                        </clipPath>
-                                                        </defs>
-                                                    </svg>
-                                                `;
-        
-                                                reviewDiv.querySelector('.star-rating').appendChild(starRate);
-                                            }
-                                        }
     
-                                        reviewDiv.querySelector('.inv').textContent = review.user.global_name ? review.user.global_name : review.user.username;
-                                        reviewDiv.querySelector('.review-user-display-name').textContent = review.user.global_name ? review.user.global_name : review.user.username;
-                                        reviewDiv.querySelector('.review-text-content').textContent = review.text;
+                                            if (review.user.avatar) {
+    
+                                                const avatarPreview = reviewDiv.querySelector('.review-avatar');
+    
+                                                avatarPreview.src = userAvatar = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.webp?size=128';
+    
+                                                if (review.user.avatar.includes('a_')) {
+                                                    reviewDiv.addEventListener("mouseenter", () => {
+                                                        avatarPreview.src = userAvatar = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.gif?size=128';
+                                                    });
+                                                    reviewDiv.addEventListener("mouseleave", () => {
+                                                        avatarPreview.src = userAvatar = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.webp?size=128';
+                                                    });
+                                                }
+    
+                                            }
+
+                                            if (!review.user.types.system) {
+                                                reviewDiv.querySelector('.review-system-tag-container').remove();
+                                            }
+    
+                                            if (review.user.avatar_decoration_data?.asset) {
+    
+                                                const decoPreview = reviewDiv.querySelector('.review-avatar-decoration');
+    
+                                                decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration_data.asset}.png?size=4096&passthrough=false`;
+    
+                                                reviewDiv.addEventListener("mouseenter", () => {
+                                                    decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration_data.asset}.png?size=4096&passthrough=true`;
+                                                });
+                                                reviewDiv.addEventListener("mouseleave", () => {
+                                                    decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration_data.asset}.png?size=4096&passthrough=false`;
+                                                });
+    
+                                            }
+    
+                                            const serverTagAsset = reviewDiv.querySelector('.review-server-tag-container-container');
+    
+                                            if (review.user.primary_guild) {
+    
+                                                serverTagAsset.querySelector('.server-tag-img').src = `https://cdn.discordapp.com/clan-badges/${review.user.primary_guild.identity_guild_id}/${review.user.primary_guild.badge}.png?size=24`;
+    
+                                                serverTagAsset.querySelector('.server-tag-title').textContent = review.user.primary_guild.tag;
+                                                serverTagAsset.querySelector('.inv').textContent = review.user.primary_guild.tag;
+    
+                                            } else {
+                                                serverTagAsset.remove();
+                                            }
+    
+                                            const userBadgesElement = reviewDiv.querySelector('.review-badges-container-container');
+                                            const userBadgesInnerElement = reviewDiv.querySelector('.review-badges-container');
+    
+                                            if (Array.isArray(review.user.badges) && review.user.badges.length != 0) {
+                                                review.user.badges.forEach(badge => {
+                                                    const badgeImg = document.createElement("img");
+                                                    badgeImg.src = `https://cdn.yapper.shop/assets/badges/${badge.id}.png`;
+                                                    badgeImg.setAttribute('data-tooltip', badge.name);
+                                                    badgeImg.classList.add("badge");
+                                                    badgeImg.classList.add("has-tooltip");
+
+                                                    if (badge.support) {
+                                                        const badgeLink = document.createElement("a");
+                                                        badgeLink.href = badge.support;
+                                                        badgeLink.target = "_blank";
+                                                        badgeLink.rel = "noopener noreferrer";
+                                                        badgeLink.appendChild(badgeImg);
+                                                        userBadgesInnerElement.appendChild(badgeLink);
+                                                    } else {
+                                                        userBadgesInnerElement.appendChild(badgeImg);
+                                                    }
+                                                });
+                                            } else {
+                                                userBadgesElement.remove();
+                                            }
+
+
+                                            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'user_banner_on_reviews')?.treatment === 1 && review.user.banner) {
+                                                let bannerPreview = document.createElement("img");
+
+                                                bannerPreview.src = `https://cdn.discordapp.com/banners/${review.user.id}/${review.user.banner}.png?size=300`;
+                                                bannerPreview.addEventListener("error", function () {
+                                                    this.remove();
+                                                });
+    
+                                                reviewDiv.querySelector('.review-banner-container').appendChild(bannerPreview);
+                                            }
+    
+                                            if (review.user.collectibles?.nameplate) {
+                                                if (review.user.collectibles.nameplate.sa_override_src) {
+                                                    let nameplatePreview = document.createElement("img");
+
+                                                    nameplatePreview.src = review.user.collectibles.nameplate.sa_override_src;
+    
+                                                    reviewDiv.querySelector('.review-nameplate-container').appendChild(nameplatePreview);
+                                                } else {
+                                                    let nameplatePreview = document.createElement("video");
+
+                                                    nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${review.user.collectibles.nameplate.asset}asset.webm`;
+                                                    nameplatePreview.disablePictureInPicture = true;
+                                                    nameplatePreview.muted = true;
+                                                    nameplatePreview.loop = true;
+                                                    nameplatePreview.playsInline = true;
+    
+                                                    reviewDiv.addEventListener("mouseenter", () => {
+                                                        nameplatePreview.play();
+                                                    });
+                                                    reviewDiv.addEventListener("mouseleave", () => {
+                                                        nameplatePreview.pause();
+                                                    });
+
+                                                    const bgcolor = nameplate_palettes[review.user.collectibles.nameplate.palette].darkBackground;
+    
+                                                    reviewDiv.querySelector('.review-nameplate-container').style.backgroundImage = `linear-gradient(90deg, #00000000 0%, ${bgcolor} 200%)`;
+    
+                                                    reviewDiv.querySelector('.review-nameplate-container').appendChild(nameplatePreview);
+                                                }
+                                            }
+    
+                                            if (review.rating != null) {
+                                                for (let i = 0; i < 5; i++) {
+                                                    let starRate = document.createElement("div");
+        
+                                                    starRate.innerHTML = `
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <g clip-path="url(#clip0_58_258)">
+                                                            <path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="#575757"></path>
+                                                            </g>
+                                                            <defs>
+                                                            <clipPath id="clip0_58_258">
+                                                            <rect width="24" height="24" fill="white"></rect>
+                                                            </clipPath>
+                                                            </defs>
+                                                        </svg>
+                                                    `;
+        
+                                                    reviewDiv.querySelector('.possible-stars').appendChild(starRate);
+                                                }
+        
+                                                for (let i = 0; i < review.rating; i++) {
+                                                    let starRate = document.createElement("div");
+        
+                                                    starRate.innerHTML = `
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <g clip-path="url(#clip0_58_258)">
+                                                            <path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="#FFEC3E"></path>
+                                                            </g>
+                                                            <defs>
+                                                            <clipPath id="clip0_58_258">
+                                                            <rect width="24" height="24" fill="white"></rect>
+                                                            </clipPath>
+                                                            </defs>
+                                                        </svg>
+                                                    `;
+        
+                                                    reviewDiv.querySelector('.star-rating').appendChild(starRate);
+                                                }
+                                            }
+    
+                                            reviewDiv.querySelector('.inv').textContent = review.user.global_name ? review.user.global_name : review.user.username;
+                                            reviewDiv.querySelector('.review-user-display-name').textContent = review.user.global_name ? review.user.global_name : review.user.username;
+                                            reviewDiv.querySelector('.review-text-content').textContent = review.text;
+                                        }
                 
                                         reviewsContainer.appendChild(reviewDiv);
                                     });
@@ -3576,6 +3615,8 @@ async function loadSite() {
                                         const timerInterval = setInterval(updateTimer, 1000);
                                         updateTimer();
                                     }
+
+                                    modalInner.querySelector('.category-modal-xp-rewards-container').appendChild(promoCard)
                                 } else if (promo.category_data?.sku_id === categoryData.sku_id && promo.already_claimed === true) {
 
                                     promoCard.classList.add('category-modal-xp-reward');
@@ -3628,9 +3669,9 @@ async function loadSite() {
                                         const timerInterval = setInterval(updateTimer, 1000);
                                         updateTimer();
                                     }
-                                }
 
-                                modalInner.querySelector('.category-modal-xp-rewards-container').appendChild(promoCard)
+                                    modalInner.querySelector('.category-modal-xp-rewards-container').appendChild(promoCard)
+                                }
                             });
                         } else {
                             modalInner.innerHTML = ``;
