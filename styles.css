@@ -553,7 +553,7 @@ body:has(.notice) .container {
 }
 
 .mobile .content {
-    padding-bottom: 50px;
+    padding-bottom: 200px;
 }
 
 .content h2 {
@@ -2090,6 +2090,10 @@ body:has(.notice) .container {
     padding: 15px;
     transform: translateY(0px);
     opacity: 1;
+}
+
+.category-modal-quick-info-container .block:has(.there-are-no-prices-here-silly) {
+    flex-direction: column;
 }
 
 .category-modal-quick-info-container .animated {
