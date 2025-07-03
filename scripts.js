@@ -595,7 +595,7 @@ async function loadSite() {
 
         xpBalance.innerHTML = `
             <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="#D9D9D9"/>
+                <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"/>
             </svg>                            
             <p id="my-xp-balance">${usersXPBalance.toLocaleString()}</p>
         `;
@@ -3250,24 +3250,15 @@ async function loadSite() {
                                                         <img class="review-avatar-decoration" src="https://cdn.yapper.shop/assets/31.png">
                                                     </div>
 
-                                                    <div class="review-user-display-name-container">
-                                                        <p class="inv"></p>
-                                                        <p class="review-user-display-name"></p>
-                                                    </div>
+                                                    <p class="review-user-display-name"></p>
 
                                                     <div class="review-system-tag-container has-tooltip" data-tooltip="Official Shop Archives Message">
-                                                        <p class="inv">SYSTEM</p>
                                                         <p class="review-system-tag">SYSTEM</p>
                                                     </div>
 
-                                                    <div class="review-server-tag-container-container">
-                                                        <div class="review-server-tag-container">
-                                                            <img class="server-tag-img" src="https://cdn.yapper.shop/assets/31.png">
-                                                            <div class="server-tag-title-container">
-                                                                <p class="server-tag-title"></p>
-                                                                <p class="inv"></p>
-                                                            </div>
-                                                        </div>
+                                                    <div class="review-server-tag-container">
+                                                        <img class="server-tag-img" src="https://cdn.yapper.shop/assets/31.png">
+                                                        <p class="server-tag-title"></p>
                                                     </div>
 
                                                     <div class="review-badges-container-container">
@@ -3388,14 +3379,13 @@ async function loadSite() {
     
                                             }
     
-                                            const serverTagAsset = reviewDiv.querySelector('.review-server-tag-container-container');
+                                            const serverTagAsset = reviewDiv.querySelector('.review-server-tag-container');
     
                                             if (review.user.primary_guild) {
     
                                                 serverTagAsset.querySelector('.server-tag-img').src = `https://cdn.discordapp.com/clan-badges/${review.user.primary_guild.identity_guild_id}/${review.user.primary_guild.badge}.png?size=24`;
     
                                                 serverTagAsset.querySelector('.server-tag-title').textContent = review.user.primary_guild.tag;
-                                                serverTagAsset.querySelector('.inv').textContent = review.user.primary_guild.tag;
     
                                             } else {
                                                 serverTagAsset.remove();
@@ -3510,7 +3500,6 @@ async function loadSite() {
                                                 }
                                             }
     
-                                            reviewDiv.querySelector('.inv').textContent = review.user.global_name ? review.user.global_name : review.user.username;
                                             reviewDiv.querySelector('.review-user-display-name').textContent = review.user.global_name ? review.user.global_name : review.user.username;
                                             reviewDiv.querySelector('.review-text-content').textContent = review.text;
                                         }
@@ -3561,10 +3550,11 @@ async function loadSite() {
                                         <h3>Claim your free ${promo.xp_reward.toLocaleString()} XP!</h3>
                                         <p class="desc">You have ${promo.xp_reward.toLocaleString()} XP waiting for you.</p>
                                         <button id="claim-xp-button">
-                                            Claim ${promo.xp_reward.toLocaleString()} XP
+                                            Claim
                                             <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
                                             </svg>
+                                            ${promo.xp_reward.toLocaleString()}
                                         </button>
                                     `;
 
@@ -4076,10 +4066,11 @@ async function loadSite() {
                     <p>You have ${data.xp_reward.toLocaleString()} XP waiting for you.</p>
                     <p class="redeem-xp-error-output"></p>
                     <button class="claim-xp-button" id="claim-xp-button">
-                        Claim ${data.xp_reward.toLocaleString()} XP
+                        Claim
                         <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
                         </svg>
+                        ${data.xp_reward.toLocaleString()}
                     </button>
                 </div>
 
@@ -4250,21 +4241,16 @@ async function loadSite() {
                         <div class="xp-purchase-modal-details-container">
                             <p>${data.name}</p>
                         </div>
-                        <div class="disclaimer">
-                            <p>By clicking 'Claim for ${data.xp_price.toLocaleString()} XP', you agree to the <a class="link" href="https://yapper.shop/legal-information/?page=tos">Digital Currency Terms.</a></p>
-                        </div>
-                        <div class="disclaimer">
-                            <p>Claiming this item means you have a limited licence to use this item on Shop Archives. This item is non-refundable.</p>
-                        </div>
                         <div class="disclaimer2">
                             <p>${disclaimer2}</p>
                         </div>
                         <p class="redeem-xp-error-output"></p>
                         <button class="claim-xp-perk-button" id="claim-xp-button">
-                            Claim for ${data.xp_price.toLocaleString()} XP
+                            Claim for
                             <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
                             </svg>
+                            ${data.xp_price.toLocaleString()}
                         </button>
                     </div>
                 </div>
@@ -5084,8 +5070,8 @@ async function loadSite() {
                 <div class="modalv3-content-card-1">
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">Day-Month-Year Date Format</div>
-                            <div class="setting-description">Changes date formats to DD/MM/YYYY instead of MM/DD/YY</div>
+                            <p class="setting-title">Day-Month-Year Date Format</p>
+                            <p class="setting-description">Changes date formats to DD/MM/YYYY instead of MM/DD/YY</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="non_us_timezone_toggle">
@@ -5095,8 +5081,8 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">Profile Effects Cut Fix</div>
-                            <div class="setting-description">Fixes some profile effects being cut off at the bottom</div>
+                            <p class="setting-title">Profile Effects Cut Fix</p>
+                            <p class="setting-description">Fixes some profile effects being cut off at the bottom</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="profile_effect_tweaks_fix_toggle">
@@ -5106,8 +5092,8 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">Category page limit</div>
-                            <div class="setting-description">How many categories are shown on a page. Large values may cause lag on low-end devices.</div>
+                            <p class="setting-title">Category page limit</p>
+                            <p class="setting-description">How many categories are shown on a page. Large values may cause lag on low-end devices.</p>
                         </div>
                         <div class="toggle-container">
                             <select id="category_page_limit_select" class="modalv3-experiment-treatment-container">
@@ -5238,7 +5224,7 @@ async function loadSite() {
 
                 <div class="xp-balance-modalv3-container">
                     <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="#D9D9D9"></path>
+                        <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
                     </svg>                            
                     <p id="my-xp-balance-modalv3">${currentUserData.xp_balance.toLocaleString()}</p>
                 </div>
@@ -5304,10 +5290,11 @@ async function loadSite() {
                             <h3>${promo.name}</h3>
                             <p class="desc">You have ${promo.xp_reward.toLocaleString()} XP waiting for you.</p>
                             <button id="claim-xp-button">
-                                Claim ${promo.xp_reward.toLocaleString()} XP
+                                Claim
                                 <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
                                 </svg>
+                                ${promo.xp_reward.toLocaleString()}
                             </button>
                         `;
 
@@ -5434,7 +5421,7 @@ async function loadSite() {
 
                 <div class="xp-balance-modalv3-container">
                     <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="#D9D9D9"></path>
+                        <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
                     </svg>                            
                     <p id="my-xp-balance-modalv3">${currentUserData.xp_balance.toLocaleString()}</p>
                 </div>
@@ -5442,31 +5429,23 @@ async function loadSite() {
                 <hr class="inv">
 
                 <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Featured Perks</h2>
-                    <p class="modalv3-content-card-summary">Top picks from us we think you might like.</p>
+                    <h2 class="modalv3-content-card-header">Browse XP Shop</h2>
+                    <p class="modalv3-content-card-summary">The XP shop is where you can claim perks that enhance your experience when you use Shop Archives!</p>
 
                     <div class="modalv3-xp-featured-cards-container">
-                        <div class="xp-featured-card">
+                        <div class="xp-featured-card loading">
                             <div class="xp-card-button-pad"></div>
                             <div class="xp-card-button-pad"></div>
                         </div>
-                        <div class="xp-featured-card">
+                        <div class="xp-featured-card loading">
                             <div class="xp-card-button-pad"></div>
                             <div class="xp-card-button-pad"></div>
                         </div>
-                    </div>
-                </div>
-
-                <hr>
-
-                <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Additional Perks</h2>
-                    <div class="modalv3-xp-shop-cards-container">
-                        <div class="xp-featured-card">
+                        <div class="xp-featured-card loading">
                             <div class="xp-card-button-pad"></div>
                             <div class="xp-card-button-pad"></div>
                         </div>
-                        <div class="xp-featured-card">
+                        <div class="xp-featured-card loading">
                             <div class="xp-card-button-pad"></div>
                             <div class="xp-card-button-pad"></div>
                         </div>
@@ -5483,7 +5462,6 @@ async function loadSite() {
 
 
             const featuredXpOutput = tabPageOutput.querySelector('.modalv3-xp-featured-cards-container');
-            const shopXpOutput = tabPageOutput.querySelector('.modalv3-xp-shop-cards-container');
 
             loadXpShopData();
 
@@ -5502,29 +5480,40 @@ async function loadSite() {
 
             function renderXpShop(data) {
                 featuredXpOutput.innerHTML = ``;
-                shopXpOutput.innerHTML = ``;
 
-                function renderXpItemCard(xpItem, type) {
+                function renderXpItemCard(xpItem) {
                     let xpCard = document.createElement("div");
 
-                    xpCard.classList.add('xp-featured-card')
+                    xpCard.classList.add('xp-featured-card');
 
                     xpCard.innerHTML = `
-                        <h3>${xpItem.name}</h3>
-                        <p>${xpItem.summary}</p>
-                        <div class="xp-card-button-pad"></div>
+                        <div class="xp-card-preview">
+                            <div class="section-1">
+                                <div class="avatar-container">
+                                    <div class="avatar" style="background-image: url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128);"></div>
+                                </div>
+                                <p>${currentUserData.global_name ? currentUserData.global_name : currentUserData.username}</p>
+                            </div>
+                            <div class="section-2">
+                                <div></div>
+                                <div></div>
+                            </div>
+                        </div>
                         <div class="xp-card-bottom">
-                            <h3 class="xp-already-claimed-text hidden">Already Claimed</h3>
-                            <button id="claim-item-for-xp-button">
-                                Claim for ${xpItem.price} XP
-                                <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
-                                </svg>
-                            </button>
+                            <h3>${xpItem.name}</h3>
+                            <p>${xpItem.summary}</p>
+                        </div>
+                        <h2 class="inv">XP</h2>
+                        <div class="xp-card-price-container">
+                            <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
+                            </svg>
+                            <p>${xpItem.price}</p>
                         </div>
                     `;
-                    const button = xpCard.querySelector('#claim-item-for-xp-button');
-                    const alreadyClaimedText = xpCard.querySelector('.xp-already-claimed-text');
+                    xpCard.classList.add('clickable');
+                    const button = xpCard;
+                    const alreadyClaimedText = xpCard.querySelector('.xp-card-price-container');
 
                     let alreadyClaimed = null;
                     usersXPInventoryCache.forEach(claimed => {
@@ -5533,54 +5522,164 @@ async function loadSite() {
                         }
                     });
 
+                    if (xpItem.id === "2") {
+                        xpCard.querySelector('.xp-card-preview').innerHTML = `
+                            <div class="section-1">
+                                <div class="avatar-container">
+                                    <div class="avatar" style="background-image: url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128);"></div>
+                                </div>
+                                <p>${currentUserData.global_name ? currentUserData.global_name : currentUserData.username}</p>
+                                <div class="review-server-tag-container">
+                                    <img class="server-tag-img" src="https://cdn.yapper.shop/assets/31.png">
+                                    <p class="server-tag-title"></p>
+                                </div>
+                            </div>
+                            <div class="section-2">
+                                <div></div>
+                                <div></div>
+                            </div>
+                        `;
+                        const serverTagAsset = xpCard.querySelector('.review-server-tag-container');
+    
+                        if (currentUserData.primary_guild) {
+    
+                            serverTagAsset.querySelector('.server-tag-img').src = `https://cdn.discordapp.com/clan-badges/${currentUserData.primary_guild.identity_guild_id}/${currentUserData.primary_guild.badge}.png?size=24`;
+    
+                            serverTagAsset.querySelector('.server-tag-title').textContent = currentUserData.primary_guild.tag;
+    
+                        } else {
+                            serverTagAsset.remove();
+                        }
+                    } else if (xpItem.id === "4") {
+                        xpCard.querySelector('.xp-card-preview').innerHTML = `
+                            <div class="section-1">
+                                <div class="avatar-container">
+                                    <div class="avatar" style="background-image: url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128);"></div>
+                                </div>
+                                <p>${currentUserData.global_name ? currentUserData.global_name : currentUserData.username}</p>
+                            </div>
+                            <div class="section-2">
+                                <div></div>
+                                <div></div>
+                            </div>
+                            <div class="section-3">
+                                <div></div>
+                                <div></div>
+                            </div>
+                        `;
+                    } else if (currentUserData.avatar_decoration_data && xpItem.id === "5") {
+                        xpCard.querySelector('.xp-card-preview').innerHTML = `
+                            <div class="section-1">
+                                <div class="avatar-container">
+                                    <div class="avatar" style="background-image: url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128);"></div>
+                                    <img class="avatar-decoration" src="https://cdn.discordapp.com/avatar-decoration-presets/${currentUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=false">
+                                </div>
+                                <p>${currentUserData.global_name ? currentUserData.global_name : currentUserData.username}</p>
+                            </div>
+                            <div class="section-2">
+                                <div></div>
+                                <div></div>
+                            </div>
+                        `;
+                        const decorationPreview = xpCard.querySelector('.avatar-decoration')
+                        xpCard.addEventListener("mouseenter", () => {
+                            decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${currentUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=true`;
+                        });
+                        xpCard.addEventListener("mouseleave", () => {
+                            decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${currentUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=false`;
+                        });
+                    } else if (currentUserData.collectibles && xpItem.id === "19") {
+                        xpCard.querySelector('.xp-card-preview').innerHTML = `
+                            <div class="xp-card-nameplate-container"></div>
+                            <div class="section-1">
+                                <div class="avatar-container">
+                                    <div class="avatar" style="background-image: url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128);"></div>
+                                </div>
+                                <p>${currentUserData.global_name ? currentUserData.global_name : currentUserData.username}</p>
+                            </div>
+                            <div class="section-2">
+                                <div></div>
+                                <div></div>
+                            </div>
+                        `;
+                        if (currentUserData.collectibles.nameplate.sa_override_src) {
+                            let nameplatePreview = document.createElement("img");
+
+                            nameplatePreview.src = currentUserData.collectibles.nameplate.sa_override_src;
+    
+                            xpCard.querySelector('.xp-card-nameplate-container').appendChild(nameplatePreview);
+                        } else {
+                            let nameplatePreview = document.createElement("video");
+
+                            nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${currentUserData.collectibles.nameplate.asset}asset.webm`;
+                            nameplatePreview.disablePictureInPicture = true;
+                            nameplatePreview.muted = true;
+                            nameplatePreview.loop = true;
+                            nameplatePreview.playsInline = true;
+    
+                            xpCard.addEventListener("mouseenter", () => {
+                                nameplatePreview.play();
+                            });
+                            xpCard.addEventListener("mouseleave", () => {
+                                nameplatePreview.pause();
+                            });
+
+                            const bgcolor = nameplate_palettes[currentUserData.collectibles.nameplate.palette].darkBackground;
+    
+                            xpCard.querySelector('.xp-card-nameplate-container').style.backgroundImage = `linear-gradient(90deg, #00000000 0%, ${bgcolor} 200%)`;
+    
+                            xpCard.querySelector('.xp-card-nameplate-container').appendChild(nameplatePreview);
+                        }
+                    }
+
                     if (!alreadyClaimed) {
                         if (!currentUserData.collectibles && xpItem.id === "19") {
                             button.disabled = true;
-                            button.innerHTML = `
-                                Unavailable
-                            `;
+                            alreadyClaimedText.innerHTML = `<p>Unavailable</p>`;
                             button.classList.add('has-tooltip');
                             button.setAttribute('data-tooltip', 'You don\'t have a Nameplate on your profile');
+                            xpCard.classList.remove('clickable');
                         } else if (!currentUserData.primary_guild && xpItem.id === "2") {
                             button.disabled = true;
-                            button.innerHTML = `
-                                Unavailable
-                            `;
+                            alreadyClaimedText.innerHTML = `<p>Unavailable</p>`;
                             button.classList.add('has-tooltip');
                             button.setAttribute('data-tooltip', 'You don\'t have a Server Tag on your profile');
+                            xpCard.classList.remove('clickable');
                         } else if (!currentUserData.avatar_decoration_data && xpItem.id === "5") {
                             button.disabled = true;
-                            button.innerHTML = `
-                                Unavailable
-                            `;
+                            alreadyClaimedText.innerHTML = `<p>Unavailable</p>`;
                             button.classList.add('has-tooltip');
                             button.setAttribute('data-tooltip', 'You don\'t have an Avatar Decoration on your profile');
+                            xpCard.classList.remove('clickable');
                         } else if (xpItem.price > currentUserData.xp_balance) {
                             button.disabled = true;
                             button.classList.add('has-tooltip');
                             button.setAttribute('data-tooltip', 'Insufficient XP');
+                            xpCard.classList.remove('clickable');
                         } else {
                             button.addEventListener('click', () => {
                                 openClaimablePurchaseModal(xpItem.id);
                             });
                         }
                     } else {
-                        alreadyClaimedText.classList.remove('hidden');
-                        button.classList.add('hidden');
+                        alreadyClaimedText.innerHTML = `
+                            <svg viewBox="0 0 20 20" fill="none">
+                                <path fill="currentColor" d="M7.89561 14.8538L6.30462 13.2629L14.3099 5.25755L15.9009 6.84854L7.89561 14.8538Z"></path>
+                                <path fill="currentColor" d="M4.08643 11.0903L5.67742 9.49929L9.4485 13.2704L7.85751 14.8614L4.08643 11.0903Z"></path>
+                            </svg>
+                            <p>Perk Active</p>
+                        `;
+                        xpCard.classList.remove('clickable');
                     }
 
-                    if (type === "featured") {
-                        featuredXpOutput.appendChild(xpCard);
-                    } else if (type === "shop") {
-                        shopXpOutput.appendChild(xpCard);
-                    }
+                    featuredXpOutput.appendChild(xpCard);
                 }
 
                 data.featured.forEach(xpItem => {
-                    renderXpItemCard(xpItem, "featured");
+                    renderXpItemCard(xpItem);
                 });
                 data.shop.forEach(xpItem => {
-                    renderXpItemCard(xpItem, "shop");
+                    renderXpItemCard(xpItem);
                 });
             }
 
@@ -5749,8 +5848,8 @@ async function loadSite() {
                     <h2>Devtools</h2>
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">Shop: Force Leaks</div>
-                            <div class="setting-description">Overrides the leaks endpoint with client side dummy data (requires restart).</div>
+                            <p class="setting-title">Shop: Force Leaks</p>
+                            <p class="setting-description">Overrides the leaks endpoint with client side dummy data (requires restart).</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="staff_force_leaks_dummy_toggle">
@@ -5760,8 +5859,8 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">Shop: Force Show Reviews</div>
-                            <div class="setting-description">Allows you to view the reviews for a category even if its reviews are disabled.</div>
+                            <p class="setting-title">Shop: Force Show Reviews</p>
+                            <p class="setting-description">Allows you to view the reviews for a category even if its reviews are disabled.</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="staff_force_viewable_reviews_tab_toggle">
@@ -5771,8 +5870,8 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">Simulate: Lite Ban</div>
-                            <div class="setting-description">Simulate the user having ban_type 1.</div>
+                            <p class="setting-title">Simulate: Lite Ban</p>
+                            <p class="setting-description">Simulate the user having ban_type 1.</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="staff_simulate_ban_type_1_toggle">
@@ -5782,8 +5881,8 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">Simulate: Medium Ban</div>
-                            <div class="setting-description">Simulate the user having ban_type 2.</div>
+                            <p class="setting-title">Simulate: Medium Ban</p>
+                            <p class="setting-description">Simulate the user having ban_type 2.</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="staff_simulate_ban_type_2_toggle">
@@ -5793,8 +5892,8 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">Simulate: Guidelines Block</div>
-                            <div class="setting-description">Simulate the user having a username that doesn't follow the guidelines.</div>
+                            <p class="setting-title">Simulate: Guidelines Block</p>
+                            <p class="setting-description">Simulate the user having a username that doesn't follow the guidelines.</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="staff_simulate_guidelines_block_toggle">
@@ -5804,8 +5903,8 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">XP: Unpublished Xp Events</div>
-                            <div class="setting-description">Allows you to see unpublished or expired XP events.</div>
+                            <p class="setting-title">XP: Unpublished Xp Events</p>
+                            <p class="setting-description">Allows you to see unpublished or expired XP events.</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="staff_show_unpublished_xp_events_toggle">
@@ -5815,8 +5914,8 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">XP: Unpublished Xp Shop</div>
-                            <div class="setting-description">Allows you to see unpublished XP shop items.</div>
+                            <p class="setting-title">XP: Unpublished Xp Shop</p>
+                            <p class="setting-description">Allows you to see unpublished XP shop items.</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="staff_show_unpublished_xp_shop_toggle">
@@ -5826,8 +5925,8 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
-                            <div class="setting-title">XP: Bypass Category Requirement</div>
-                            <div class="setting-description">Allows you to claim category only events from the events tab.</div>
+                            <p class="setting-title">XP: Bypass Category Requirement</p>
+                            <p class="setting-description">Allows you to claim category only events from the events tab.</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="staff_allow_category_only_event_claiming_in_events_tab_toggle">
