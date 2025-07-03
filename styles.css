@@ -2331,7 +2331,7 @@ body:has(.notice) .container {
 .review-text-content {
     position: relative;
     font-family: gg sans five;
-    margin: 5px;
+    padding-left: 5px;
     z-index: 2;
     word-break: break-word;
     overflow-wrap: break-word;

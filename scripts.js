@@ -3329,6 +3329,18 @@ async function loadSite() {
                                                 reviewDiv.querySelector(".shop-modal-review-moderation-buttons").appendChild(deleteReviewIcon);
                                             }
 
+                                            if (review.types.pinned === true) {
+                                                let pinnedReviewIcon = document.createElement("div");
+
+                                                pinnedReviewIcon.innerHTML = `
+                                                    <svg class="modalv2_top_icon has-tooltip" data-tooltip="This review is pinned" x="0" y="0" class="icon__9293f" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+                                                        <path fill="currentColor" d="M19.38 11.38a3 3 0 0 0 4.24 0l.03-.03a.5.5 0 0 0 0-.7L13.35.35a.5.5 0 0 0-.7 0l-.03.03a3 3 0 0 0 0 4.24L13 5l-2.92 2.92-3.65-.34a2 2 0 0 0-1.6.58l-.62.63a1 1 0 0 0 0 1.42l9.58 9.58a1 1 0 0 0 1.42 0l.63-.63a2 2 0 0 0 .58-1.6l-.34-3.64L19 11l.38.38ZM9.07 17.07a.5.5 0 0 1-.08.77l-5.15 3.43a.5.5 0 0 1-.63-.06l-.42-.42a.5.5 0 0 1-.06-.63L6.16 15a.5.5 0 0 1 .77-.08l2.14 2.14Z" class=""></path>
+                                                    </svg>
+                                                `;
+
+                                                reviewDiv.querySelector(".shop-modal-review-moderation-buttons").appendChild(pinnedReviewIcon);
+                                            }
+
                                             if (review.types.flag != 0 && review.user.id === currentUserData?.id) {
                                                 let hiddenReviewIcon = document.createElement("div");
 
@@ -3503,8 +3515,12 @@ async function loadSite() {
                                             reviewDiv.querySelector('.review-user-display-name').textContent = review.user.global_name ? review.user.global_name : review.user.username;
                                             reviewDiv.querySelector('.review-text-content').textContent = review.text;
                                         }
-                
-                                        reviewsContainer.appendChild(reviewDiv);
+                                        
+                                        if (review.types.pinned === true) {
+                                            reviewsContainer.insertBefore(reviewDiv, reviewsContainer.firstChild);
+                                        } else {
+                                            reviewsContainer.appendChild(reviewDiv);
+                                        }
                                     });
                                 } else {
                                     let reviewDiv = document.createElement("div");
@@ -5512,7 +5528,6 @@ async function loadSite() {
                         </div>
                     `;
                     xpCard.classList.add('clickable');
-                    const button = xpCard;
                     const alreadyClaimedText = xpCard.querySelector('.xp-card-price-container');
 
                     let alreadyClaimed = null;
@@ -5634,30 +5649,31 @@ async function loadSite() {
 
                     if (!alreadyClaimed) {
                         if (!currentUserData.collectibles && xpItem.id === "19") {
-                            button.disabled = true;
-                            alreadyClaimedText.innerHTML = `<p>Unavailable</p>`;
-                            button.classList.add('has-tooltip');
-                            button.setAttribute('data-tooltip', 'You don\'t have a Nameplate on your profile');
+                            xpCard.style.cursor = 'not-allowed';
+                            alreadyClaimedText.style.color = 'var(--text-tertiary)';
+                            alreadyClaimedText.classList.add('has-tooltip');
+                            alreadyClaimedText.setAttribute('data-tooltip', 'You don\'t have a Nameplate on your profile');
                             xpCard.classList.remove('clickable');
                         } else if (!currentUserData.primary_guild && xpItem.id === "2") {
-                            button.disabled = true;
-                            alreadyClaimedText.innerHTML = `<p>Unavailable</p>`;
-                            button.classList.add('has-tooltip');
-                            button.setAttribute('data-tooltip', 'You don\'t have a Server Tag on your profile');
+                            xpCard.style.cursor = 'not-allowed';
+                            alreadyClaimedText.style.color = 'var(--text-tertiary)';
+                            alreadyClaimedText.classList.add('has-tooltip');
+                            alreadyClaimedText.setAttribute('data-tooltip', 'You don\'t have a Server Tag on your profile');
                             xpCard.classList.remove('clickable');
                         } else if (!currentUserData.avatar_decoration_data && xpItem.id === "5") {
-                            button.disabled = true;
-                            alreadyClaimedText.innerHTML = `<p>Unavailable</p>`;
-                            button.classList.add('has-tooltip');
-                            button.setAttribute('data-tooltip', 'You don\'t have an Avatar Decoration on your profile');
+                            xpCard.style.cursor = 'not-allowed';
+                            alreadyClaimedText.style.color = 'var(--text-tertiary)';
+                            alreadyClaimedText.classList.add('has-tooltip');
+                            alreadyClaimedText.setAttribute('data-tooltip', 'You don\'t have an Avatar Decoration on your profile');
                             xpCard.classList.remove('clickable');
                         } else if (xpItem.price > currentUserData.xp_balance) {
-                            button.disabled = true;
-                            button.classList.add('has-tooltip');
-                            button.setAttribute('data-tooltip', 'Insufficient XP');
+                            xpCard.style.cursor = 'not-allowed';
+                            alreadyClaimedText.style.color = 'var(--text-tertiary)';
+                            alreadyClaimedText.classList.add('has-tooltip');
+                            alreadyClaimedText.setAttribute('data-tooltip', 'Insufficient XP');
                             xpCard.classList.remove('clickable');
                         } else {
-                            button.addEventListener('click', () => {
+                            xpCard.addEventListener('click', () => {
                                 openClaimablePurchaseModal(xpItem.id);
                             });
                         }
