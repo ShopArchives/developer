@@ -4579,7 +4579,12 @@ async function loadSite() {
                 if (settingsStore.staff_show_test_categories_on_misc_page === 1) {
                     apiUrl.searchParams.append("include-test-categories", "true");
                 }
-                const rawData = await fetch(apiUrl);
+                const rawData = await fetch(apiUrl, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": localStorage.token
+                    }
+                });
 
                 if (!rawData.ok) {
                     renderShopLoadingError(rawData.status, output);
@@ -6080,6 +6085,7 @@ async function loadSite() {
             devtoolsContainer.querySelector('#staff_show_test_categories_on_misc_page_toggle').addEventListener("click", () => {
                 toggleSetting('staff_show_test_categories_on_misc_page');
                 updateToggleStates();
+                loadPage(currentPageCache, true);
             });
 
             devtoolsContainer.querySelector('#staff_simulate_ban_type_1_toggle').addEventListener("click", () => {
