@@ -1,5 +1,5 @@
 
-const appVersion = "7.2.2";
+const appVersion = "7.2.3";
 const appType = "Dev";
 
 const endpoints = {
@@ -434,7 +434,8 @@ const settings = {
     "staff_simulate_guidelines_block": 0,
     "staff_show_unpublished_xp_events": 0,
     "staff_show_unpublished_xp_shop": 0,
-    "staff_allow_category_only_event_claiming_in_events_tab": 0
+    "staff_allow_category_only_event_claiming_in_events_tab": 0,
+    "staff_show_test_categories_on_misc_page": 0
 };
 
 const leaks_dummy_data = {
