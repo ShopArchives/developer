@@ -544,6 +544,11 @@ body:has(.notice) .container {
     background-image: linear-gradient(90deg, rgba(0, 0, 0, 0) 40.75%, #E2373E 158.26%);;
 }
 
+hr {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    border: 1px solid var(--modalv3-hr-color);
+}
 
 .content {
     flex: 1;
@@ -2043,11 +2048,17 @@ body:has(.notice) .container {
 }
 
 .category-modal-bottom-container {
-    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
     width: 100%;
-    padding: 20px;
-    padding-top: 70px;
-    z-index: 2;
+    height: 90%;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 10px;
+    margin-top: 70px;
+    overflow-y: auto;
+    box-sizing: border-box;
 }
 
 
@@ -2059,10 +2070,6 @@ body:has(.notice) .container {
 
 .category-modal-bottom-container .sku_id.clicked {
     animation: modal-sku-clicked 0.5s;
-}
-
-.category-modal-bottom-container p, .category-modal-bottom-container h1 {
-    width: fit-content;
 }
 
 
@@ -2157,7 +2164,6 @@ body:has(.notice) .container {
     background-color: var(--modal-block-bg);
     border-radius: 5px;
 }
-
 
 
 .category-modal-assets-container {
@@ -2301,6 +2307,11 @@ body:has(.notice) .container {
     border-radius: 50%;
 }
 
+.review-user-container .rawicon svg {
+    height: 20px;
+    width: 20px;
+}
+
 
 
 .review-system-tag {
@@ -2331,7 +2342,6 @@ body:has(.notice) .container {
 .review-text-content {
     position: relative;
     font-family: gg sans five;
-    padding-left: 5px;
     z-index: 2;
     word-break: break-word;
     overflow-wrap: break-word;
@@ -2414,43 +2424,25 @@ body:has(.notice) .container {
 
 .review-nameplate-container video {
     height: 100%;
-    display: block;
-    margin-left: auto;
+    width: 100%;
+    object-fit: cover;
+    object-position: right;
+    position: absolute;
+    right: 0;
+    top: 0;
     mask-image: linear-gradient(to left,#000 50%,rgba(0,0,0,0)100%);
 }
 
 .review-nameplate-container img {
-    position: absolute;
     height: 100%;
+    width: 100%;
+    object-fit: cover;
+    object-position: right;
+    position: absolute;
     right: 0;
+    top: 0;
     mask-image: linear-gradient(to left,#000 50%,rgba(0,0,0,0)100%);
 }
-
-
-
-.review-banner-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 50%;
-    opacity: 0.3;
-    z-index: 1;
-    transition: opacity 0.5s ease;
-
-}
-
-.review-banner-container:has(img) {
-    mask-image: linear-gradient(to right,#000 50%,rgba(0,0,0,0)100%);
-}
-
-.review-banner-container img {
-    position: absolute;
-    height: 100%;
-    left: 0;
-    mask-image: linear-gradient(to right,#000 50%,rgba(0,0,0,0)100%);
-}
-
 
 
 
@@ -3840,7 +3832,6 @@ body:has(.notice) .container {
     opacity: 0.5;
     z-index: 1;
     transition: opacity 0.5s ease;
-
 }
 
 .xp-card-nameplate-container:has(img) {

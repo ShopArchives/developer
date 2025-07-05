@@ -2838,6 +2838,14 @@ async function loadSite() {
                                 } else {
                                     modalInner.querySelector('#average-rating').textContent = average;
                                 }
+
+                                if (average <= 2.5) {
+                                    console.log('nah')
+                                } else if (average >= 2.6 && average <= 3.4) {
+                                    console.log('mid')
+                                } else if (average >= 3.5) {
+                                    console.log('yea')
+                                }
                                   
                             } else {
                                 reviewsTab.classList.add('has-tooltip');
@@ -3090,7 +3098,7 @@ async function loadSite() {
                                         if (currentUserData.user_features.includes("LONGER_REVIEWS")) {
                                             maxLength = 200;
                                             counter.classList.add('has-tooltip');
-                                            counter.setAttribute('data-tooltip', 'Your review length limit is doubled');
+                                            counter.setAttribute('data-tooltip', 'Review length limit extended thanks to XP!');
                                         }
 
                                         function updateCounter() {
@@ -3209,20 +3217,21 @@ async function loadSite() {
                                         let reviewDiv = document.createElement("div");
                                         reviewDiv.classList.add('category-modal-review-container');
                 
-                                        if (review.types.flag != 0 && review.user.id != currentUserData?.id) {
+                                        if (review.types.flag != 0 && review.user.id != currentUserData?.id && settingsStore.reviews_filter_setting === 1) {
                                             reviewDiv.innerHTML = `
                                                 <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                                                     <path fill="currentColor" d="M1.3 21.3a1 1 0 1 0 1.4 1.4l20-20a1 1 0 0 0-1.4-1.4l-20 20ZM3.16 16.05c.18.24.53.26.74.05l.72-.72c.18-.18.2-.45.05-.66a15.7 15.7 0 0 1-1.43-2.52.48.48 0 0 1 0-.4c.4-.9 1.18-2.37 2.37-3.72C7.13 6.38 9.2 5 12 5c.82 0 1.58.12 2.28.33.18.05.38 0 .52-.13l.8-.8c.25-.25.18-.67-.15-.79A9.79 9.79 0 0 0 12 3C4.89 3 1.73 10.11 1.11 11.7a.83.83 0 0 0 0 .6c.25.64.9 2.15 2.05 3.75Z" class=""></path>
                                                     <path fill="currentColor" d="M8.18 10.81c-.13.43.36.65.67.34l2.3-2.3c.31-.31.09-.8-.34-.67a4 4 0 0 0-2.63 2.63ZM12.85 15.15c-.31.31-.09.8.34.67a4.01 4.01 0 0 0 2.63-2.63c.13-.43-.36-.65-.67-.34l-2.3 2.3Z" class=""></path>
                                                     <path fill="currentColor" d="M9.72 18.67a.52.52 0 0 0-.52.13l-.8.8c-.25.25-.18.67.15.79 1.03.38 2.18.61 3.45.61 7.11 0 10.27-7.11 10.89-8.7a.83.83 0 0 0 0-.6c-.25-.64-.9-2.15-2.05-3.75a.49.49 0 0 0-.74-.05l-.72.72a.51.51 0 0 0-.05.66 15.7 15.7 0 0 1 1.43 2.52c.06.13.06.27 0 .4-.4.9-1.18 2.37-2.37 3.72C16.87 17.62 14.8 19 12 19c-.82 0-1.58-.12-2.28-.33Z" class=""></path>
                                                 </svg>
-                                                <p class="review-text-content">This review has been censored due to inappropriate language.</p>
+                                                <p class="review-text-content">This review has been censored due to inappropriate content.</p>
                                                 <div style="flex: 1;"></div>
                                                 <button class="generic-brand-button">
                                                     Show
                                                 </button>
                                             `;
                                             reviewDiv.style.display = 'inline-flex';
+                                            reviewDiv.style.gap = '3px';
                                             reviewDiv.style.alignItems = 'center';
                                             reviewDiv.querySelector('.generic-brand-button').addEventListener("click", function () {
                                                 revealReview();
@@ -3329,47 +3338,104 @@ async function loadSite() {
                                                 reviewDiv.querySelector(".shop-modal-review-moderation-buttons").appendChild(deleteReviewIcon);
                                             }
 
-                                            if (review.types.pinned === true) {
-                                                let pinnedReviewIcon = document.createElement("div");
+                                            if (review.text.length > 100 && JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1) {
+                                                let xpReviewIcon = document.createElement("div");
 
-                                                pinnedReviewIcon.innerHTML = `
-                                                    <svg class="modalv2_top_icon has-tooltip" data-tooltip="This review is pinned" x="0" y="0" class="icon__9293f" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
-                                                        <path fill="currentColor" d="M19.38 11.38a3 3 0 0 0 4.24 0l.03-.03a.5.5 0 0 0 0-.7L13.35.35a.5.5 0 0 0-.7 0l-.03.03a3 3 0 0 0 0 4.24L13 5l-2.92 2.92-3.65-.34a2 2 0 0 0-1.6.58l-.62.63a1 1 0 0 0 0 1.42l9.58 9.58a1 1 0 0 0 1.42 0l.63-.63a2 2 0 0 0 .58-1.6l-.34-3.64L19 11l.38.38ZM9.07 17.07a.5.5 0 0 1-.08.77l-5.15 3.43a.5.5 0 0 1-.63-.06l-.42-.42a.5.5 0 0 1-.06-.63L6.16 15a.5.5 0 0 1 .77-.08l2.14 2.14Z" class=""></path>
+                                                xpReviewIcon.style.height = '20px';
+                                                xpReviewIcon.classList.add('rawicon');
+                                                xpReviewIcon.classList.add('clickable');
+                                                xpReviewIcon.addEventListener("click", function () {
+                                                    modal.classList.remove('show');
+                                                    modal_back.classList.remove('show');
+                                                    setTimeout(() => {
+                                                        modal.remove();
+                                                        modal_back.remove();
+                                                    }, 300);
+                                                    currentOpenModalId = null;
+                                                    removeParams('itemSkuId');
+                                                    setModalv3InnerContent('xp_shop');
+                                                });
+                                                xpReviewIcon.innerHTML = `
+                                                    <svg class="has-tooltip" data-tooltip="This user unlocked extended reviews with an XP Perk!" width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
                                                     </svg>
                                                 `;
 
-                                                reviewDiv.querySelector(".shop-modal-review-moderation-buttons").appendChild(pinnedReviewIcon);
+                                                reviewDiv.querySelector(".review-user-container").appendChild(xpReviewIcon);
                                             }
 
                                             if (review.types.flag != 0 && review.user.id === currentUserData?.id) {
                                                 let hiddenReviewIcon = document.createElement("div");
 
+                                                hiddenReviewIcon.style.height = '20px';
+                                                hiddenReviewIcon.classList.add('rawicon');
                                                 hiddenReviewIcon.innerHTML = `
-                                                    <svg class="modalv2_top_icon has-tooltip" data-tooltip="This review may be hidden to some users" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                                    <svg class="has-tooltip" data-tooltip="This review has been flagged as inappropriate and may be hidden to some users" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                                                         <path fill="currentColor" d="M1.3 21.3a1 1 0 1 0 1.4 1.4l20-20a1 1 0 0 0-1.4-1.4l-20 20ZM3.16 16.05c.18.24.53.26.74.05l.72-.72c.18-.18.2-.45.05-.66a15.7 15.7 0 0 1-1.43-2.52.48.48 0 0 1 0-.4c.4-.9 1.18-2.37 2.37-3.72C7.13 6.38 9.2 5 12 5c.82 0 1.58.12 2.28.33.18.05.38 0 .52-.13l.8-.8c.25-.25.18-.67-.15-.79A9.79 9.79 0 0 0 12 3C4.89 3 1.73 10.11 1.11 11.7a.83.83 0 0 0 0 .6c.25.64.9 2.15 2.05 3.75Z" class=""></path>
                                                         <path fill="currentColor" d="M8.18 10.81c-.13.43.36.65.67.34l2.3-2.3c.31-.31.09-.8-.34-.67a4 4 0 0 0-2.63 2.63ZM12.85 15.15c-.31.31-.09.8.34.67a4.01 4.01 0 0 0 2.63-2.63c.13-.43-.36-.65-.67-.34l-2.3 2.3Z" class=""></path>
                                                         <path fill="currentColor" d="M9.72 18.67a.52.52 0 0 0-.52.13l-.8.8c-.25.25-.18.67.15.79 1.03.38 2.18.61 3.45.61 7.11 0 10.27-7.11 10.89-8.7a.83.83 0 0 0 0-.6c-.25-.64-.9-2.15-2.05-3.75a.49.49 0 0 0-.74-.05l-.72.72a.51.51 0 0 0-.05.66 15.7 15.7 0 0 1 1.43 2.52c.06.13.06.27 0 .4-.4.9-1.18 2.37-2.37 3.72C16.87 17.62 14.8 19 12 19c-.82 0-1.58-.12-2.28-.33Z" class=""></path>
                                                     </svg>
                                                 `;
 
-                                                reviewDiv.querySelector(".shop-modal-review-moderation-buttons").appendChild(hiddenReviewIcon);
+                                                reviewDiv.querySelector(".review-user-container").appendChild(hiddenReviewIcon);
+                                            } else if (review.types.flag != 0) {
+                                                let hiddenReviewIcon = document.createElement("div");
+
+                                                hiddenReviewIcon.style.height = '20px';
+                                                hiddenReviewIcon.classList.add('rawicon');
+                                                hiddenReviewIcon.innerHTML = `
+                                                    <svg class="has-tooltip" data-tooltip="This review has been flagged as inappropriate" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                                        <path fill="currentColor" d="M1.3 21.3a1 1 0 1 0 1.4 1.4l20-20a1 1 0 0 0-1.4-1.4l-20 20ZM3.16 16.05c.18.24.53.26.74.05l.72-.72c.18-.18.2-.45.05-.66a15.7 15.7 0 0 1-1.43-2.52.48.48 0 0 1 0-.4c.4-.9 1.18-2.37 2.37-3.72C7.13 6.38 9.2 5 12 5c.82 0 1.58.12 2.28.33.18.05.38 0 .52-.13l.8-.8c.25-.25.18-.67-.15-.79A9.79 9.79 0 0 0 12 3C4.89 3 1.73 10.11 1.11 11.7a.83.83 0 0 0 0 .6c.25.64.9 2.15 2.05 3.75Z" class=""></path>
+                                                        <path fill="currentColor" d="M8.18 10.81c-.13.43.36.65.67.34l2.3-2.3c.31-.31.09-.8-.34-.67a4 4 0 0 0-2.63 2.63ZM12.85 15.15c-.31.31-.09.8.34.67a4.01 4.01 0 0 0 2.63-2.63c.13-.43-.36-.65-.67-.34l-2.3 2.3Z" class=""></path>
+                                                        <path fill="currentColor" d="M9.72 18.67a.52.52 0 0 0-.52.13l-.8.8c-.25.25-.18.67.15.79 1.03.38 2.18.61 3.45.61 7.11 0 10.27-7.11 10.89-8.7a.83.83 0 0 0 0-.6c-.25-.64-.9-2.15-2.05-3.75a.49.49 0 0 0-.74-.05l-.72.72a.51.51 0 0 0-.05.66 15.7 15.7 0 0 1 1.43 2.52c.06.13.06.27 0 .4-.4.9-1.18 2.37-2.37 3.72C16.87 17.62 14.8 19 12 19c-.82 0-1.58-.12-2.28-.33Z" class=""></path>
+                                                    </svg>
+                                                `;
+
+                                                reviewDiv.querySelector(".review-user-container").appendChild(hiddenReviewIcon);
+                                            }
+
+                                            if (review.types.pinned === true) {
+                                                let pinnedReviewIcon = document.createElement("div");
+
+                                                pinnedReviewIcon.style.height = '20px';
+                                                pinnedReviewIcon.classList.add('rawicon');
+                                                pinnedReviewIcon.innerHTML = `
+                                                    <svg class="has-tooltip" data-tooltip="This review is pinned" x="0" y="0" class="icon__9293f" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+                                                        <path fill="currentColor" d="M19.38 11.38a3 3 0 0 0 4.24 0l.03-.03a.5.5 0 0 0 0-.7L13.35.35a.5.5 0 0 0-.7 0l-.03.03a3 3 0 0 0 0 4.24L13 5l-2.92 2.92-3.65-.34a2 2 0 0 0-1.6.58l-.62.63a1 1 0 0 0 0 1.42l9.58 9.58a1 1 0 0 0 1.42 0l.63-.63a2 2 0 0 0 .58-1.6l-.34-3.64L19 11l.38.38ZM9.07 17.07a.5.5 0 0 1-.08.77l-5.15 3.43a.5.5 0 0 1-.63-.06l-.42-.42a.5.5 0 0 1-.06-.63L6.16 15a.5.5 0 0 1 .77-.08l2.14 2.14Z" class=""></path>
+                                                    </svg>
+                                                `;
+
+                                                reviewDiv.querySelector(".review-user-container").appendChild(pinnedReviewIcon);
                                             }
     
                                             if (review.user.avatar) {
     
                                                 const avatarPreview = reviewDiv.querySelector('.review-avatar');
+                                                const container = reviewDiv.querySelector('.review-avatar-container');
     
-                                                avatarPreview.src = userAvatar = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.webp?size=128';
+                                                avatarPreview.src = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.webp?size=128';
+
+                                                avatarPreview.addEventListener("load", () => {
+                                                    if (avatarPreview.naturalWidth === 0 || avatarPreview.naturalHeight === 0) {
+                                                        container.remove();
+                                                    }
+                                                });
+                                                
+                                                avatarPreview.addEventListener("error", () => {
+                                                    container.remove();
+                                                });
     
                                                 if (review.user.avatar.includes('a_')) {
                                                     reviewDiv.addEventListener("mouseenter", () => {
-                                                        avatarPreview.src = userAvatar = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.gif?size=128';
+                                                        avatarPreview.src = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.gif?size=128';
                                                     });
                                                     reviewDiv.addEventListener("mouseleave", () => {
-                                                        avatarPreview.src = userAvatar = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.webp?size=128';
+                                                        avatarPreview.src = 'https://cdn.discordapp.com/avatars/'+review.user.id+'/'+review.user.avatar+'.webp?size=128';
                                                     });
                                                 }
     
+                                            } else {
+                                                reviewDiv.querySelector('.review-avatar-container').remove();
                                             }
 
                                             if (!review.user.types.system) {
@@ -3427,18 +3493,6 @@ async function loadSite() {
                                                 });
                                             } else {
                                                 userBadgesElement.remove();
-                                            }
-
-
-                                            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'user_banner_on_reviews')?.treatment === 1 && review.user.banner) {
-                                                let bannerPreview = document.createElement("img");
-
-                                                bannerPreview.src = `https://cdn.discordapp.com/banners/${review.user.id}/${review.user.banner}.png?size=300`;
-                                                bannerPreview.addEventListener("error", function () {
-                                                    this.remove();
-                                                });
-    
-                                                reviewDiv.querySelector('.review-banner-container').appendChild(bannerPreview);
                                             }
     
                                             if (review.user.collectibles?.nameplate) {
@@ -4761,6 +4815,19 @@ async function loadSite() {
                         </div>
                     </div>
                 </div>
+                <div class="modalv3-content-card-1">
+                    <div class="setting">
+                        <div class="setting-info">
+                            <p class="setting-title">Child Mode</p>
+                            <p class="setting-description">Automatically censor reviews containing inappropriate content.</p>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="reviews_filter_setting_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             `;
 
             if (currentUserData) {
@@ -4820,6 +4887,37 @@ async function loadSite() {
                     localStorage.removeItem('currentUser');
                     location.reload();
                 });
+
+
+
+                updateToggleStates();
+
+                tabPageOutput.querySelector('#reviews_filter_setting_toggle').addEventListener("click", () => {
+                    toggleSetting('reviews_filter_setting');
+                    updateToggleStates();
+                });
+
+                // Function to toggle a setting (0 or 1)
+                function toggleSetting(key) {
+                    if (key in settingsStore) {
+                        const newValue = settingsStore[key] === 0 ? 1 : 0;
+                        changeSetting(key, newValue);
+                    }
+                }
+
+                // Update toggle visual states
+                function updateToggleStates() {
+                    for (let key in settingsStore) {
+                        const toggle = document.getElementById(key + '_toggle');
+                        if (toggle) {
+                            if (settingsStore[key] === 1) {
+                                toggle.classList.add('active');
+                            } else {
+                                toggle.classList.remove('active');
+                            }
+                        }
+                    }
+                }
 
             } else {
                 tabPageOutput.querySelector('#discord-account-container').innerHTML = `
@@ -5087,7 +5185,7 @@ async function loadSite() {
                     <div class="setting">
                         <div class="setting-info">
                             <p class="setting-title">Day-Month-Year Date Format</p>
-                            <p class="setting-description">Changes date formats to DD/MM/YYYY instead of MM/DD/YY</p>
+                            <p class="setting-description">Changes date formats to DD/MM/YYYY instead of MM/DD/YY.</p>
                         </div>
                         <div class="toggle-container">
                             <div class="toggle" id="non_us_timezone_toggle">
@@ -5097,7 +5195,7 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
-                            <p class="setting-title">Profile Effects Cut Fix</p>
+                            <p class="setting-title">Profile Effects Cut Fix.</p>
                             <p class="setting-description">Fixes some profile effects being cut off at the bottom</p>
                         </div>
                         <div class="toggle-container">
