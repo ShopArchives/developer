@@ -4465,7 +4465,7 @@ async function loadSite() {
     }
     window.setDiscordLeakedCategoriesCache = setDiscordLeakedCategoriesCache;
 
-    async function loadPage(key, firstLoad) {
+    async function loadPage(key, firstLoad, reFetch) {
         document.getElementById('searchInput').value = '';
         document.querySelectorAll('.selected').forEach((el) => {
             el.classList.remove("selected");
@@ -4507,7 +4507,7 @@ async function loadSite() {
         if (currentPageCache === "home") {
             searchInput.classList.add('hidden');   
             const output = document.getElementById('categories-container');
-            if (!discordCollectiblesShopHomeCache) {
+            if (!discordCollectiblesShopHomeCache || discordCollectiblesShopHomeCache && reFetch) {
                 const rawData = await fetch(redneredAPI + endpoints.DISCORD_COLLECTIBLES_HOME);
 
                 if (!rawData.ok) {
@@ -4534,7 +4534,7 @@ async function loadSite() {
         } else if (currentPageCache === "catalog") {
             searchInput.classList.remove('hidden');   
             const output = document.getElementById('categories-container');
-            if (!discordCollectiblesCategoriesCache) {
+            if (!discordCollectiblesCategoriesCache || discordCollectiblesCategoriesCache && reFetch) {
                 const rawData = await fetch(redneredAPI + endpoints.DISCORD_COLLECTIBLES_CATEGORIES);
 
                 if (!rawData.ok) {
@@ -4552,7 +4552,7 @@ async function loadSite() {
         } else if (currentPageCache === "orbs") {
             searchInput.classList.remove('hidden');   
             const output = document.getElementById('categories-container');
-            if (!discordOrbsCategoriesCache) {
+            if (!discordOrbsCategoriesCache || discordOrbsCategoriesCache && reFetch) {
                 const rawData = await fetch(redneredAPI + endpoints.DISCORD_ORBS_CATEGORIES);
 
                 if (!rawData.ok) {
@@ -4570,13 +4570,21 @@ async function loadSite() {
         } else if (currentPageCache === "miscellaneous") {
             searchInput.classList.remove('hidden');
             const output = document.getElementById('categories-container');
-            if (!discordMiscellaneousCategoriesCache) {
+            if (!discordMiscellaneousCategoriesCache || discordMiscellaneousCategoriesCache && reFetch) {
                 url = redneredAPI + endpoints.DISCORD_MISCELLANEOUS_CATEGORIES;
                 apiUrl = new URL(url);
                 if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'published_items_category')?.treatment === 1) {
                     apiUrl.searchParams.append("include-published-items-category", "true");
                 }
-                const rawData = await fetch(apiUrl);
+                if (settingsStore.staff_show_test_categories_on_misc_page === 1) {
+                    apiUrl.searchParams.append("include-test-categories", "true");
+                }
+                const rawData = await fetch(apiUrl, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": localStorage.token
+                    }
+                });
 
                 if (!rawData.ok) {
                     renderShopLoadingError(rawData.status, output);
@@ -5984,6 +5992,17 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
+                            <p class="setting-title">Shop: Test Categories</p>
+                            <p class="setting-description">Shows the test categories in the misc tab.</p>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="staff_show_test_categories_on_misc_page_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-info">
                             <p class="setting-title">Simulate: Lite Ban</p>
                             <p class="setting-description">Simulate the user having ban_type 1.</p>
                         </div>
@@ -6061,6 +6080,13 @@ async function loadSite() {
             devtoolsContainer.querySelector('#staff_force_viewable_reviews_tab_toggle').addEventListener("click", () => {
                 toggleSetting('staff_force_viewable_reviews_tab');
                 updateToggleStates();
+            });
+
+            devtoolsContainer.querySelector('#staff_show_test_categories_on_misc_page_toggle').addEventListener("click", () => {
+                toggleSetting('staff_show_test_categories_on_misc_page');
+                updateToggleStates();
+                console.log(currentPageCache)
+                loadPage(currentPageCache, true, true);
             });
 
             devtoolsContainer.querySelector('#staff_simulate_ban_type_1_toggle').addEventListener("click", () => {
