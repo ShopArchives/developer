@@ -1,5 +1,5 @@
 
-const appVersion = "7.2.3";
+const appVersion = "7.2.4";
 const appType = "Dev";
 
 const endpoints = {
