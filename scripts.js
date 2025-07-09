@@ -648,9 +648,26 @@ async function loadSite() {
             modal.setAttribute('data-clear-param', 'itemSkuId');
             modal.setAttribute('data-clear-cache', 'currentOpenModalId');
 
-            let logoAsset = 'https://cdn.yapper.shop/assets/31.png'
-            if (category.logo != null) {
-                logoAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${category.logo}.png?size=4096`
+            let logoAsset;
+            if (category.full_src && category.logo) {
+                logoAsset = category.logo;
+            }
+            else if (category.logo) {
+                logoAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${category.logo}.png?size=4096`;
+            }
+
+            let pdpAsset;
+            if (category.full_src && category.pdp_bg) {
+                pdpAsset = category.pdp_bg;
+            }
+            else if (category.pdp_bg) {
+                pdpAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${category.pdp_bg}.png?size=4096`;
+            }
+            else if (category.full_src && category.banner) {
+                pdpAsset = category.banner;
+            }
+            else if (category.banner) {
+                pdpAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${category.banner}.png?size=4096`;
             }
 
             modal.innerHTML = `
@@ -719,7 +736,7 @@ async function loadSite() {
                             </div>
                         </div>
                         <div class="modalv2-right">
-                            <img class="modalv2-right-bg-img" src="https://cdn.discordapp.com/app-assets/1096190356233670716/${category.pdp_bg ? category.pdp_bg : category.banner}.png?size=4096"></img>
+                            <img class="modalv2-right-bg-img" src="${pdpAsset}"></img>
                             <img class="modalv2-right-logo-img" src="${logoAsset}"></img>
 
                             <div class="modal2-profile-preview">
@@ -1973,10 +1990,76 @@ async function loadSite() {
                         "Hero Banner Asset (Animated)": categoryData.hero_banner_asset?.animated,
                         "Wide Banner": categoryData.wide_banner,
                         "Hero Logo": categoryData.hero_logo,
-                        "Category Background": categoryData.category_bg
+                        "Category Background": categoryData.category_bg,
+                        "Condensed Banner Left": categoryData.condensed_banner_left,
+                        "Condensed Banner Right": categoryData.condensed_banner_right
                     };
 
                     let nullAssets = true;
+
+                    const categoryClientDataId = category_client_overrides.findIndex(cat => cat.sku_id === categoryData.sku_id);
+
+                    if (category_client_overrides[categoryClientDataId]?.animatedBanner__credits) {
+                        doTheAssetThing('Animated Banner', category_client_overrides[categoryClientDataId]?.animatedBanner, category_client_overrides[categoryClientDataId]?.animatedBanner__credits);
+                    } else if (category_client_overrides[categoryClientDataId]?.animatedBanner) {
+                        doTheAssetThing('Animated Banner', category_client_overrides[categoryClientDataId]?.animatedBanner);
+                    }
+
+                    if (category_client_overrides[categoryClientDataId]?.heroBanner?.animationSource__credits) {
+                        doTheAssetThing('Animated Hero Banner', category_client_overrides[categoryClientDataId]?.modal_hero_banner, category_client_overrides[categoryClientDataId]?.heroBanner?.animationSource__credits);
+                    } else if (category_client_overrides[categoryClientDataId]?.heroBanner?.animationSource) {
+                        doTheAssetThing('Animated Hero Banner', category_client_overrides[categoryClientDataId]?.heroBanner?.animationSource);
+                    }
+
+                    if (category_client_overrides[categoryClientDataId]?.modal_hero_banner__credits) {
+                        doTheAssetThing('Modal Banner', category_client_overrides[categoryClientDataId]?.modal_hero_banner, category_client_overrides[categoryClientDataId]?.modal_hero_banner__credits);
+                    } else if (category_client_overrides[categoryClientDataId]?.modal_hero_banner) {
+                        doTheAssetThing('Modal Banner', category_client_overrides[categoryClientDataId]?.modal_hero_banner);
+                    }
+
+                    function doTheAssetThing(asset, value, credits = null) {
+                        nullAssets = false;
+
+                        let assetDiv = document.createElement("div");
+
+                        assetDiv.classList.add('asset-div')
+
+                        if (value.includes(".webm")) {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <p>This video is built into the client and overrides the existing asset or acts as an alternative.</p>
+                                <div class="credits"></div>
+                                <video disablepictureinpicture autoplay muted loop src="${value}"></video> 
+                            `;
+                            if (credits) {
+                                const userIndex = user_preview_usernames.findIndex(user => user.id === credits);
+                                assetDiv.querySelector('.credits').innerHTML = `
+                                    <p>This asset was made by </p>
+                                    <div class="mention" onclick="openModal('user-modal', 'openUserModal', '${credits}');">${user_preview_usernames[userIndex].name}</div>
+                                `;
+                            } else {
+                                assetDiv.querySelector('.credits').remove();
+                            }
+                        } else if (value.includes(".png") || value.includes(".jpg")) {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <p>This image is built into the client and overrides the existing asset or acts as an alternative.</p>
+                                <div class="credits"></div>
+                                <img src="${value}"></img> 
+                            `;
+                            if (credits) {
+                                const userIndex = user_preview_usernames.findIndex(user => user.id === credits);
+                                assetDiv.querySelector('.credits').innerHTML = `
+                                    <p>This asset was made by </p>
+                                    <div class="mention" onclick="openModal('user-modal', 'openUserModal', '${credits}');">${user_preview_usernames[userIndex].name}</div>
+                                `;
+                            } else {
+                                assetDiv.querySelector('.credits').remove();
+                            }
+                        }
+
+                        assetsContainer.appendChild(assetDiv);
+                    }
 
                     Object.entries(allAssets).forEach(([asset, value]) => {
                         if (!value) return; // skip null or undefined
@@ -2385,6 +2468,13 @@ async function loadSite() {
                                         <p class="review-text-content"></p>
                                     `;
 
+                                    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'open_profile_modals_on_reviews')?.treatment === 1) {
+                                        reviewDiv.querySelector('.review-user-display-name').classList.add('clickable');
+                                        reviewDiv.querySelector('.review-user-display-name').addEventListener("click", function () {
+                                            openModal('user-modal', 'openUserModal', review.user.id);
+                                        });
+                                    }
+
                                     const date = new Date(review.created_at);
 
                                     const day = String(date.getDate()).padStart(2, '0');
@@ -2565,9 +2655,9 @@ async function loadSite() {
                                             badgeImg.classList.add("badge");
                                             badgeImg.classList.add("has-tooltip");
 
-                                            if (badge.support) {
+                                            if (badge.redirect) {
                                                 const badgeLink = document.createElement("a");
-                                                badgeLink.href = badge.support;
+                                                badgeLink.href = badge.redirect;
                                                 badgeLink.target = "_blank";
                                                 badgeLink.rel = "noopener noreferrer";
                                                 badgeLink.appendChild(badgeImg);
@@ -3322,10 +3412,218 @@ async function loadSite() {
                     closeModal();
                 }
             });
+
+        } else if (type === "openUserModal") {
+            const userID = data1;
+            let cacheUserData;
+
+            let modal_back = document.createElement("div");
+            modal_back.classList.add(mainClass + '-back');
+            modal_back.classList.add('open-back-modal-' + openModalsCache);
+            modal_back.id = mainClass + '-back';
+
+            modal_back.style.zIndex = 300 + openModalsCache;
+
+            document.body.appendChild(modal_back);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_back.classList.add('show');
+                });
+            });
+
+            if (!cacheUserData) {
+                await fetchCategoryData();
+            }
+
+            async function fetchCategoryData() {
+                const rawUserData = await fetch(redneredAPI + endpoints.USERS + userID, {
+                    method: 'GET',
+                    headers: {
+                        "Authorization": localStorage.token
+                    }
+                });
+
+                if (!rawUserData.ok) {
+                    return
+                }
+
+                const data = await rawUserData.json();
+
+                if (data.message) {
+                    console.error(data);
+                } else {
+                    cacheUserData = data;
+                }
+            }
+        
+            modal.innerHTML = `
+                <div class="user-modal-inner">
+                    <div class="modalv2-tabs-container">
+                        <div class="tab selected" id="user-modal-tab-1">
+                            <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="24" r="6" fill="currentColor"/>
+                                <circle cx="12" cy="72" r="6" fill="currentColor"/>
+                                <circle cx="12" cy="48" r="6" fill="currentColor"/>
+                                <rect x="28" y="20" width="60" height="8" rx="4" fill="currentColor"/>
+                                <path d="M72.124 44.0029C64.5284 44.0668 57.6497 47.1046 52.6113 52H32C29.7909 52 28 50.2091 28 48C28 45.7909 29.7909 44 32 44H72C72.0415 44 72.0828 44.0017 72.124 44.0029Z" fill="currentColor"/>
+                                <path d="M44.2852 68C44.0983 69.3065 44 70.6418 44 72C44 73.3582 44.0983 74.6935 44.2852 76H32C29.7909 76 28 74.2091 28 72C28 69.7909 29.7909 68 32 68H44.2852Z" fill="currentColor"/>
+                                <circle cx="72" cy="72" r="16" stroke="currentColor" stroke-width="8"/>
+                                <rect x="81" y="85.9497" width="7" height="16" rx="3.5" transform="rotate(-45 81 85.9497)" fill="currentColor"/>
+                            </svg>
+                            <p>Profile</p>
+                        </div>
+                        <div class="tab" id="user-modal-tab-2">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M15.7376 3.18925C15.4883 2.93731 15.0814 2.93686 14.8316 3.18824L14.0087 4.01625C13.7618 4.26471 13.7614 4.66581 14.0078 4.91476L20.3804 11.3527C20.6265 11.6013 20.6265 12.0017 20.3804 12.2503L14.0078 18.6882C13.7614 18.9373 13.7618 19.3383 14.0087 19.5867L14.8316 20.4148C15.0814 20.6662 15.4883 20.6658 15.7376 20.4138L23.815 12.2503C24.061 12.0016 24.061 11.6014 23.815 11.3528L15.7376 3.18925Z" fill="currentColor"/>
+                                <path d="M9.99171 4.91476C10.2381 4.66581 10.2377 4.26471 9.99081 4.01625L9.16787 3.18824C8.91804 2.93686 8.51118 2.93731 8.2619 3.18925L0.184466 11.3528C-0.0614893 11.6014 -0.061488 12.0016 0.184466 12.2503L8.2619 20.4138C8.51118 20.6658 8.91803 20.6662 9.16787 20.4148L9.99081 19.5867C10.2377 19.3383 10.2381 18.9373 9.99171 18.6882L3.61906 12.2503C3.37298 12.0017 3.37298 11.6013 3.61906 11.3527L9.99171 4.91476Z" fill="currentColor"/>
+                            </svg>
+                            <p>Raw</p>
+                        </div>
+                    </div>
+
+                    <img class="user-modal-banner-preview">
+                    
+                    <div id="user-modal-inner-content">
+                    </div>
+        
+                    <div data-modal-top-product-buttons>
+                        <div class="has-tooltip" data-tooltip="Close" data-close-product-card-button>
+                            <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (cacheUserData.banner) {
+                modal.querySelector('.user-modal-banner-preview').src = `https://cdn.discordapp.com/banners/${cacheUserData.id}/${cacheUserData.banner}.png?size=480`;
+            }
+        
+            function changeModalTab(tab) {
+                modal.querySelectorAll('.selected').forEach((el) => {
+                    el.classList.remove("selected");
+                });
+        
+                modal.querySelector('#user-modal-tab-'+tab).classList.add('selected');
+        
+                const modalInner = modal.querySelector('#user-modal-inner-content');
+        
+                if (tab === '1') {
+                    modalInner.innerHTML = `
+                        <div class="user-modal-bottom-container">
+                            <div class="user-modal-part1">
+                                <div class="user-modal-avatar-preview">
+                                    <img class="avatar" src="https://cdn.discordapp.com/avatars/${cacheUserData.id}/${cacheUserData.avatar}.png?size=480">
+                                    <img class="deco" src="https://cdn.discordapp.com/avatar-decoration-presets/${cacheUserData.avatar_decoration_data ? cacheUserData.avatar_decoration_data.asset : ''}.png?size=4096&passthrough=false">
+                                </div>
+                                <div class="sub">
+                                    <div class="user-display-name-container">
+                                        <h1>${cacheUserData.global_name ? cacheUserData.global_name : ''}</h1>
+                                        <div class="review-system-tag-container has-tooltip" data-tooltip="Official Shop Archives Account">
+                                            <p class="review-system-tag">SYSTEM</p>
+                                        </div>
+                                    </div>
+                                    <p>${cacheUserData.username}</p>
+                                    <div class="user-badges-container-container">
+                                        <div class="user-badges-container">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    if (!cacheUserData.types.system) {
+                        modalInner.querySelector('.review-system-tag-container').remove();
+                    }
+
+                    const userBadgesElement = modalInner.querySelector('.user-badges-container-container');
+                    const userBadgesInnerElement = modalInner.querySelector('.user-badges-container');
+    
+                    if (Array.isArray(cacheUserData.badges) && cacheUserData.badges.length != 0) {
+                        if (cacheUserData.id === "1169899815983915121") {
+                            const badgeImg = document.createElement("img");
+                            badgeImg.src = `https://cdn.yapper.shop/assets/badges/9.png`;
+                            badgeImg.setAttribute('data-tooltip', 'Site Owner');
+                            badgeImg.classList.add("badge");
+                            badgeImg.classList.add("has-tooltip");
+
+                            userBadgesInnerElement.appendChild(badgeImg);
+                        }
+                        cacheUserData.badges.forEach(badge => {
+                            const badgeImg = document.createElement("img");
+                            badgeImg.src = `https://cdn.yapper.shop/assets/badges/${badge.id}.png`;
+                            badgeImg.setAttribute('data-tooltip', badge.name);
+                            badgeImg.classList.add("badge");
+                            badgeImg.classList.add("has-tooltip");
+
+                            if (badge.redirect) {
+                                const badgeLink = document.createElement("a");
+                                badgeLink.href = badge.redirect;
+                                badgeLink.target = "_blank";
+                                badgeLink.rel = "noopener noreferrer";
+                                badgeLink.appendChild(badgeImg);
+                                userBadgesInnerElement.appendChild(badgeLink);
+                            } else {
+                                userBadgesInnerElement.appendChild(badgeImg);
+                            }
+                        });
+                    } else if (cacheUserData.id === "1169899815983915121") {
+                        const badgeImg = document.createElement("img");
+                        badgeImg.src = `https://cdn.yapper.shop/assets/badges/9.png`;
+                        badgeImg.setAttribute('data-tooltip', 'Site Owner');
+                        badgeImg.classList.add("badge");
+                        badgeImg.classList.add("has-tooltip");
+
+                        userBadgesInnerElement.appendChild(badgeImg);
+                    } else {
+                        userBadgesElement.remove();
+                    }
+        
+                } else if (tab === '2') {
+                    modalInner.innerHTML = `
+                        <div class="view-raw-modalv2-inner">
+                            <textarea class="view-raw-modal-textbox" readonly>${JSON.stringify(cacheUserData, undefined, 4)}</textarea>
+                        </div>
+                    `;
+                } else {
+                    modalInner.innerHTML = ``;
+                }
+            }
+            window.changeModalTab = changeModalTab;
+
+            modal.querySelector('#user-modal-tab-1').addEventListener("click", function () {
+                // Profile
+                changeModalTab('1');
+            });
+            modal.querySelector('#user-modal-tab-2').addEventListener("click", function () {
+                // Raw
+                changeModalTab('2');
+            });
             
+
+            document.body.appendChild(modal);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.classList.add('show');
+                });
+            });
+
+        
+            changeModalTab('1');
+
+
+            modal.querySelector("[data-close-product-card-button]").addEventListener('click', () => {
+                closeModal();
+            });
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
         }
 
-        if (type != "fromCategoryBanner" && type != "userSettings") {
+        if (type != "fromCategoryBanner" && type != "userSettings" && type != "openUserModal") {
             document.body.appendChild(modal);
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -4119,36 +4417,65 @@ async function loadSite() {
                 category.classList.add('category-container');
                 category.setAttribute('data-sku-id', categoryData.sku_id);
                 category.setAttribute('data-listing-id', categoryData.store_listing_id);
-    
-                let categoryBanner = categoryData.banner_asset?.static ??
-                `https://cdn.discordapp.com/app-assets/1096190356233670716/${categoryData.banner}.png?size=4096`;
+
+                const categoryClientDataId = category_client_overrides.findIndex(cat => cat.sku_id === categoryData.sku_id);
+
+                let categoryBanner;
+                if (category_client_overrides[categoryClientDataId]?.banner_override) {
+                    categoryBanner = category_client_overrides[categoryClientDataId]?.banner_override;
+                }
+                else if (categoryData.banner_asset?.static) {
+                    categoryBanner = categoryData.banner_asset?.static;
+                }
+                else if (categoryData.full_src && categoryData.banner) {
+                    categoryBanner = categoryData.banner;
+                }
+                else if (categoryData.banner) {
+                    categoryBanner = `https://cdn.discordapp.com/app-assets/1096190356233670716/${categoryData.banner}.png?size=4096`;
+                }
+
+                let categoryHeroBanner;
+                if (category_client_overrides[categoryClientDataId]?.hero_banner_override) {
+                    categoryHeroBanner = category_client_overrides[categoryClientDataId]?.hero_banner_override;
+                }
+                else if (categoryData.hero_banner_asset?.static) {
+                    categoryHeroBanner = categoryData.hero_banner_asset?.static;
+                }
+                else if (categoryData.full_src && categoryData.hero_banner) {
+                    categoryHeroBanner = categoryData.hero_banner;
+                }
+                else if (categoryData.hero_banner) {
+                    categoryHeroBanner = `https://cdn.discordapp.com/app-assets/1096190356233670716/${categoryData.hero_banner}.png?size=4096`;
+                }
+
+                let modalBanner;
+                if (category_client_overrides[categoryClientDataId]?.modal_hero_banner) {
+                    modalBanner = category_client_overrides[categoryClientDataId]?.modal_hero_banner
+                }
+                else if (categoryHeroBanner) {
+                    modalBanner = categoryHeroBanner;
+                }
+                else if (categoryBanner) {
+                    modalBanner = categoryBanner;
+                }
     
                 const bannerContainer = document.createElement('div');
                 bannerContainer.classList.add('banner-container');
                 bannerContainer.style.backgroundImage = `url(${categoryBanner})`;
 
-                const categoryClientDataId = category_client_overrides.findIndex(cat => cat.sku_id === categoryData.sku_id);
-
-                let modalBanner;
-
-                if (category_client_overrides[categoryClientDataId]?.modal_hero_banner) {
-                    modalBanner = category_client_overrides[categoryClientDataId].modal_hero_banner;
-                } else if (categoryData.hero_banner_asset?.static) {
-                    modalBanner = categoryData.hero_banner_asset?.static;
-                } else if (categoryData.banner_asset?.static) {
-                    modalBanner = categoryData.banner_asset?.static;
-                } else if (categoryData.hero_banner) {
-                    modalBanner = `https://cdn.discordapp.com/app-assets/1096190356233670716/${categoryData.hero_banner}.png?size=4096`;
-                } else if (categoryData.banner) {
-                    modalBanner = `https://cdn.discordapp.com/app-assets/1096190356233670716/${categoryData.banner}.png?size=4096`;
-                }
-
                 if (categoryData.logo && category_client_overrides[categoryClientDataId]?.addLogo) {
                     if (category_client_overrides[categoryClientDataId]?.banner_verification && category_client_overrides[categoryClientDataId]?.banner_verification === categoryData.banner || !category_client_overrides[categoryClientDataId].banner_verification) {
+                        let logoAsset;
+                        if (categoryData.full_src && categoryData.logo) {
+                            logoAsset = categoryData.logo;
+                        }
+                        else if (categoryData.logo) {
+                            logoAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${categoryData.logo}.png?size=4096`;
+                        }
                         const bannerLogo = document.createElement("div");
                         bannerLogo.classList.add('shop-category-logo-holder')
                         bannerLogo.innerHTML = `
-                            <img class="shop-category-banner-logo" loading="lazy" src="https://cdn.discordapp.com/app-assets/1096190356233670716/${categoryData.logo}.png?size=4096">
+                            <img class="shop-category-banner-logo" loading="lazy" src="${logoAsset}">
                         `;
                         bannerContainer.appendChild(bannerLogo);
                     }

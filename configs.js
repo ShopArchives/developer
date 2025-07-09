@@ -1,5 +1,5 @@
 
-const appVersion = "7.2.4";
+const appVersion = "7.2.5";
 const appType = "Dev";
 
 const endpoints = {
@@ -8,6 +8,7 @@ const endpoints = {
     VERIFY_ORIGIN: "/heartbeat",
     SERVER_EXPERIMENTS: "/experiments",
     USER: "/users/@me",
+    USERS: "/users/",
     XP_EVENTS: "/xp-events",
     XP_INVENTORY: "/xp-inventory",
     XP_SHOP: "/claimables-shop",
@@ -122,6 +123,15 @@ const discord_categories = {
 };
 
 const category_client_overrides = [
+    {
+        sku_id: "1",
+        animatedBanner: "https://cdn.discordapp.com/assets/content/6f72be1e45f627e6b43894ca7dcda02c2851a3120a643a85c5132e87af6b50c4.webm",
+        animatedBanner__credits: "643945264868098049"
+    },
+    {
+        sku_id: "4",
+        addLogo: !0
+    },
     {
         sku_id: discord_categories.FANTASY,
         addLogo: !0,
@@ -331,6 +341,22 @@ const nameplate_palettes = {
 
 const experiments = [
     {
+        title: `Open Profile Modal On Reviews`,
+        codename: `open_profile_modals_on_reviews`,
+        release_config: {
+            year: `2025`,
+            month: `07`
+        },
+        treatments: [
+            {
+                title: `Not Eligible`
+            },
+            {
+                title: `Enabled`
+            }
+        ]
+    },
+    {
         title: `Published Items Category`,
         codename: `published_items_category`,
         release_config: {
@@ -463,3 +489,10 @@ const leaks_dummy_data = {
         }
     ]
 };
+
+const user_preview_usernames = [
+    {
+        id: "643945264868098049",
+        name: "Discord"
+    }
+]
