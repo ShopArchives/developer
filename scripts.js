@@ -633,6 +633,13 @@ async function loadSite() {
         
         openModalsCache += 1;
 
+        // Code to hide the not top most modal
+        // try {
+        //     const amount = openModalsCache - 1;
+        //     document.querySelector('.open-modal-' + amount).classList.remove('show');
+        //     document.querySelector('.open-back-modal-' + amount).classList.remove('show');
+        // } catch {}
+
         let modal = document.createElement("div");
         modal.classList.add(mainClass);
         modal.classList.add('open-modal-' + openModalsCache);
@@ -3099,6 +3106,10 @@ async function loadSite() {
                     <div class="side-tabs-button" id="modal-v3-tab-experiments" onclick="setModalv3InnerContent('experiments')">
                         <p>Experiments</p>
                     </div>
+
+                    <div class="side-tabs-button" id="modal-v3-tab-modal_testing" onclick="setModalv3InnerContent('modal_testing')">
+                        <p>Modal Testing</p>
+                    </div>
                 `;
             }
 
@@ -3148,24 +3159,38 @@ async function loadSite() {
                 });
 
                 if (!dataClaimable.ok) {
+                    closeModal();
                     return
                 }
 
                 const data1 = await dataClaimable.json();
 
-                data = data1;
+                if (data1.message) {
+                    console.error(data1.message);
+                    closeModal();
+                    return
+                } else {
+                    data = data1;
+                }
             } else {
                 const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId, {
                     method: 'GET'
                 });
 
                 if (!dataClaimable.ok) {
+                    closeModal();
                     return
                 }
 
                 const data1 = await dataClaimable.json();
 
-                data = data1;
+                if (data1.message) {
+                    console.error(data1.message);
+                    closeModal();
+                    return
+                } else {
+                    data = data1;
+                }
             }
 
             modal.innerHTML = `
@@ -3286,27 +3311,41 @@ async function loadSite() {
                 });
 
                 if (!dataClaimable.ok) {
+                    closeModal();
                     return
                 }
 
                 const data1 = await dataClaimable.json();
 
-                data = data1;
+                if (data1.message) {
+                    console.error(data1.message);
+                    closeModal();
+                    return
+                } else {
+                    data = data1;
+                }
             } else {
                 const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId, {
                     method: 'GET'
                 });
 
                 if (!dataClaimable.ok) {
+                    closeModal();
                     return
                 }
 
                 const data1 = await dataClaimable.json();
 
-                data = data1;
+                if (data1.message) {
+                    console.error(data1.message);
+                    closeModal();
+                    return
+                } else {
+                    data = data1;
+                }
             }
 
-            let disclaimer2;
+            let disclaimer2 = "";
 
             if (data.id === 2) {
                 disclaimer2 = "Once you've claimed this item, your Discord server tag will be applied to all your existing and future reviews. Note that if you don't have a Discord server tag applied on your profile, this item is useless."
@@ -3444,6 +3483,7 @@ async function loadSite() {
                 });
 
                 if (!rawUserData.ok) {
+                    closeModal();
                     return
                 }
 
@@ -3451,6 +3491,8 @@ async function loadSite() {
 
                 if (data.message) {
                     console.error(data);
+                    closeModal();
+                    return
                 } else {
                     cacheUserData = data;
                 }
@@ -3513,16 +3555,16 @@ async function loadSite() {
                             <div class="user-modal-part1">
                                 <div class="user-modal-avatar-preview">
                                     <img class="avatar" src="https://cdn.discordapp.com/avatars/${cacheUserData.id}/${cacheUserData.avatar}.png?size=480">
-                                    <img class="deco" src="https://cdn.discordapp.com/avatar-decoration-presets/${cacheUserData.avatar_decoration_data ? cacheUserData.avatar_decoration_data.asset : ''}.png?size=4096&passthrough=false">
+                                    <img class="deco">
                                 </div>
                                 <div class="sub">
                                     <div class="user-display-name-container">
-                                        <h1>${cacheUserData.global_name ? cacheUserData.global_name : ''}</h1>
+                                        <h1 id="users-displayname"></h1>
                                         <div class="review-system-tag-container has-tooltip" data-tooltip="Official Shop Archives Account">
                                             <p class="review-system-tag">SYSTEM</p>
                                         </div>
                                     </div>
-                                    <p>${cacheUserData.username}</p>
+                                    <p id="users-username"></p>
                                     <div class="user-badges-container-container">
                                         <div class="user-badges-container">
                                         </div>
@@ -3532,23 +3574,32 @@ async function loadSite() {
                         </div>
                     `;
 
-                    if (!cacheUserData.types.system) {
-                        modalInner.querySelector('.review-system-tag-container').remove();
-                    }
+                    if (cacheUserData.global_name) modalInner.querySelector('#users-displayname').textContent = cacheUserData.global_name;
+                    else modalInner.querySelector('#users-displayname').remove();
+
+                    if (cacheUserData.username) modalInner.querySelector('#users-username').textContent = cacheUserData.username;
+
+                    if (!cacheUserData.types.system) modalInner.querySelector('.review-system-tag-container').remove();
+
+                    const avatar = modalInner.querySelector('.avatar');
+                    avatar.addEventListener("load", () => {
+                        if (avatar.naturalWidth === 0 || avatar.naturalHeight === 0) {
+                            avatar.src = "https://cdn.yapper.shop/assets/183.png";
+                        }
+                    });
+                    avatar.addEventListener("error", () => {
+                        avatar.src = "https://cdn.yapper.shop/assets/183.png";
+                    });
+                    
+                    const deco = modalInner.querySelector('.deco');
+                    if (cacheUserData.avatar_decoration_data) deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${cacheUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=true`;
+                    else deco.remove();
+
 
                     const userBadgesElement = modalInner.querySelector('.user-badges-container-container');
                     const userBadgesInnerElement = modalInner.querySelector('.user-badges-container');
     
                     if (Array.isArray(cacheUserData.badges) && cacheUserData.badges.length != 0) {
-                        if (cacheUserData.id === "1169899815983915121") {
-                            const badgeImg = document.createElement("img");
-                            badgeImg.src = `https://cdn.yapper.shop/assets/badges/9.png`;
-                            badgeImg.setAttribute('data-tooltip', 'Site Owner');
-                            badgeImg.classList.add("badge");
-                            badgeImg.classList.add("has-tooltip");
-
-                            userBadgesInnerElement.appendChild(badgeImg);
-                        }
                         cacheUserData.badges.forEach(badge => {
                             const badgeImg = document.createElement("img");
                             badgeImg.src = `https://cdn.yapper.shop/assets/badges/${badge.id}.png`;
@@ -3567,14 +3618,6 @@ async function loadSite() {
                                 userBadgesInnerElement.appendChild(badgeImg);
                             }
                         });
-                    } else if (cacheUserData.id === "1169899815983915121") {
-                        const badgeImg = document.createElement("img");
-                        badgeImg.src = `https://cdn.yapper.shop/assets/badges/9.png`;
-                        badgeImg.setAttribute('data-tooltip', 'Site Owner');
-                        badgeImg.classList.add("badge");
-                        badgeImg.classList.add("has-tooltip");
-
-                        userBadgesInnerElement.appendChild(badgeImg);
                     } else {
                         userBadgesElement.remove();
                     }
@@ -3655,17 +3698,24 @@ async function loadSite() {
             const modal = document.querySelector('.open-modal-' + openModalsCache);
             const modal_back = document.querySelector('.open-back-modal-' + openModalsCache);
 
-            if (modal.hasAttribute('data-clear-param')) {
+            // Code to hide the not top most modal
+            // try {
+            //     const amount = openModalsCache - 1;
+            //     document.querySelector('.open-modal-' + amount).classList.add('show');
+            //     document.querySelector('.open-back-modal-' + amount).classList.add('show');
+            // } catch {}
+
+            if (modal?.hasAttribute('data-clear-param')) {
                 removeParams(modal.getAttribute('data-clear-param'));
             }
-            if (modal.hasAttribute('data-clear-cache') && modal.getAttribute('data-clear-cache') === "currentOpenModalId") {
+            if (modal?.hasAttribute('data-clear-cache') && modal.getAttribute('data-clear-cache') === "currentOpenModalId") {
                 currentOpenModalId = null;
             }
 
-            modal.classList.remove('show');
+            if (modal) modal.classList.remove('show');
             if (modal_back) modal_back.classList.remove('show');
             setTimeout(() => {
-                modal.remove();
+                if (modal) modal.remove();
                 if (modal_back) modal_back.remove();
             }, 300);
             openModalsCache -= 1;
@@ -6207,6 +6257,52 @@ async function loadSite() {
             }
           
             renderExperiments();
+
+        } else if (tab === "modal_testing") {
+            tabPageOutput.innerHTML = `
+                <h2>Modal Testing</h2>
+
+                <hr>
+
+                <button class="generic-brand-button" onclick="openModal('modalv3', 'userSettings');">
+                    Open User Settings Modal (Not Recommended)
+                </button>
+
+                <hr class="inv">
+
+                <input type="text" class="modalv3-input" autocomplete="off" placeholder="User ID" id="open-user-modal-input"></input>
+                <button class="generic-brand-button" id="open-user-modal">
+                    Open User Modal
+                </button>
+
+                <hr class="inv">
+
+                <input type="text" class="modalv3-input" autocomplete="off" placeholder="Claimable ID" id="open-xp-claim-modal-input"></input>
+                <button class="generic-brand-button" id="open-xp-claim-modal">
+                    Open XP Claim Modal
+                </button>
+                <button class="generic-brand-button" id="open-xp-redeem-modal">
+                    Open XP Redeem Modal
+                </button>
+            `;
+
+            tabPageOutput.querySelector('#open-user-modal').addEventListener("click", () => {
+                if (tabPageOutput.querySelector('#open-user-modal-input').value.length != 0) {
+                    openModal('user-modal', 'openUserModal', `${tabPageOutput.querySelector('#open-user-modal-input').value}`);
+                }
+            });
+
+            tabPageOutput.querySelector('#open-xp-claim-modal').addEventListener("click", () => {
+                if (tabPageOutput.querySelector('#open-xp-claim-modal-input').value.length != 0) {
+                    openModal('modalv2', 'xpClaim', `${tabPageOutput.querySelector('#open-xp-claim-modal-input').value}`);
+                }
+            });
+
+            tabPageOutput.querySelector('#open-xp-redeem-modal').addEventListener("click", () => {
+                if (tabPageOutput.querySelector('#open-xp-claim-modal-input').value.length != 0) {
+                    openModal('modalv2', 'xpRedeem', `${tabPageOutput.querySelector('#open-xp-claim-modal-input').value}`);
+                }
+            });
 
         } else {
             console.error(tab + ' is not a valid tab');

@@ -2821,6 +2821,13 @@ hr {
     flex-direction: column;
 }
 
+.user-modal-part1 .sub h1 {
+    max-width: 400px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .user-display-name-container {
     display: inline-flex;
     gap: 5px;
@@ -4093,6 +4100,17 @@ hr {
     color: var(--white);
     background-color: var(--input-primary);
     cursor: pointer;
+}
+
+
+
+.modalv3-input {
+    padding: 10px;
+    border: none;
+    outline: none;
+    border-radius: 5px;
+    color: var(--white);
+    background-color: var(--input-primary);
 }
 
 
