@@ -1,5 +1,5 @@
 
-const appVersion = "7.2.6";
+const appVersion = "7.2.7";
 const appType = "Dev";
 
 const endpoints = {
@@ -131,6 +131,27 @@ const category_client_overrides = [
     {
         sku_id: "4",
         addLogo: !0
+    },
+    {
+        sku_id: "1344802365307621427",
+        banner_override: "https://cdn.yapper.shop/assets/198.png",
+        modal_hero_banner: "https://cdn.yapper.shop/assets/199.png",
+        banner_override__credits: "1049207768785100880",
+        modal_hero_banner__credits: "1049207768785100880"
+    },
+    {
+        sku_id: "1217175518781243583",
+        banner_override: "https://cdn.yapper.shop/assets/200.png",
+        modal_hero_banner: "https://cdn.yapper.shop/assets/202.png",
+        banner_override__credits: "1049207768785100880",
+        modal_hero_banner__credits: "1049207768785100880"
+    },
+    {
+        sku_id: "1309309974266118144",
+        banner_override: "https://cdn.yapper.shop/assets/201.png",
+        modal_hero_banner: "https://cdn.yapper.shop/assets/202.png",
+        banner_override__credits: "1049207768785100880",
+        modal_hero_banner__credits: "1049207768785100880"
     },
     {
         sku_id: discord_categories.FANTASY,
@@ -494,5 +515,9 @@ const user_preview_usernames = [
     {
         id: "643945264868098049",
         name: "Discord"
+    },
+    {
+        id: "1049207768785100880",
+        name: "TrellTrell"
     }
 ]

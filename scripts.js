@@ -1528,11 +1528,24 @@ async function loadSite() {
                     }
 
                 } else {
-                    modal.querySelector('#modalv2-inner-content').innerHTML = `
+                    modalInner.innerHTML = `
                         <div class="view-raw-modalv2-inner">
                             <textarea class="view-raw-modal-textbox" readonly>${JSON.stringify(product, undefined, 4)}</textarea>
                         </div>
                     `;
+                    // const rawOutput = modalInner.querySelector('.view-raw-modalv2-inner');
+                    // if (product.type === item_types.PROFILE_EFFECT) {
+                    //     let raw = document.createElement('textarea');
+                    //     raw.classList.add('view-raw-modal-textbox');
+                    //     raw.setAttribute('readonly', 'true');
+                    //     raw.innerHTML = JSON.stringify(product, undefined, 4);
+                    //     rawOutput.appendChild(raw);
+                    // }
+                    // document.querySelectorAll('.view-raw-modal-textbox').forEach(textbox => {
+                    //     textbox.style.height = 'auto';
+                    //     textbox.style.width = '100%';
+                    //     textbox.style.height = textbox.scrollHeight + 'px';
+                    // });
                 }
             }
 
@@ -1634,6 +1647,16 @@ async function loadSite() {
                     </div>
                 </div>
             `;
+
+            const bannerBG = modal.querySelector('.category-modal-banner-preview');
+            bannerBG.addEventListener("load", () => {
+                if (bannerBG.naturalWidth === 0 || bannerBG.naturalHeight === 0) {
+                    bannerBG.remove();
+                }
+            });
+            bannerBG.addEventListener("error", () => {
+                bannerBG.remove();
+            });
         
             function changeModalTab(tab) {
                 modal.querySelectorAll('.selected').forEach((el) => {
@@ -1974,6 +1997,11 @@ async function loadSite() {
                             <textarea class="view-raw-modal-textbox" readonly>${JSON.stringify(categoryData, undefined, 4)}</textarea>
                         </div>
                     `;
+                    // document.querySelectorAll('.view-raw-modal-textbox').forEach(textbox => {
+                    //     textbox.style.height = 'auto';
+                    //     textbox.style.width = '100%';
+                    //     textbox.style.height = textbox.scrollHeight + 'px';
+                    // });
                 } else if (tab === '3') {
                     modalInner.innerHTML = `
                         <div class="category-modal-assets-container">
@@ -2005,6 +2033,12 @@ async function loadSite() {
                     let nullAssets = true;
 
                     const categoryClientDataId = category_client_overrides.findIndex(cat => cat.sku_id === categoryData.sku_id);
+
+                    if (category_client_overrides[categoryClientDataId]?.banner_override__credits) {
+                        doTheAssetThing('Banner', category_client_overrides[categoryClientDataId]?.banner_override, category_client_overrides[categoryClientDataId]?.banner_override__credits);
+                    } else if (category_client_overrides[categoryClientDataId]?.banner_override) {
+                        doTheAssetThing('Banner', category_client_overrides[categoryClientDataId]?.banner_override);
+                    }
 
                     if (category_client_overrides[categoryClientDataId]?.animatedBanner__credits) {
                         doTheAssetThing('Animated Banner', category_client_overrides[categoryClientDataId]?.animatedBanner, category_client_overrides[categoryClientDataId]?.animatedBanner__credits);
@@ -2042,7 +2076,7 @@ async function loadSite() {
                                 const userIndex = user_preview_usernames.findIndex(user => user.id === credits);
                                 assetDiv.querySelector('.credits').innerHTML = `
                                     <p>This asset was made by </p>
-                                    <div class="mention" onclick="openModal('user-modal', 'openUserModal', '${credits}');">${user_preview_usernames[userIndex].name}</div>
+                                    <div class="mention" onclick="openModal('user-modal', 'openUserModal', '${credits}');">@${user_preview_usernames[userIndex].name}</div>
                                 `;
                             } else {
                                 assetDiv.querySelector('.credits').remove();
@@ -2058,7 +2092,7 @@ async function loadSite() {
                                 const userIndex = user_preview_usernames.findIndex(user => user.id === credits);
                                 assetDiv.querySelector('.credits').innerHTML = `
                                     <p>This asset was made by </p>
-                                    <div class="mention" onclick="openModal('user-modal', 'openUserModal', '${credits}');">${user_preview_usernames[userIndex].name}</div>
+                                    <div class="mention" onclick="openModal('user-modal', 'openUserModal', '${credits}');">@${user_preview_usernames[userIndex].name}</div>
                                 `;
                             } else {
                                 assetDiv.querySelector('.credits').remove();
@@ -3537,7 +3571,16 @@ async function loadSite() {
             `;
 
             if (cacheUserData.banner) {
-                modal.querySelector('.user-modal-banner-preview').src = `https://cdn.discordapp.com/banners/${cacheUserData.id}/${cacheUserData.banner}.png?size=480`;
+                const bannerBG = modal.querySelector('.user-modal-banner-preview');
+                bannerBG.src = `https://cdn.discordapp.com/banners/${cacheUserData.id}/${cacheUserData.banner}.png?size=480`;
+                bannerBG.addEventListener("load", () => {
+                    if (bannerBG.naturalWidth === 0 || bannerBG.naturalHeight === 0) {
+                        bannerBG.remove();
+                    }
+                });
+                bannerBG.addEventListener("error", () => {
+                    bannerBG.remove();
+                });
             }
         
             function changeModalTab(tab) {
@@ -4357,7 +4400,7 @@ async function loadSite() {
                 `;
             }
         } else {
-            createCardTag('UPDATE REQUIRED')
+            createCardTag('UPDATE REQUIRED');
         }
 
         card.addEventListener("click", (event) => {
