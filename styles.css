@@ -118,6 +118,10 @@
     content: url(https://cdn.yapper.shop/profile-effect-bug-fix-thumbnails/power-surge-fuchsia.png);
 }
 
+.staff-hide-cards-for-no-reason .products-wrapper {
+    display: none;
+}
+
 @font-face {
     font-family: ABC Ginto Nord;
     src: url('https://cdn.yapper.shop/assets/fonts/097b737553f77c92.woff2') format('woff2');
@@ -196,6 +200,8 @@ p, h1, h2, h3, h4, h5, h6, a {
     background-color: var(--background-tertiary);
     padding: 10px;
     padding-top: 70px;
+    box-sizing: border-box;
+    overflow-y: auto;
 }
 
 
@@ -3296,6 +3302,10 @@ hr {
     top: 8px;
     font-size: 18px;
     color: var(--text-primary);
+    max-width: 160px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .ubar-username {
@@ -3304,6 +3314,10 @@ hr {
     top: 30px;
     font-size: 14px;
     color: var(--text-primary);
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #ubar-options-cog {

@@ -650,7 +650,6 @@ async function loadSite() {
         if (type === "fromCollectibleCard") {
             const category = data1;
             const product = data2;
-            const card = data3;
 
             modal.setAttribute('data-clear-param', 'itemSkuId');
             modal.setAttribute('data-clear-cache', 'currentOpenModalId');
@@ -731,7 +730,7 @@ async function loadSite() {
                             <div class="modalv2-preview-container"></div>
                             <div class="modalv2-bottom-container">
                                 <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${product.sku_id}')">${product.sku_id}</p>
-                                <h3>${product.name}</h3>
+                                <h3 class="modal-item-name">${product.name}</h3>
                                 <p class="modal-summary">${product.summary}</p>
                                 <div class="modalv2-price-container"></div>
                                 <div class="modalv2-price-container-crossed"></div>
@@ -743,8 +742,8 @@ async function loadSite() {
                             </div>
                         </div>
                         <div class="modalv2-right">
-                            <img class="modalv2-right-bg-img" src="${pdpAsset}"></img>
-                            <img class="modalv2-right-logo-img" src="${logoAsset}"></img>
+                            <img class="modalv2-right-bg-img"></img>
+                            <img class="modalv2-right-logo-img"></img>
 
                             <div class="modal2-profile-preview">
                                 <div class="modal-preview-profile" style="height: 210px;">
@@ -763,6 +762,14 @@ async function loadSite() {
 
                         </div>
                     `;
+
+                    const modalBGImage = modalInner.querySelector('.modalv2-right-bg-img');
+                    if (pdpAsset) modalBGImage.src = pdpAsset;
+                    else modalBGImage.remove();
+
+                    const modalLogoImage = modalInner.querySelector('.modalv2-right-logo-img');
+                    if (logoAsset) modalLogoImage.src = logoAsset;
+                    else modalLogoImage.remove();
 
                     if (currentUserData) {
                         if (currentUserData.banner_color) modalInner.querySelector('.options-preview-profile-banner-color').style.backgroundColor = currentUserData.banner_color;
@@ -941,10 +948,8 @@ async function loadSite() {
                     });
 
                     const modalPreviewContainer = modalInner.querySelector('.modalv2-preview-container');
-
-                    const previewContainer = card.querySelector('[data-shop-card-preview-container]');
-                    const itemName = card.querySelector('[data-product-card-name]');
                     const modalSummary = modalInner.querySelector('.modal-summary');
+                    const nothingHover = document.querySelector('.something-nobody-is-gonna-hover');
 
                     if (product.type === item_types.AVATAR_DECORATION) {
 
@@ -991,12 +996,12 @@ async function loadSite() {
                                 profileProfileEffectPreview.style.aspectRatio = '0.1';
 
                                 // Create and initialize the profile effects card with card-level hover
-                                const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, document.querySelector('.something-nobody-is-gonna-hover'), {
+                                const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, nothingHover, {
                                     startImmediately: true
                                 });
 
                                 // Store reference for cleanup if needed
-                                document.querySelector('.something-nobody-is-gonna-hover')._profileEffectsCard = effectsCard;
+                                nothingHover._profileEffectsCard = effectsCard;
                             } else {
                                 // Fallback if profile effect not found
                                 profileProfileEffectPreview.innerHTML = ``;
@@ -1220,12 +1225,12 @@ async function loadSite() {
                                     profileProfileEffectPreview.style.aspectRatio = '0.1';
 
                                     // Create and initialize the profile effects card with card-level hover
-                                    const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, document.querySelector('.something-nobody-is-gonna-hover'), {
+                                    const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, nothingHover, {
                                         startImmediately: true
                                     });
 
                                     // Store reference for cleanup if needed
-                                    card._profileEffectsCard = effectsCard;
+                                    nothingHover._profileEffectsCard = effectsCard;
                                 } else {
                                     // Fallback if profile effect not found
                                     profileProfileEffectPreview.innerHTML = ``;
@@ -1308,7 +1313,7 @@ async function loadSite() {
                                     const effectsCard = new ProfileEffectsCard(effectPreview, profileEffect, modalPreviewContainer);
 
                                     // Store reference for cleanup if needed
-                                    card._profileEffectsCard = effectsCard;
+                                    nothingHover._profileEffectsCard = effectsCard;
                                 } else {
                                     // Fallback if profile effect not found
                                     effectPreview.innerHTML = ``;
@@ -1357,7 +1362,7 @@ async function loadSite() {
                         function applyVariant(selectedVariant) {
                             modalInner.querySelector("[data-shop-card-var-title]").textContent = `(${selectedVariant.variant_label})`;
 
-                            itemName.textContent = selectedVariant.base_variant_name;
+                            modalInner.querySelector(".modal-item-name").textContent = selectedVariant.base_variant_name;
 
                             if (selectedVariant.type === 0) {
 
@@ -1413,12 +1418,12 @@ async function loadSite() {
                                         profileProfileEffectPreview.style.aspectRatio = '0.1';
 
                                         // Create and initialize the profile effects card with card-level hover
-                                        const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, document.querySelector('.something-nobody-is-gonna-hover'), {
+                                        const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, nothingHover, {
                                             startImmediately: true
                                         });
 
                                         // Store reference for cleanup if needed
-                                        document.querySelector('.something-nobody-is-gonna-hover')._profileEffectsCard = effectsCard;
+                                        nothingHover._profileEffectsCard = effectsCard;
                                     } else {
                                         // Fallback if profile effect not found
                                         profileProfileEffectPreview.innerHTML = ``;
@@ -1431,7 +1436,6 @@ async function loadSite() {
 
 
                                 modalPreviewContainer.innerHTML = "";
-                                previewContainer.classList.add('type-1-preview-container');
 
                                 let effectBG = document.createElement("div");
 
@@ -2197,7 +2201,7 @@ async function loadSite() {
                                 }
                             });
 
-                            if (currentUserData.ban_config.ban_type >= 1 || settingsStore.staff_simulate_ban_type_1 === 1 || settingsStore.staff_simulate_ban_type_2 === 1 || currentUserData.username_violates_tos === true || settingsStore.staff_simulate_guidelines_block === 1) {
+                            if (currentUserData.ban_config.ban_type >= 1 || settingsStore.staff_simulate_ban_type_1 === 1 || settingsStore.staff_simulate_ban_type_2 === 1 || currentUserData.types.guidelines_block === true || settingsStore.staff_simulate_guidelines_block === 1 || currentUserData.types.suspicious_account === true || settingsStore.staff_simulate_sus_block === 1) {
 
                                 let banTitle = 'You have been suspended from submitting reviews.';
                                 let banDisclaimer = `
@@ -2218,12 +2222,20 @@ async function loadSite() {
                                     appealable = false;
                                 }
 
-                                if (currentUserData.username_violates_tos === true || settingsStore.staff_simulate_guidelines_block === 1) {
+                                if (currentUserData.types.guidelines_block === true || settingsStore.staff_simulate_guidelines_block === 1) {
                                     banTitle = 'You cannot submit reviews.';
                                     banDisclaimer = `
                                         <p>Your username violates our</p>
                                         <a class="link" href="https://yapper.shop/legal-information/?page=tos">Community Guidelines,</a>
                                         <p>all your reviews have been temporarily hidden from the public.</p>
+                                    `;
+                                    appealable = false;
+                                }
+
+                                if (currentUserData.types.suspicious_account === true || settingsStore.staff_simulate_sus_block === 1) {
+                                    banTitle = 'You cannot submit reviews.';
+                                    banDisclaimer = `
+                                        <p>Suspicious activity has been detected on your account, you cannot submit review temporarily.</p>
                                     `;
                                     appealable = false;
                                 }
@@ -3782,8 +3794,8 @@ async function loadSite() {
             <div data-shop-card-preview-container>
             </div>
             <div class="card-bottom">
-                <h3 data-product-card-name data-product-card-name>${product.name}</h3>
-                <p class="shop-card-summary" data-product-card-summary>${product.summary}</p>
+                <h3 class="shop-card-name"></h3>
+                <p class="shop-card-summary"></p>
                 <div class="shop-price-container" data-shop-price-container>
                 </div>
 
@@ -3798,6 +3810,9 @@ async function loadSite() {
             <div class="shop-card-tag-container" data-shop-card-tag-container>
             </div>
         `;
+
+        if (product.name) card.querySelector('.shop-card-name').textContent = product.name;
+        if (product.summary) card.querySelector('.shop-card-summary').textContent = product.summary;
 
         const cardTag = card.querySelector("[data-shop-card-tag-container]");
 
@@ -3922,8 +3937,8 @@ async function loadSite() {
         }
 
         const previewContainer = card.querySelector('[data-shop-card-preview-container]');
-        const itemName = card.querySelector('[data-product-card-name]');
-        const itemSummary = card.querySelector('[data-product-card-summary]');
+        const itemName = card.querySelector('.shop-card-name');
+        const itemSummary = card.querySelector('.shop-card-summary');
 
         if (product.type === item_types.AVATAR_DECORATION) {
             previewContainer.classList.add('type-0-preview-container-container')
@@ -4406,14 +4421,14 @@ async function loadSite() {
         card.addEventListener("click", (event) => {
             if (event.target.matches(".shop-card-var")) {
             } else {
-                openModal('modalv2', 'fromCollectibleCard', category, product, card);
+                openModal('modalv2', 'fromCollectibleCard', category, product);
                 addParams({itemSkuId: product.sku_id})
             }
         });
 
         if (currentOpenModalId === product.sku_id) {
             setTimeout(() => {
-                openModal('modalv2', 'fromCollectibleCard', category, product, card);
+                openModal('modalv2', 'fromCollectibleCard', category, product);
             }, 500);
         }
 
@@ -6302,32 +6317,42 @@ async function loadSite() {
             renderExperiments();
 
         } else if (tab === "modal_testing") {
+            const textCategory = JSON.stringify(leaks_dummy_data.categories[0], undefined, 4);
+            const textProduct = JSON.stringify(dummy_products[0], undefined, 4);
             tabPageOutput.innerHTML = `
                 <h2>Modal Testing</h2>
 
                 <hr>
 
-                <button class="generic-brand-button" onclick="openModal('modalv3', 'userSettings');">
-                    Open User Settings Modal (Not Recommended)
-                </button>
+                <button class="generic-brand-button" onclick="openModal('modalv3', 'userSettings');">Open User Settings Modal (Not Recommended)</button>
+
+                <hr class="inv">
+
+                <button class="generic-brand-button" id="open-text-category-button">Open Category Modal</button>
+
+                <hr class="inv">
+
+                <button class="generic-brand-button" id="open-text-product-button">Open Product Modal</button>
 
                 <hr class="inv">
 
                 <input type="text" class="modalv3-input" autocomplete="off" placeholder="User ID" id="open-user-modal-input"></input>
-                <button class="generic-brand-button" id="open-user-modal">
-                    Open User Modal
-                </button>
+                <button class="generic-brand-button" id="open-user-modal">Open User Modal</button>
 
                 <hr class="inv">
 
                 <input type="text" class="modalv3-input" autocomplete="off" placeholder="Claimable ID" id="open-xp-claim-modal-input"></input>
-                <button class="generic-brand-button" id="open-xp-claim-modal">
-                    Open XP Claim Modal
-                </button>
-                <button class="generic-brand-button" id="open-xp-redeem-modal">
-                    Open XP Redeem Modal
-                </button>
+                <button class="generic-brand-button" id="open-xp-claim-modal">Open XP Claim Modal</button>
+                <button class="generic-brand-button" id="open-xp-redeem-modal">Open XP Redeem Modal</button>
             `;
+
+            tabPageOutput.querySelector('#open-text-category-button').addEventListener("click", () => {
+                openModal('category-modal', 'fromCategoryBanner', JSON.parse(textCategory), 'https://cdn.discordapp.com/app-assets/1096190356233670716/1336165352392097853.png?size=4096');
+            });
+
+            tabPageOutput.querySelector('#open-text-product-button').addEventListener("click", () => {
+                openModal('modalv2', 'fromCollectibleCard', JSON.parse(textCategory), JSON.parse(textProduct));
+            });
 
             tabPageOutput.querySelector('#open-user-modal').addEventListener("click", () => {
                 if (tabPageOutput.querySelector('#open-user-modal-input').value.length != 0) {
@@ -6433,6 +6458,17 @@ async function loadSite() {
                     </div>
                     <div class="setting">
                         <div class="setting-info">
+                            <p class="setting-title">Simulate: Sus Block</p>
+                            <p class="setting-description">Simulate the user having a sus account.</p>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="staff_simulate_sus_block_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setting">
+                        <div class="setting-info">
                             <p class="setting-title">XP: Unpublished Xp Events</p>
                             <p class="setting-description">Allows you to see unpublished or expired XP events.</p>
                         </div>
@@ -6498,6 +6534,11 @@ async function loadSite() {
 
             devtoolsContainer.querySelector('#staff_simulate_guidelines_block_toggle').addEventListener("click", () => {
                 toggleSetting('staff_simulate_guidelines_block');
+                updateToggleStates();
+            });
+
+            devtoolsContainer.querySelector('#staff_simulate_sus_block_toggle').addEventListener("click", () => {
+                toggleSetting('staff_simulate_sus_block');
                 updateToggleStates();
             });
 
