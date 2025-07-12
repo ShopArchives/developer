@@ -625,7 +625,7 @@ async function loadSite() {
         document.getElementById('ubar-avatar').remove();
     }
 
-    async function openModal(mainClass, type, data1, data2, data3) {
+    async function openModal(mainClass, type, data1, data2) {
         if (!mainClass || !type) return console.error('Sorry, you are NOT sigma!');
 
         let categoryModalInfo;
@@ -634,17 +634,38 @@ async function loadSite() {
         openModalsCache += 1;
 
         // Code to hide the not top most modal
-        // try {
-        //     const amount = openModalsCache - 1;
-        //     document.querySelector('.open-modal-' + amount).classList.remove('show');
-        //     document.querySelector('.open-back-modal-' + amount).classList.remove('show');
-        // } catch {}
+        try {
+            const amount = openModalsCache - 1;
+            document.querySelector('.open-modal-' + amount).classList.remove('show');
+            document.querySelector('.open-back-modal-' + amount).classList.remove('show');
+        } catch {}
 
         let modal = document.createElement("div");
         modal.classList.add(mainClass);
         modal.classList.add('open-modal-' + openModalsCache);
 
         modal.style.zIndex = 301 + openModalsCache;
+
+
+        let modal_back = document.createElement("div");
+        modal_back.classList.add(mainClass + '-back');
+        modal_back.classList.add('open-back-modal-' + openModalsCache);
+        modal_back.id = mainClass + '-back';
+
+        modal_back.style.zIndex = 300 + openModalsCache;
+
+
+        let modal_loading = document.createElement("div");
+        modal_loading.classList.add('modal-loading');
+        modal_loading.classList.add('open-loading-modal-' + openModalsCache);
+        modal_loading.id = 'modal-loading';
+        modal_loading.innerHTML = `
+            <div class="modal-loading-inner">
+                <div class="spinner"></div>
+            </div>
+        `;
+
+        modal_loading.style.zIndex = 301 + openModalsCache;
 
 
         if (type === "fromCollectibleCard") {
@@ -1545,11 +1566,11 @@ async function loadSite() {
                     //     raw.innerHTML = JSON.stringify(product, undefined, 4);
                     //     rawOutput.appendChild(raw);
                     // }
-                    // document.querySelectorAll('.view-raw-modal-textbox').forEach(textbox => {
-                    //     textbox.style.height = 'auto';
-                    //     textbox.style.width = '100%';
-                    //     textbox.style.height = textbox.scrollHeight + 'px';
-                    // });
+                    document.querySelectorAll('.view-raw-modal-textbox').forEach(textbox => {
+                        textbox.style.height = 'auto';
+                        textbox.style.width = '100%';
+                        textbox.style.height = textbox.scrollHeight + 'px';
+                    });
                 }
             }
 
@@ -2001,11 +2022,11 @@ async function loadSite() {
                             <textarea class="view-raw-modal-textbox" readonly>${JSON.stringify(categoryData, undefined, 4)}</textarea>
                         </div>
                     `;
-                    // document.querySelectorAll('.view-raw-modal-textbox').forEach(textbox => {
-                    //     textbox.style.height = 'auto';
-                    //     textbox.style.width = '100%';
-                    //     textbox.style.height = textbox.scrollHeight + 'px';
-                    // });
+                    document.querySelectorAll('.view-raw-modal-textbox').forEach(textbox => {
+                        textbox.style.height = 'auto';
+                        textbox.style.width = '100%';
+                        textbox.style.height = textbox.scrollHeight + 'px';
+                    });
                 } else if (tab === '3') {
                     modalInner.innerHTML = `
                         <div class="category-modal-assets-container">
@@ -2986,23 +3007,18 @@ async function loadSite() {
             
 
             document.body.appendChild(modal);
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    modal.classList.add('show');
-                });
-            });
-
-            let modal_back = document.createElement("div");
-            modal_back.classList.add(mainClass + '-back');
-            modal_back.classList.add('open-back-modal-' + openModalsCache);
-            modal_back.id = mainClass + '-back';
-
-            modal_back.style.zIndex = 300 + openModalsCache;
 
             document.body.appendChild(modal_back);
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     modal_back.classList.add('show');
+                });
+            });
+
+            document.body.appendChild(modal_loading);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_loading.classList.add('show');
                 });
             });
 
@@ -3049,6 +3065,12 @@ async function loadSite() {
             changeModalTab('1');
 
             firstTimeOpeningModal = false;
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.classList.add('show');
+                });
+            });
 
 
             modal.querySelector("[data-close-product-card-button]").addEventListener('click', () => {
@@ -3179,17 +3201,17 @@ async function loadSite() {
             const claimableId = data1;
             const changeModalTab = data2;
 
-            let modal_back = document.createElement("div");
-            modal_back.classList.add(mainClass + '-back');
-            modal_back.classList.add('open-back-modal-' + openModalsCache);
-            modal_back.id = mainClass + '-back';
-
-            modal_back.style.zIndex = 300 + openModalsCache;
-
             document.body.appendChild(modal_back);
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     modal_back.classList.add('show');
+                });
+            });
+
+            document.body.appendChild(modal_loading);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_loading.classList.add('show');
                 });
             });
 
@@ -3331,17 +3353,17 @@ async function loadSite() {
             const claimableId = data1;
             const changeModalTab = data2;
 
-            let modal_back = document.createElement("div");
-            modal_back.classList.add(mainClass + '-back');
-            modal_back.classList.add('open-back-modal-' + openModalsCache);
-            modal_back.id = mainClass + '-back';
-
-            modal_back.style.zIndex = 300 + openModalsCache;
-
             document.body.appendChild(modal_back);
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     modal_back.classList.add('show');
+                });
+            });
+
+            document.body.appendChild(modal_loading);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_loading.classList.add('show');
                 });
             });
 
@@ -3502,12 +3524,14 @@ async function loadSite() {
             const userID = data1;
             let cacheUserData;
 
-            let modal_back = document.createElement("div");
-            modal_back.classList.add(mainClass + '-back');
-            modal_back.classList.add('open-back-modal-' + openModalsCache);
-            modal_back.id = mainClass + '-back';
 
-            modal_back.style.zIndex = 300 + openModalsCache;
+            document.body.appendChild(modal_loading);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_loading.classList.add('show');
+                });
+            });
+
 
             document.body.appendChild(modal_back);
             requestAnimationFrame(() => {
@@ -3683,6 +3707,11 @@ async function loadSite() {
                             <textarea class="view-raw-modal-textbox" readonly>${JSON.stringify(cacheUserData, undefined, 4)}</textarea>
                         </div>
                     `;
+                    document.querySelectorAll('.view-raw-modal-textbox').forEach(textbox => {
+                        textbox.style.height = 'auto';
+                        textbox.style.width = '100%';
+                        textbox.style.height = textbox.scrollHeight + 'px';
+                    });
                 } else {
                     modalInner.innerHTML = ``;
                 }
@@ -3730,12 +3759,6 @@ async function loadSite() {
             });
 
             if (type != "xpRedeem" && type != "xpClaim") {
-                let modal_back = document.createElement("div");
-                modal_back.classList.add(mainClass + '-back');
-                modal_back.classList.add('open-back-modal-' + openModalsCache);
-                modal_back.id = mainClass + '-back';
-
-                modal_back.style.zIndex = 300 + openModalsCache;
 
                 document.body.appendChild(modal_back);
                 requestAnimationFrame(() => {
@@ -3745,6 +3768,11 @@ async function loadSite() {
                 });
             }
         }
+
+        if (modal_loading) modal_loading.classList.remove('show');
+        setTimeout(() => {
+            if (modal_loading) modal_loading.remove();
+        }, 300);
     }
     window.openModal = openModal;
 
@@ -3754,11 +3782,11 @@ async function loadSite() {
             const modal_back = document.querySelector('.open-back-modal-' + openModalsCache);
 
             // Code to hide the not top most modal
-            // try {
-            //     const amount = openModalsCache - 1;
-            //     document.querySelector('.open-modal-' + amount).classList.add('show');
-            //     document.querySelector('.open-back-modal-' + amount).classList.add('show');
-            // } catch {}
+            try {
+                const amount = openModalsCache - 1;
+                document.querySelector('.open-modal-' + amount).classList.add('show');
+                document.querySelector('.open-back-modal-' + amount).classList.add('show');
+            } catch {}
 
             if (modal?.hasAttribute('data-clear-param')) {
                 removeParams(modal.getAttribute('data-clear-param'));
@@ -4803,13 +4831,6 @@ async function loadSite() {
                 `;
                 bannerSummaryAndLogo.appendChild(bannerLogo);
 
-                const bannerButton = document.createElement("div");
-                bannerButton.id = 'home-page-preview-button-container';
-                bannerButton.innerHTML = `
-                    <button class="home-page-preview-button" onclick="scrollToCache = '${categoryData.category_store_listing_id}'; addParams({scrollTo: '${categoryData.category_store_listing_id}'}); loadPage('2');">Shop the ${categoryData.name} Collection</button>
-                `;
-                bannerSummaryAndLogo.appendChild(bannerButton);
-
                 if (categoryData.banner_asset?.animated) {
                     const videoBanner = document.createElement("video");
                     videoBanner.disablePictureInPicture = true;
@@ -4826,6 +4847,28 @@ async function loadSite() {
                     imageBanner.classList.add('banner-video');
                     bannerContainer.appendChild(imageBanner);
                 }
+
+
+                const bannerButton = document.createElement("div");
+                bannerButton.id = 'home-page-preview-button-container';
+                bannerButton.innerHTML = `
+                    <svg class="has-tooltip" data-tooltip="Open Category Modal" width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="24" r="6" fill="currentColor"></circle>
+                        <circle cx="12" cy="72" r="6" fill="currentColor"></circle>
+                        <circle cx="12" cy="48" r="6" fill="currentColor"></circle>
+                        <rect x="28" y="20" width="60" height="8" rx="4" fill="currentColor"></rect>
+                        <path d="M72.124 44.0029C64.5284 44.0668 57.6497 47.1046 52.6113 52H32C29.7909 52 28 50.2091 28 48C28 45.7909 29.7909 44 32 44H72C72.0415 44 72.0828 44.0017 72.124 44.0029Z" fill="currentColor"></path>
+                        <path d="M44.2852 68C44.0983 69.3065 44 70.6418 44 72C44 73.3582 44.0983 74.6935 44.2852 76H32C29.7909 76 28 74.2091 28 72C28 69.7909 29.7909 68 32 68H44.2852Z" fill="currentColor"></path>
+                        <circle cx="72" cy="72" r="16" stroke="currentColor" stroke-width="8"></circle>
+                        <rect x="81" y="85.9497" width="7" height="16" rx="3.5" transform="rotate(-45 81 85.9497)" fill="currentColor"></rect>
+                    </svg>
+                    <button class="home-page-preview-button" onclick="scrollToCache = '${categoryData.category_store_listing_id}'; addParams({scrollTo: '${categoryData.category_store_listing_id}'}); loadPage('2');">Shop the ${categoryData.name} Collection</button>
+                `;
+                bannerButton.querySelector('svg').addEventListener("click", () => {
+                    openModal('category-modal', 'fromCategoryBanner', data.categories[0], categoryData.banner_asset?.static);
+                });
+                bannerSummaryAndLogo.appendChild(bannerButton);
+
 
                 category.appendChild(bannerContainer);
 
