@@ -3667,7 +3667,7 @@ async function loadSite() {
                                             <p>/${cacheUserData.profile_information.xp_to_level}</p>
                                         </div>
                                     </div>
-                                    <p>User Rank #${cacheUserData.profile_information.rank}</p>
+                                    <p id="user-level-rank">User Rank #${cacheUserData.profile_information.rank}</p>
                                 </div>
                                 <div class="user-modal-xp-level">
                                     <p>Level</p>
@@ -3686,6 +3686,10 @@ async function loadSite() {
                             </div>
                         </div>
                     `;
+
+                    if (cacheUserData.profile_information.xp_balance === 0) {
+                        modalInner.querySelector('#user-level-rank').remove();
+                    }
 
                     if (cacheUserData.collectibles?.nameplate.sa_override_src) {
                         let nameplatePreview = document.createElement("img");
