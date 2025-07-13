@@ -636,8 +636,10 @@ async function loadSite() {
         // Code to hide the not top most modal
         try {
             const amount = openModalsCache - 1;
-            document.querySelector('.open-modal-' + amount).classList.remove('show');
-            document.querySelector('.open-back-modal-' + amount).classList.remove('show');
+            if (!document.querySelector('.open-modal-' + amount).classList.contains('modalv3')) {
+                document.querySelector('.open-modal-' + amount).classList.remove('show');
+                document.querySelector('.open-back-modal-' + amount).classList.remove('show');
+            }
         } catch {}
 
         let modal = document.createElement("div");
@@ -3083,6 +3085,7 @@ async function loadSite() {
                 }
             });
         } else if (type === "userSettings") {
+
             modal.innerHTML = `
                 <div class="modalv3-inner" style="color: var(--white);">
                     <div class="modalv3-inner-left">
@@ -3216,50 +3219,48 @@ async function loadSite() {
             });
 
 
-            let data;
+            let methodAndHeaders = {
+                method: 'GET'
+            };
 
             if (localStorage.token) {
-                const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId, {
+                methodAndHeaders = {
                     method: 'GET',
                     headers: {
                         "Authorization": localStorage.token
                     }
-                });
-
-                if (!dataClaimable.ok) {
-                    closeModal();
-                    return
-                }
-
-                const data1 = await dataClaimable.json();
-
-                if (data1.message) {
-                    console.error(data1.message);
-                    closeModal();
-                    return
-                } else {
-                    data = data1;
-                }
-            } else {
-                const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId, {
-                    method: 'GET'
-                });
-
-                if (!dataClaimable.ok) {
-                    closeModal();
-                    return
-                }
-
-                const data1 = await dataClaimable.json();
-
-                if (data1.message) {
-                    console.error(data1.message);
-                    closeModal();
-                    return
-                } else {
-                    data = data1;
-                }
+                };
             }
+
+            const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId,
+                methodAndHeaders
+            );
+
+            if (!dataClaimable.ok) {
+                closeModal();
+
+                if (modal_loading) modal_loading.classList.remove('show');
+                setTimeout(() => {
+                    if (modal_loading) modal_loading.remove();
+                }, 300);
+
+                return
+            }
+
+            const data = await dataClaimable.json();
+
+            if (data.message) {
+                console.error(data.message);
+                closeModal();
+
+                if (modal_loading) modal_loading.classList.remove('show');
+                setTimeout(() => {
+                    if (modal_loading) modal_loading.remove();
+                }, 300);
+                
+                return
+            }
+
 
             modal.innerHTML = `
                 <div class="modalv2-inner xp-modal">
@@ -3368,50 +3369,48 @@ async function loadSite() {
             });
 
 
-            let data;
+            let methodAndHeaders = {
+                method: 'GET'
+            };
 
             if (localStorage.token) {
-                const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId, {
+                methodAndHeaders = {
                     method: 'GET',
                     headers: {
                         "Authorization": localStorage.token
                     }
-                });
-
-                if (!dataClaimable.ok) {
-                    closeModal();
-                    return
-                }
-
-                const data1 = await dataClaimable.json();
-
-                if (data1.message) {
-                    console.error(data1.message);
-                    closeModal();
-                    return
-                } else {
-                    data = data1;
-                }
-            } else {
-                const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId, {
-                    method: 'GET'
-                });
-
-                if (!dataClaimable.ok) {
-                    closeModal();
-                    return
-                }
-
-                const data1 = await dataClaimable.json();
-
-                if (data1.message) {
-                    console.error(data1.message);
-                    closeModal();
-                    return
-                } else {
-                    data = data1;
-                }
+                };
             }
+
+            const dataClaimable = await fetch(redneredAPI + endpoints.CLAIMABLES_PUBLISHED + claimableId,
+                methodAndHeaders
+            );
+
+            if (!dataClaimable.ok) {
+                closeModal();
+
+                if (modal_loading) modal_loading.classList.remove('show');
+                setTimeout(() => {
+                    if (modal_loading) modal_loading.remove();
+                }, 300);
+
+                return
+            }
+
+            const data = await dataClaimable.json();
+
+            if (data.message) {
+                console.error(data.message);
+                closeModal();
+
+                if (modal_loading) modal_loading.classList.remove('show');
+                setTimeout(() => {
+                    if (modal_loading) modal_loading.remove();
+                }, 300);
+                
+                return
+            }
+            
 
             let disclaimer2 = "";
 
@@ -3540,33 +3539,41 @@ async function loadSite() {
                 });
             });
 
-            if (!cacheUserData) {
-                await fetchCategoryData();
+
+            const rawUserData = await fetch(redneredAPI + endpoints.USERS + userID, {
+                method: 'GET',
+                headers: {
+                    "Authorization": localStorage.token
+                }
+            });
+
+            if (!rawUserData.ok) {
+                closeModal();
+
+                if (modal_loading) modal_loading.classList.remove('show');
+                setTimeout(() => {
+                    if (modal_loading) modal_loading.remove();
+                }, 300);
+
+                return
             }
 
-            async function fetchCategoryData() {
-                const rawUserData = await fetch(redneredAPI + endpoints.USERS + userID, {
-                    method: 'GET',
-                    headers: {
-                        "Authorization": localStorage.token
-                    }
-                });
+            const data = await rawUserData.json();
 
-                if (!rawUserData.ok) {
-                    closeModal();
-                    return
-                }
+            if (data.message) {
+                console.error(data);
+                closeModal();
 
-                const data = await rawUserData.json();
+                if (modal_loading) modal_loading.classList.remove('show');
+                setTimeout(() => {
+                    if (modal_loading) modal_loading.remove();
+                }, 300);
 
-                if (data.message) {
-                    console.error(data);
-                    closeModal();
-                    return
-                } else {
-                    cacheUserData = data;
-                }
+                return
+            } else {
+                cacheUserData = data;
             }
+
         
             modal.innerHTML = `
                 <div class="user-modal-inner">
@@ -3632,6 +3639,7 @@ async function loadSite() {
                     modalInner.innerHTML = `
                         <div class="user-modal-bottom-container">
                             <div class="user-modal-part1">
+                                <div class="xp-card-nameplate-container"></div>
                                 <div class="user-modal-avatar-preview">
                                     <img class="avatar" src="https://cdn.discordapp.com/avatars/${cacheUserData.id}/${cacheUserData.avatar}.png?size=480">
                                     <img class="deco">
@@ -3650,8 +3658,93 @@ async function loadSite() {
                                     </div>
                                 </div>
                             </div>
+                            <div class="user-modal-part2 xp-exp-only">
+                                <div class="user-modal-xp-progress-left">
+                                    <div class="user-modal-xp-progress">
+                                        <div class="bar"></div>
+                                        <div class="text">
+                                            <p id="animate-level-xp">0</p>
+                                            <p>/${cacheUserData.profile_information.xp_to_level}</p>
+                                        </div>
+                                    </div>
+                                    <p>User Rank #${cacheUserData.profile_information.rank}</p>
+                                </div>
+                                <div class="user-modal-xp-level">
+                                    <p>Level</p>
+                                    <h1>${cacheUserData.profile_information.level}</h1>
+                                </div>
+                            </div>
+                            <div class="user-modal-part3">
+                                <div>
+                                    <h3>Reviews</h3>
+                                    <p>${cacheUserData.profile_information.reviews}</p>
+                                </div>
+                                <div>
+                                    <h3>Joined Shop Archives</h3>
+                                    <p class="sa-join-date">Date</p>
+                                </div>
+                            </div>
                         </div>
                     `;
+
+                    if (cacheUserData.collectibles?.nameplate.sa_override_src) {
+                        let nameplatePreview = document.createElement("img");
+
+                        nameplatePreview.src = cacheUserData.collectibles.nameplate.sa_override_src;
+    
+                        modalInner.querySelector('.xp-card-nameplate-container').appendChild(nameplatePreview);
+                    } else if (cacheUserData.collectibles?.nameplate) {
+                        let nameplatePreview = document.createElement("video");
+
+                        nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${cacheUserData.collectibles.nameplate.asset}asset.webm`;
+                        nameplatePreview.disablePictureInPicture = true;
+                        nameplatePreview.muted = true;
+                        nameplatePreview.loop = true;
+                        nameplatePreview.autoplay = true;
+                        nameplatePreview.playsInline = true;
+
+                        const bgcolor = nameplate_palettes[cacheUserData.collectibles.nameplate.palette].darkBackground;
+    
+                        modalInner.querySelector('.xp-card-nameplate-container').style.backgroundImage = `linear-gradient(90deg, #00000000 0%, ${bgcolor} 200%)`;
+    
+                        modalInner.querySelector('.xp-card-nameplate-container').appendChild(nameplatePreview);
+                    }
+
+
+                    const date = new Date(cacheUserData.profile_information.join_date);
+
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+
+                    const dateContainer = modalInner.querySelector(".sa-join-date");
+
+                    if (settingsStore.non_us_timezone === 1) {
+                        const formatted = `${day}/${month}/${year}`;
+
+                        dateContainer.textContent = `${formatted}`;
+                    } else {
+                        const formatted = `${month}/${day}/${year}`;
+
+                        dateContainer.textContent = `${formatted}`;
+                    }
+
+
+                    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1) {
+                        animateNumber(modalInner.querySelector('#animate-level-xp'), cacheUserData.profile_information.xp_into_level, 2000, {
+                            useCommas: false
+                        });
+
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                modalInner.querySelector('.bar').style.width = cacheUserData.profile_information.level_percentage+'%';
+                            });
+                        });
+                    } else {
+                        document.querySelectorAll('.xp-exp-only').forEach(el => {
+                            el.remove();
+                        });
+                    }
 
                     if (cacheUserData.global_name) modalInner.querySelector('#users-displayname').textContent = cacheUserData.global_name;
                     else modalInner.querySelector('#users-displayname').remove();
@@ -3748,9 +3841,29 @@ async function loadSite() {
                     closeModal();
                 }
             });
+        } else if (type === "openLoadingTest") {
+            document.body.appendChild(modal_loading);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_loading.classList.add('show');
+                });
+            });
+
+            document.body.appendChild(modal_back);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_back.classList.add('show');
+                });
+            });
+
+            modal_loading.addEventListener('click', (event) => {
+                if (event.target === modal_loading) {
+                    closeModal();
+                }
+            });
         }
 
-        if (type != "fromCategoryBanner" && type != "userSettings" && type != "openUserModal") {
+        if (type != "fromCategoryBanner" && type != "userSettings" && type != "openUserModal" && type != "openLoadingTest") {
             document.body.appendChild(modal);
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -3769,10 +3882,12 @@ async function loadSite() {
             }
         }
 
-        if (modal_loading) modal_loading.classList.remove('show');
-        setTimeout(() => {
-            if (modal_loading) modal_loading.remove();
-        }, 300);
+        if (type != "openLoadingTest") {
+            if (modal_loading) modal_loading.classList.remove('show');
+            setTimeout(() => {
+                if (modal_loading) modal_loading.remove();
+            }, 300);
+        }
     }
     window.openModal = openModal;
 
@@ -3780,12 +3895,15 @@ async function loadSite() {
         if (openModalsCache != 0) {
             const modal = document.querySelector('.open-modal-' + openModalsCache);
             const modal_back = document.querySelector('.open-back-modal-' + openModalsCache);
+            const modal_loading = document.querySelector('.open-loading-modal-' + openModalsCache);
 
             // Code to hide the not top most modal
             try {
                 const amount = openModalsCache - 1;
-                document.querySelector('.open-modal-' + amount).classList.add('show');
-                document.querySelector('.open-back-modal-' + amount).classList.add('show');
+                if (!document.querySelector('.open-modal-' + amount).classList.contains('modalv3')) {
+                    document.querySelector('.open-modal-' + amount).classList.add('show');
+                    document.querySelector('.open-back-modal-' + amount).classList.add('show');
+                }
             } catch {}
 
             if (modal?.hasAttribute('data-clear-param')) {
@@ -3797,9 +3915,11 @@ async function loadSite() {
 
             if (modal) modal.classList.remove('show');
             if (modal_back) modal_back.classList.remove('show');
+            if (modal_loading) modal_loading.classList.remove('show');
             setTimeout(() => {
                 if (modal) modal.remove();
                 if (modal_back) modal_back.remove();
+                if (modal_loading) modal_loading.remove();
             }, 300);
             openModalsCache -= 1;
         }
@@ -6387,6 +6507,10 @@ async function loadSite() {
                 <input type="text" class="modalv3-input" autocomplete="off" placeholder="Claimable ID" id="open-xp-claim-modal-input"></input>
                 <button class="generic-brand-button" id="open-xp-claim-modal">Open XP Claim Modal</button>
                 <button class="generic-brand-button" id="open-xp-redeem-modal">Open XP Redeem Modal</button>
+
+                <hr class="inv">
+
+                <button class="generic-brand-button" id="open-loading-animation-modal">Play Loading Animation</button>
             `;
 
             tabPageOutput.querySelector('#open-text-category-button').addEventListener("click", () => {
@@ -6398,21 +6522,25 @@ async function loadSite() {
             });
 
             tabPageOutput.querySelector('#open-user-modal').addEventListener("click", () => {
-                if (tabPageOutput.querySelector('#open-user-modal-input').value.length != 0) {
+                if (tabPageOutput.querySelector('#open-user-modal-input').value.trim().length != 0) {
                     openModal('user-modal', 'openUserModal', `${tabPageOutput.querySelector('#open-user-modal-input').value}`);
                 }
             });
 
             tabPageOutput.querySelector('#open-xp-claim-modal').addEventListener("click", () => {
-                if (tabPageOutput.querySelector('#open-xp-claim-modal-input').value.length != 0) {
+                if (tabPageOutput.querySelector('#open-xp-claim-modal-input').value.trim().length != 0) {
                     openModal('modalv2', 'xpClaim', `${tabPageOutput.querySelector('#open-xp-claim-modal-input').value}`);
                 }
             });
 
             tabPageOutput.querySelector('#open-xp-redeem-modal').addEventListener("click", () => {
-                if (tabPageOutput.querySelector('#open-xp-claim-modal-input').value.length != 0) {
+                if (tabPageOutput.querySelector('#open-xp-claim-modal-input').value.trim().length != 0) {
                     openModal('modalv2', 'xpRedeem', `${tabPageOutput.querySelector('#open-xp-claim-modal-input').value}`);
                 }
+            });
+
+            tabPageOutput.querySelector('#open-loading-animation-modal').addEventListener("click", () => {
+                openModal('modalv2', 'openLoadingTest');
             });
 
         } else {
