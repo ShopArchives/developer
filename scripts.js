@@ -6159,6 +6159,15 @@ async function loadSite() {
                                 <p class="sub">Show off your Discord avatar decoration on your profile and reviews.</p>
                             </div>
                         `;
+                        if (!currentUserData.avatar_decoration_data) {
+                            let cardError = document.createElement("div");
+                            cardError.classList.add('main-err');
+                            cardError.innerHTML = `
+                                <p>You are not eligible for this perk.</p>
+                                <a class="sub link has-tooltip" data-tooltip="You don't have an avatar decoration on your Discord profile.">Learn More</a>
+                            `;
+                            xpLevelPerk.appendChild(cardError);
+                        }
                         promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
                     else if (level.level === 2) {
@@ -6172,6 +6181,15 @@ async function loadSite() {
                                 <p class="sub">Show off your Discord server tag on your profile and reviews.</p>
                             </div>
                         `;
+                        if (!currentUserData.primary_guild) {
+                            let cardError = document.createElement("div");
+                            cardError.classList.add('main-err');
+                            cardError.innerHTML = `
+                                <p>You are not eligible for this perk.</p>
+                                <a class="sub link has-tooltip" data-tooltip="You don't have a server tag on your Discord profile.">Learn More</a>
+                            `;
+                            xpLevelPerk.appendChild(cardError);
+                        }
                         promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
                     else if (level.level === 3) {
@@ -6186,6 +6204,15 @@ async function loadSite() {
                                     <p class="sub">Show off your Discord display name style on your profile and reviews.</p>
                                 </div>
                             `;
+                            if (!currentUserData.display_name_style) {
+                                let cardError = document.createElement("div");
+                                cardError.classList.add('main-err');
+                                cardError.innerHTML = `
+                                    <p>You are not eligible for this perk.</p>
+                                    <a class="sub link has-tooltip" data-tooltip="You don't have a display name style on your Discord profile.">Learn More</a>
+                                `;
+                                xpLevelPerk.appendChild(cardError);
+                            }
                             promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                         }
                         let xpLevelPerk = document.createElement("div");
@@ -6211,6 +6238,15 @@ async function loadSite() {
                                 <p class="sub">Show off your Discord nameplate on your profile and reviews.</p>
                             </div>
                         `;
+                        if (!currentUserData.collectibles?.nameplate) {
+                            let cardError = document.createElement("div");
+                            cardError.classList.add('main-err');
+                            cardError.innerHTML = `
+                                <p>You are not eligible for this perk.</p>
+                                <a class="sub link has-tooltip" data-tooltip="You don't have a nameplate on your Discord profile.">Learn More</a>
+                            `;
+                            xpLevelPerk.appendChild(cardError);
+                        }
                         promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
                     else if (level.level === 5) {
