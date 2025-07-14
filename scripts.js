@@ -603,6 +603,19 @@ async function loadSite() {
 
         await fetchAndUpdateXpEvents();
         await fetchAndUpdateXpLevels();
+    } else if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1 && isMobileCache != true) {
+        let xpBalance = document.createElement("div");
+
+        xpBalance.classList.add('my-xp-value-container');
+        xpBalance.addEventListener("click", () => {
+            setModalv3InnerContent('xp_perks');
+        });
+
+        xpBalance.innerHTML = `
+            <p id="my-xp-balance">Level 0</p>
+        `;
+        
+        document.querySelector('.topbar-content').appendChild(xpBalance);
     }
 
     if (currentUserData) {
@@ -3155,7 +3168,7 @@ async function loadSite() {
                 </div>
             `;
 
-            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1) {
+            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1 && isMobileCache != true) {
                 modal.querySelector("#xp-rewards-tabs-modalv3-container").innerHTML = `
                     <hr>
                     <div class="side-tabs-category-text-container">
@@ -5894,18 +5907,20 @@ async function loadSite() {
             `;
 
             const xpBalance = tabPageOutput.querySelector('.xp-balance-modalv3-container');
-            const xpNeeded = currentUserData.xp_information.xp_to_level - currentUserData.xp_information.xp_into_level;
-            const nextLevel = currentUserData.xp_information.level + 1;
+            if (currentUserData) {
+                const xpNeeded = currentUserData.xp_information.xp_to_level - currentUserData.xp_information.xp_into_level;
+                const nextLevel = currentUserData.xp_information.level + 1;
 
-            xpBalance.classList.add('has-tooltip');
-            xpBalance.setAttribute('data-tooltip', 'You need '+xpNeeded.toLocaleString()+' more XP for Level '+nextLevel);
+                xpBalance.classList.add('has-tooltip');
+                xpBalance.setAttribute('data-tooltip', 'You need '+xpNeeded.toLocaleString()+' more XP for Level '+nextLevel);
 
-            xpBalance.innerHTML = `
-                <div class="bar"></div>
-                <p id="my-xp-balance">Level ${currentUserData.xp_information.level}</p>
-            `;
+                xpBalance.innerHTML = `
+                    <div class="bar"></div>
+                    <p id="my-xp-balance">Level ${currentUserData.xp_information.level}</p>
+                `;
 
-            xpBalance.querySelector('.bar').style.width = currentUserData.xp_information.level_percentage+'%';
+                xpBalance.querySelector('.bar').style.width = currentUserData.xp_information.level_percentage+'%';
+            }
 
 
             const unclaimedOutput = tabPageOutput.querySelector('#xp-events-unclaimed');
@@ -5913,6 +5928,25 @@ async function loadSite() {
 
             if (usersXPEventsCache) {
                 refreshXPEventsList()
+            } else {
+                tabPageOutput.innerHTML = `
+                    <h2>XP Events</h2>
+
+                    <hr>
+
+                    <div class="modalv3-content-card-1">
+                        <h2 class="modalv3-content-card-header">You are curently not logged in.</h2>
+                        <p class="modalv3-content-card-summary">Login with Discord to level up and gain sweet perks!</p>
+                        <img style="width: 100%;" src="https://cdn.yapper.shop/assets/204.png">
+                        <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
+                            <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"></path>
+                            </svg>
+                            Login with Discord
+                        </button>
+                    </div>
+
+                `;
             }
 
             function refreshXPEventsList() {
@@ -6055,7 +6089,7 @@ async function loadSite() {
                         <p class="desc">There are no events happening right now, check back later.</p>
                     `;
                     
-                    unclaimedOutput.appendChild(promoCard)
+                    unclaimedOutput.appendChild(promoCard);
                 }
             }
 
@@ -6078,123 +6112,144 @@ async function loadSite() {
 
             `;
 
-            xpLevelStatsCache.forEach(level => {
+            if (xpLevelStatsCache) {
+                xpLevelStatsCache.forEach(level => {
 
-                let promoCard = document.createElement("div");
+                    let promoCard = document.createElement("div");
 
-                promoCard.classList.add('modalv3-xp-level-card');
+                    promoCard.classList.add('modalv3-xp-level-card');
 
-                promoCard.innerHTML = `
-                    <h3>Level ${level.level}</h3>
-                    <div class="xp-balance-modalv3-container">
-                    </div>
-                    <p class="desc">Reaching Level ${level.level} will unlock the following perks:</p>
-                    <div class="xp-level-card-perks"></div>
-                `;
-
-                const xpBalance = promoCard.querySelector('.xp-balance-modalv3-container');
-
-                xpBalance.innerHTML = `
-                    <div class="bar"></div>
-                    <p id="my-xp-balance">${currentUserData.xp_information.xp_into_level}/${level.required_xp}</p>
-                `;
-
-                if (currentUserData.xp_information.level >= level.level) {
-                    xpBalance.querySelector('#my-xp-balance').textContent = `${level.required_xp}/${level.required_xp}`;
-                    promoCard.querySelector('.desc').textContent = `Reaching Level ${level.level} has unlocked the following perks:`;
-                    xpBalance.querySelector('.bar').classList.add('shimmer');
-                    xpBalance.querySelector('.bar').style.width = '100%';
-                }
-                else if (currentUserData.xp_information.level < level.level - 1) {
-                    xpBalance.querySelector('#my-xp-balance').textContent = `0/${level.required_xp}`;
-                }
-                else {
-                    xpBalance.querySelector('.bar').style.width = currentUserData.xp_information.level_percentage+'%';
-                }
-
-
-                if (level.level === 1) {
-                    let xpLevelPerk = document.createElement("div");
-                    xpLevelPerk.innerHTML = `
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
-                        </svg>
-                        <div class="main">
-                            <p>Avatar Decoration Preview</p>
-                            <p class="sub">Show off your Discord avatar decoration on your profile and reviews.</p>
+                    promoCard.innerHTML = `
+                        <h3>Level ${level.level}</h3>
+                        <div class="xp-balance-modalv3-container">
                         </div>
+                        <p class="desc">Reaching Level ${level.level} will unlock the following perks:</p>
+                        <div class="xp-level-card-perks"></div>
                     `;
-                    promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
-                }
-                else if (level.level === 2) {
-                    let xpLevelPerk = document.createElement("div");
-                    xpLevelPerk.innerHTML = `
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
-                        </svg>
-                        <div class="main">
-                            <p>Server Tag Preview</p>
-                            <p class="sub">Show off your Discord server tag on your profile and reviews.</p>
-                        </div>
+
+                    const xpBalance = promoCard.querySelector('.xp-balance-modalv3-container');
+
+                    xpBalance.innerHTML = `
+                        <div class="bar"></div>
+                        <p id="my-xp-balance">${currentUserData.xp_information.xp_into_level}/${level.required_xp}</p>
                     `;
-                    promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
-                }
-                else if (level.level === 3) {
-                    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_xp_level_perk')?.treatment === 1) {
+
+                    if (currentUserData.xp_information.level >= level.level) {
+                        xpBalance.querySelector('#my-xp-balance').textContent = `${level.required_xp}/${level.required_xp}`;
+                        promoCard.querySelector('.desc').textContent = `Reaching Level ${level.level} has unlocked the following perks:`;
+                        xpBalance.querySelector('.bar').classList.add('shimmer');
+                        xpBalance.querySelector('.bar').style.width = '100%';
+                    }
+                    else if (currentUserData.xp_information.level < level.level - 1) {
+                        xpBalance.querySelector('#my-xp-balance').textContent = `0/${level.required_xp}`;
+                    }
+                    else {
+                        xpBalance.querySelector('.bar').style.width = currentUserData.xp_information.level_percentage+'%';
+                    }
+
+
+                    if (level.level === 1) {
                         let xpLevelPerk = document.createElement("div");
                         xpLevelPerk.innerHTML = `
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="12" cy="12" r="3" fill="currentColor"/>
                             </svg>
                             <div class="main">
-                                <p>Display Name Style Preview</p>
-                                <p class="sub">Show off your Discord display name style on your profile and reviews.</p>
+                                <p>Avatar Decoration Preview</p>
+                                <p class="sub">Show off your Discord avatar decoration on your profile and reviews.</p>
                             </div>
                         `;
                         promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
-                    let xpLevelPerk = document.createElement("div");
-                    xpLevelPerk.innerHTML = `
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
-                        </svg>
-                        <div class="main">
-                            <p>Increased Review Character Limit</p>
-                            <p class="sub">Lets you submit reviews with up to 200 characters.</p>
-                        </div>
-                    `;
-                    promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
-                }
-                else if (level.level === 4) {
-                    let xpLevelPerk = document.createElement("div");
-                    xpLevelPerk.innerHTML = `
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
-                        </svg>
-                        <div class="main">
-                            <p>Nameplate Preview</p>
-                            <p class="sub">Show off your Discord nameplate on your profile and reviews.</p>
-                        </div>
-                    `;
-                    promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
-                }
-                else if (level.level === 5) {
-                    let xpLevelPerk = document.createElement("div");
-                    xpLevelPerk.innerHTML = `
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
-                        </svg>
-                        <div class="main">
-                            <p>Increased Review Character Limit</p>
-                            <p class="sub">Lets you submit reviews with up to 300 characters.</p>
-                        </div>
-                    `;
-                    promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
-                }
+                    else if (level.level === 2) {
+                        let xpLevelPerk = document.createElement("div");
+                        xpLevelPerk.innerHTML = `
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                            </svg>
+                            <div class="main">
+                                <p>Server Tag Preview</p>
+                                <p class="sub">Show off your Discord server tag on your profile and reviews.</p>
+                            </div>
+                        `;
+                        promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
+                    }
+                    else if (level.level === 3) {
+                        if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_xp_level_perk')?.treatment === 1) {
+                            let xpLevelPerk = document.createElement("div");
+                            xpLevelPerk.innerHTML = `
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                                </svg>
+                                <div class="main">
+                                    <p>Display Name Style Preview</p>
+                                    <p class="sub">Show off your Discord display name style on your profile and reviews.</p>
+                                </div>
+                            `;
+                            promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
+                        }
+                        let xpLevelPerk = document.createElement("div");
+                        xpLevelPerk.innerHTML = `
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                            </svg>
+                            <div class="main">
+                                <p>Increased Review Character Limit</p>
+                                <p class="sub">Lets you submit reviews with up to 200 characters.</p>
+                            </div>
+                        `;
+                        promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
+                    }
+                    else if (level.level === 4) {
+                        let xpLevelPerk = document.createElement("div");
+                        xpLevelPerk.innerHTML = `
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                            </svg>
+                            <div class="main">
+                                <p>Nameplate Preview</p>
+                                <p class="sub">Show off your Discord nameplate on your profile and reviews.</p>
+                            </div>
+                        `;
+                        promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
+                    }
+                    else if (level.level === 5) {
+                        let xpLevelPerk = document.createElement("div");
+                        xpLevelPerk.innerHTML = `
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                            </svg>
+                            <div class="main">
+                                <p>Increased Review Character Limit</p>
+                                <p class="sub">Lets you submit reviews with up to 300 characters.</p>
+                            </div>
+                        `;
+                        promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
+                    }
 
-                
-                tabPageOutput.querySelector('.modalv3-xp-levels-container').appendChild(promoCard);
-            });
+
+                    tabPageOutput.querySelector('.modalv3-xp-levels-container').appendChild(promoCard);
+                });
+            } else {
+                tabPageOutput.innerHTML = `
+                    <h2>XP Levels</h2>
+
+                    <hr>
+
+                    <div class="modalv3-content-card-1">
+                        <h2 class="modalv3-content-card-header">You are curently not logged in.</h2>
+                        <p class="modalv3-content-card-summary">Login with Discord to level up and gain sweet perks!</p>
+                        <img style="width: 100%;" src="https://cdn.yapper.shop/assets/203.png">
+                        <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
+                            <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"></path>
+                            </svg>
+                            Login with Discord
+                        </button>
+                    </div>
+
+                `;
+            }
 
         } else if (tab === "experiments") {
             tabPageOutput.innerHTML = `
