@@ -9,9 +9,8 @@ let devtoolsOpenCache;
 let currentUserData;
 let usersXPBalance;
 let usersXPEventsCache;
-let usersXPInventoryCache;
-let XPShopCache;
 let openModalsCache = 0;
+let xpLevelStatsCache;
 
 let discordProfileEffectsCache;
 let discordLeakedCategoriesCache;
@@ -320,46 +319,24 @@ async function fetchAndUpdateXpEvents() {
     } catch {}
 }
 
-async function fetchAndUpdateXpInventory() {
+async function fetchAndUpdateXpLevels() {
     try {
-        const xpInventoryRaw = await fetch(redneredAPI + endpoints.USER + endpoints.XP_INVENTORY, {
-            method: "GET",
-            headers: {
-                "Authorization": localStorage.token
-            }
-        });
-
-        if (!xpInventoryRaw.ok) {
-            createNotice(`There was an error fetching ${endpoints.USER + endpoints.XP_INVENTORY}`, 4);
-        } else {
-            const xpInventory = await xpInventoryRaw.json();
-
-            usersXPInventoryCache = xpInventory;
-        }
-    } catch {}
-}
-
-async function fetchAndUpdateXpShop() {
-    try {
-        url = redneredAPI + endpoints.XP_SHOP;
+        url = redneredAPI + endpoints.XP_LEVELS;
         apiUrl = new URL(url);
-        if (settingsStore.staff_show_unpublished_xp_shop === 1) {
-            apiUrl.searchParams.append("include-unpublished", "true");
-        }
 
-        const xpShopRaw = await fetch(apiUrl, {
+        const xpLevelsRaw = await fetch(apiUrl, {
             method: "GET",
             headers: {
                 "Authorization": localStorage.token
             }
         });
 
-        if (!xpShopRaw.ok) {
-            createNotice(`There was an error fetching ${endpoints.XP_SHOP}`, 4);
+        if (!xpLevelsRaw.ok) {
+            createNotice(`There was an error fetching ${endpoints.XP_LEVELS}`, 4);
         } else {
-            const xpShop = await xpShopRaw.json();
+            const xpLevels = await xpLevelsRaw.json();
 
-            XPShopCache = xpShop;
+            xpLevelStatsCache = xpLevels;
         }
     } catch {}
 }
@@ -405,6 +382,26 @@ async function fetchAndSyncUserInfo() {
         }
         return success
     } catch {}
+}
+
+async function updateXpLevelBar() {
+    const xpNeeded = currentUserData.xp_information.xp_to_level - currentUserData.xp_information.xp_into_level;
+    const nextLevel = currentUserData.xp_information.level + 1;
+    
+    const xpBar = document.querySelector('.xp-balance-modalv3-container');
+    if (xpBar) {
+        xpBar.setAttribute('data-tooltip', 'You need '+xpNeeded.toLocaleString()+' more XP for Level '+nextLevel);
+        xpBar.querySelector('.bar').style.width = currentUserData.xp_information.level_percentage+'%';
+        xpBar.querySelector('#my-xp-balance').textContent = 'Level '+currentUserData.xp_information.level;
+    }
+
+    const xpBar2 = document.querySelector('.my-xp-value-container');
+    if (xpBar2) {
+
+        xpBar2.setAttribute('data-tooltip', 'You need '+xpNeeded.toLocaleString()+' more XP for Level '+nextLevel);
+        xpBar2.querySelector('.bar').style.width = currentUserData.xp_information.level_percentage+'%';
+        xpBar2.querySelector('#my-xp-balance').textContent = 'Level '+currentUserData.xp_information.level;
+    }
 }
 
 async function loadSite() {
@@ -585,26 +582,27 @@ async function loadSite() {
     if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1 && currentUserData) {
         let xpBalance = document.createElement("div");
 
-        usersXPBalance = currentUserData.xp_balance;
+        const xpNeeded = currentUserData.xp_information.xp_to_level - currentUserData.xp_information.xp_into_level;
+        const nextLevel = currentUserData.xp_information.level + 1;
 
         xpBalance.classList.add('my-xp-value-container');
         xpBalance.addEventListener("click", () => {
-            setModalv3InnerContent('xp_shop');
+            setModalv3InnerContent('xp_perks');
         });
         xpBalance.classList.add('has-tooltip');
-        xpBalance.setAttribute('data-tooltip', 'You have '+usersXPBalance.toLocaleString()+' XP');
+        xpBalance.setAttribute('data-tooltip', 'You need '+xpNeeded.toLocaleString()+' more XP for Level '+nextLevel);
 
         xpBalance.innerHTML = `
-            <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"/>
-            </svg>                            
-            <p id="my-xp-balance">${usersXPBalance.toLocaleString()}</p>
+            <div class="bar"></div>
+            <p id="my-xp-balance">Level ${currentUserData.xp_information.level}</p>
         `;
+
+        xpBalance.querySelector('.bar').style.width = currentUserData.xp_information.level_percentage+'%';
         
         document.querySelector('.topbar-content').appendChild(xpBalance);
 
         await fetchAndUpdateXpEvents();
-        await fetchAndUpdateXpInventory();
+        await fetchAndUpdateXpLevels();
     }
 
     if (currentUserData) {
@@ -2346,8 +2344,14 @@ async function loadSite() {
                             let maxLength = 100;
 
                             if (counter) {
-                                if (currentUserData.user_features.includes("LONGER_REVIEWS")) {
+                                if (currentUserData.xp_information.level >= 3) {
                                     maxLength = 200;
+                                    counter.classList.add('has-tooltip');
+                                    counter.setAttribute('data-tooltip', 'Review length limit extended thanks to XP!');
+                                }
+
+                                if (currentUserData.xp_information.level >= 5) {
+                                    maxLength = 300;
                                     counter.classList.add('has-tooltip');
                                     counter.setAttribute('data-tooltip', 'Review length limit extended thanks to XP!');
                                 }
@@ -2604,7 +2608,7 @@ async function loadSite() {
                                         xpReviewIcon.classList.add('clickable');
                                         xpReviewIcon.addEventListener("click", function () {
                                             closeModal();
-                                            setModalv3InnerContent('xp_shop');
+                                            setModalv3InnerContent('xp_perks');
                                         });
                                         xpReviewIcon.innerHTML = `
                                             <svg class="has-tooltip" data-tooltip="This user unlocked extended reviews with an XP Perk!" width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -3161,8 +3165,8 @@ async function loadSite() {
                     <div class="side-tabs-button" id="modal-v3-tab-xp_events" onclick="setModalv3InnerContent('xp_events')">
                         <p>Events</p>
                     </div>
-                    <div class="side-tabs-button" id="modal-v3-tab-xp_shop" onclick="setModalv3InnerContent('xp_shop')">
-                        <p>Shop</p>
+                    <div class="side-tabs-button" id="modal-v3-tab-xp_perks" onclick="setModalv3InnerContent('xp_perks')">
+                        <p>Levels</p>
                     </div>
                 `;
             }
@@ -3313,13 +3317,8 @@ async function loadSite() {
                     return
                 }
                 await fetchAndUpdateXpEvents();
-                await fetchAndUpdateXpInventory();
                 await fetchAndUpdateUserInfo();
-                animateXPNumber('my-xp-balance', usersXPBalance + data.xp_reward);
-                try {
-                    animateXPNumber('my-xp-balance-modalv3', usersXPBalance + data.xp_reward);
-                } catch {
-                }
+                await updateXpLevelBar();
                 try {
                     refreshXPEventsList();
                 } catch {
@@ -3481,14 +3480,7 @@ async function loadSite() {
                     return
                 }
                 await fetchAndUpdateXpEvents();
-                await fetchAndUpdateXpInventory();
                 await fetchAndUpdateUserInfo();
-                await loadXpShopData();
-                animateXPNumber('my-xp-balance', usersXPBalance - data.xp_price);
-                try {
-                    animateXPNumber('my-xp-balance-modalv3', usersXPBalance - data.xp_price);
-                } catch {
-                }
                 try {
                     changeModalTab('5');
                 } catch {
@@ -3540,11 +3532,9 @@ async function loadSite() {
             });
 
 
-            const rawUserData = await fetch(redneredAPI + endpoints.USERS + userID, {
-                method: 'GET',
-                headers: {
-                    "Authorization": localStorage.token
-                }
+            apiUrl = new URL(redneredAPI + endpoints.USERS + userID);
+            const rawUserData = await fetch(apiUrl, {
+                method: "GET"
             });
 
             if (!rawUserData.ok) {
@@ -5878,10 +5868,6 @@ async function loadSite() {
                 <hr>
 
                 <div class="xp-balance-modalv3-container">
-                    <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
-                    </svg>                            
-                    <p id="my-xp-balance-modalv3">${currentUserData.xp_balance.toLocaleString()}</p>
                 </div>
 
                 <hr class="inv">
@@ -5908,11 +5894,18 @@ async function loadSite() {
             `;
 
             const xpBalance = tabPageOutput.querySelector('.xp-balance-modalv3-container');
-
-            usersXPBalance = currentUserData.xp_balance;
+            const xpNeeded = currentUserData.xp_information.xp_to_level - currentUserData.xp_information.xp_into_level;
+            const nextLevel = currentUserData.xp_information.level + 1;
 
             xpBalance.classList.add('has-tooltip');
-            xpBalance.setAttribute('data-tooltip', 'You have '+usersXPBalance.toLocaleString()+' XP');
+            xpBalance.setAttribute('data-tooltip', 'You need '+xpNeeded.toLocaleString()+' more XP for Level '+nextLevel);
+
+            xpBalance.innerHTML = `
+                <div class="bar"></div>
+                <p id="my-xp-balance">Level ${currentUserData.xp_information.level}</p>
+            `;
+
+            xpBalance.querySelector('.bar').style.width = currentUserData.xp_information.level_percentage+'%';
 
 
             const unclaimedOutput = tabPageOutput.querySelector('#xp-events-unclaimed');
@@ -6068,286 +6061,140 @@ async function loadSite() {
 
             window.refreshXPEventsList = refreshXPEventsList;
 
-        } else if (tab === "xp_shop") {
+        } else if (tab === "xp_perks") {
             tabPageOutput.innerHTML = `
-                <h2>XP Shop</h2>
+                <h2>Levels</h2>
 
                 <hr>
 
-                <div class="xp-balance-modalv3-container">
-                    <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
-                    </svg>                            
-                    <p id="my-xp-balance-modalv3">${currentUserData.xp_balance.toLocaleString()}</p>
-                </div>
-
-                <hr class="inv">
-
                 <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Browse XP Shop</h2>
-                    <p class="modalv3-content-card-summary">The XP shop is where you can claim perks that enhance your experience when you use Shop Archives!</p>
+                    <h2 class="modalv3-content-card-header">Levels</h2>
+                    <p class="modalv3-content-card-summary">Earn XP and level up! Higher levels grant you better perks.</p>
 
-                    <div class="modalv3-xp-featured-cards-container">
-                        <div class="xp-featured-card loading">
-                            <div class="xp-card-button-pad"></div>
-                            <div class="xp-card-button-pad"></div>
-                        </div>
-                        <div class="xp-featured-card loading">
-                            <div class="xp-card-button-pad"></div>
-                            <div class="xp-card-button-pad"></div>
-                        </div>
-                        <div class="xp-featured-card loading">
-                            <div class="xp-card-button-pad"></div>
-                            <div class="xp-card-button-pad"></div>
-                        </div>
-                        <div class="xp-featured-card loading">
-                            <div class="xp-card-button-pad"></div>
-                            <div class="xp-card-button-pad"></div>
-                        </div>
+                    <div class="modalv3-xp-levels-container">
+
                     </div>
                 </div>
+
             `;
 
-            const xpBalance = tabPageOutput.querySelector('.xp-balance-modalv3-container');
+            xpLevelStatsCache.forEach(level => {
 
-            usersXPBalance = currentUserData.xp_balance;
+                let promoCard = document.createElement("div");
 
-            xpBalance.classList.add('has-tooltip');
-            xpBalance.setAttribute('data-tooltip', 'You have '+usersXPBalance.toLocaleString()+' XP');
+                promoCard.classList.add('modalv3-xp-level-card');
 
+                promoCard.innerHTML = `
+                    <h3>Level ${level.level}</h3>
+                    <div class="xp-balance-modalv3-container">
+                    </div>
+                    <p class="desc">Reaching Level ${level.level} will unlock the following perks:</p>
+                    <div class="xp-level-card-perks"></div>
+                `;
 
-            const featuredXpOutput = tabPageOutput.querySelector('.modalv3-xp-featured-cards-container');
+                const xpBalance = promoCard.querySelector('.xp-balance-modalv3-container');
 
-            loadXpShopData();
+                xpBalance.innerHTML = `
+                    <div class="bar"></div>
+                    <p id="my-xp-balance">${currentUserData.xp_information.xp_into_level}/${level.required_xp}</p>
+                `;
 
-            async function loadXpShopData() {
-                
-                if (!XPShopCache) {
-                    await fetchAndUpdateXpShop();
-                    renderXpShop(XPShopCache)
-                } else {
-                    renderXpShop(XPShopCache)
+                if (currentUserData.xp_information.level >= level.level) {
+                    xpBalance.querySelector('#my-xp-balance').textContent = `${level.required_xp}/${level.required_xp}`;
+                    promoCard.querySelector('.desc').textContent = `Reaching Level ${level.level} has unlocked the following perks:`;
+                    xpBalance.querySelector('.bar').classList.add('shimmer');
+                    xpBalance.querySelector('.bar').style.width = '100%';
+                }
+                else if (currentUserData.xp_information.level < level.level - 1) {
+                    xpBalance.querySelector('#my-xp-balance').textContent = `0/${level.required_xp}`;
+                }
+                else {
+                    xpBalance.querySelector('.bar').style.width = currentUserData.xp_information.level_percentage+'%';
                 }
 
-            }
-            
-            window.loadXpShopData = loadXpShopData;
 
-            function renderXpShop(data) {
-                featuredXpOutput.innerHTML = ``;
-
-                function renderXpItemCard(xpItem) {
-                    let xpCard = document.createElement("div");
-
-                    xpCard.classList.add('xp-featured-card');
-
-                    xpCard.innerHTML = `
-                        <div class="xp-card-preview">
-                            <div class="section-1">
-                                <div class="avatar-container">
-                                    <div class="avatar" style="background-image: url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128);"></div>
-                                </div>
-                                <p>${currentUserData.global_name ? currentUserData.global_name : currentUserData.username}</p>
-                            </div>
-                            <div class="section-2">
-                                <div></div>
-                                <div></div>
-                            </div>
-                        </div>
-                        <div class="xp-card-bottom">
-                            <h3>${xpItem.name}</h3>
-                            <p>${xpItem.summary}</p>
-                        </div>
-                        <h2 class="inv">XP</h2>
-                        <div class="xp-card-price-container">
-                            <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
-                            </svg>
-                            <p>${xpItem.price}</p>
+                if (level.level === 1) {
+                    let xpLevelPerk = document.createElement("div");
+                    xpLevelPerk.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                        </svg>
+                        <div class="main">
+                            <p>Avatar Decoration Preview</p>
+                            <p class="sub">Show off your Discord avatar decoration on your profile and reviews.</p>
                         </div>
                     `;
-                    xpCard.classList.add('clickable');
-                    const alreadyClaimedText = xpCard.querySelector('.xp-card-price-container');
-
-                    let alreadyClaimed = null;
-                    usersXPInventoryCache.forEach(claimed => {
-                        if (claimed.id === xpItem.id) {
-                            alreadyClaimed = true;
-                        }
-                    });
-
-                    if (xpItem.id === "2") {
-                        xpCard.querySelector('.xp-card-preview').innerHTML = `
-                            <div class="section-1">
-                                <div class="avatar-container">
-                                    <div class="avatar" style="background-image: url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128);"></div>
-                                </div>
-                                <p>${currentUserData.global_name ? currentUserData.global_name : currentUserData.username}</p>
-                                <div class="review-server-tag-container">
-                                    <img class="server-tag-img" src="https://cdn.yapper.shop/assets/31.png">
-                                    <p class="server-tag-title"></p>
-                                </div>
-                            </div>
-                            <div class="section-2">
-                                <div></div>
-                                <div></div>
-                            </div>
-                        `;
-                        const serverTagAsset = xpCard.querySelector('.review-server-tag-container');
-    
-                        if (currentUserData.primary_guild) {
-    
-                            serverTagAsset.querySelector('.server-tag-img').src = `https://cdn.discordapp.com/clan-badges/${currentUserData.primary_guild.identity_guild_id}/${currentUserData.primary_guild.badge}.png?size=24`;
-    
-                            serverTagAsset.querySelector('.server-tag-title').textContent = currentUserData.primary_guild.tag;
-    
-                        } else {
-                            serverTagAsset.remove();
-                        }
-                    } else if (xpItem.id === "4") {
-                        xpCard.querySelector('.xp-card-preview').innerHTML = `
-                            <div class="section-1">
-                                <div class="avatar-container">
-                                    <div class="avatar" style="background-image: url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128);"></div>
-                                </div>
-                                <p>${currentUserData.global_name ? currentUserData.global_name : currentUserData.username}</p>
-                            </div>
-                            <div class="section-2">
-                                <div></div>
-                                <div></div>
-                            </div>
-                            <div class="section-3">
-                                <div></div>
-                                <div></div>
-                            </div>
-                        `;
-                    } else if (currentUserData.avatar_decoration_data && xpItem.id === "5") {
-                        xpCard.querySelector('.xp-card-preview').innerHTML = `
-                            <div class="section-1">
-                                <div class="avatar-container">
-                                    <div class="avatar" style="background-image: url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128);"></div>
-                                    <img class="avatar-decoration" src="https://cdn.discordapp.com/avatar-decoration-presets/${currentUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=false">
-                                </div>
-                                <p>${currentUserData.global_name ? currentUserData.global_name : currentUserData.username}</p>
-                            </div>
-                            <div class="section-2">
-                                <div></div>
-                                <div></div>
-                            </div>
-                        `;
-                        const decorationPreview = xpCard.querySelector('.avatar-decoration')
-                        xpCard.addEventListener("mouseenter", () => {
-                            decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${currentUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=true`;
-                        });
-                        xpCard.addEventListener("mouseleave", () => {
-                            decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${currentUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=false`;
-                        });
-                    } else if (currentUserData.collectibles && xpItem.id === "19") {
-                        xpCard.querySelector('.xp-card-preview').innerHTML = `
-                            <div class="xp-card-nameplate-container"></div>
-                            <div class="section-1">
-                                <div class="avatar-container">
-                                    <div class="avatar" style="background-image: url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128);"></div>
-                                </div>
-                                <p>${currentUserData.global_name ? currentUserData.global_name : currentUserData.username}</p>
-                            </div>
-                            <div class="section-2">
-                                <div></div>
-                                <div></div>
-                            </div>
-                        `;
-                        if (currentUserData.collectibles.nameplate.sa_override_src) {
-                            let nameplatePreview = document.createElement("img");
-
-                            nameplatePreview.src = currentUserData.collectibles.nameplate.sa_override_src;
-    
-                            xpCard.querySelector('.xp-card-nameplate-container').appendChild(nameplatePreview);
-                        } else {
-                            let nameplatePreview = document.createElement("video");
-
-                            nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${currentUserData.collectibles.nameplate.asset}asset.webm`;
-                            nameplatePreview.disablePictureInPicture = true;
-                            nameplatePreview.muted = true;
-                            nameplatePreview.loop = true;
-                            nameplatePreview.playsInline = true;
-    
-                            xpCard.addEventListener("mouseenter", () => {
-                                nameplatePreview.play();
-                            });
-                            xpCard.addEventListener("mouseleave", () => {
-                                nameplatePreview.pause();
-                            });
-
-                            const bgcolor = nameplate_palettes[currentUserData.collectibles.nameplate.palette].darkBackground;
-    
-                            xpCard.querySelector('.xp-card-nameplate-container').style.backgroundImage = `linear-gradient(90deg, #00000000 0%, ${bgcolor} 200%)`;
-    
-                            xpCard.querySelector('.xp-card-nameplate-container').appendChild(nameplatePreview);
-                        }
-                    }
-
-                    if (!alreadyClaimed) {
-                        if (!currentUserData.collectibles && xpItem.id === "19") {
-                            xpCard.style.cursor = 'not-allowed';
-                            alreadyClaimedText.style.color = 'var(--text-tertiary)';
-                            alreadyClaimedText.classList.add('has-tooltip');
-                            alreadyClaimedText.setAttribute('data-tooltip', 'You don\'t have a Nameplate on your profile');
-                            xpCard.classList.remove('clickable');
-                        } else if (!currentUserData.primary_guild && xpItem.id === "2") {
-                            xpCard.style.cursor = 'not-allowed';
-                            alreadyClaimedText.style.color = 'var(--text-tertiary)';
-                            alreadyClaimedText.classList.add('has-tooltip');
-                            alreadyClaimedText.setAttribute('data-tooltip', 'You don\'t have a Server Tag on your profile');
-                            xpCard.classList.remove('clickable');
-                        } else if (!currentUserData.avatar_decoration_data && xpItem.id === "5") {
-                            xpCard.style.cursor = 'not-allowed';
-                            alreadyClaimedText.style.color = 'var(--text-tertiary)';
-                            alreadyClaimedText.classList.add('has-tooltip');
-                            alreadyClaimedText.setAttribute('data-tooltip', 'You don\'t have an Avatar Decoration on your profile');
-                            xpCard.classList.remove('clickable');
-                        } else if (xpItem.price > currentUserData.xp_balance) {
-                            xpCard.style.cursor = 'not-allowed';
-                            alreadyClaimedText.style.color = 'var(--text-tertiary)';
-                            alreadyClaimedText.classList.add('has-tooltip');
-                            alreadyClaimedText.setAttribute('data-tooltip', 'Insufficient XP');
-                            xpCard.classList.remove('clickable');
-                        } else {
-                            xpCard.addEventListener('click', () => {
-                                openModal('modalv2', 'xpClaim', xpItem.id);
-                            });
-                        }
-                    } else {
-                        alreadyClaimedText.innerHTML = `
-                            <svg viewBox="0 0 20 20" fill="none">
-                                <path fill="currentColor" d="M7.89561 14.8538L6.30462 13.2629L14.3099 5.25755L15.9009 6.84854L7.89561 14.8538Z"></path>
-                                <path fill="currentColor" d="M4.08643 11.0903L5.67742 9.49929L9.4485 13.2704L7.85751 14.8614L4.08643 11.0903Z"></path>
+                    promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
+                }
+                else if (level.level === 2) {
+                    let xpLevelPerk = document.createElement("div");
+                    xpLevelPerk.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                        </svg>
+                        <div class="main">
+                            <p>Server Tag Preview</p>
+                            <p class="sub">Show off your Discord server tag on your profile and reviews.</p>
+                        </div>
+                    `;
+                    promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
+                }
+                else if (level.level === 3) {
+                    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_xp_level_perk')?.treatment === 1) {
+                        let xpLevelPerk = document.createElement("div");
+                        xpLevelPerk.innerHTML = `
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="3" fill="currentColor"/>
                             </svg>
-                            <p>Perk Active</p>
+                            <div class="main">
+                                <p>Display Name Style Preview</p>
+                                <p class="sub">Show off your Discord display name style on your profile and reviews.</p>
+                            </div>
                         `;
-                        xpCard.classList.remove('clickable');
+                        promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
-
-                    featuredXpOutput.appendChild(xpCard);
+                    let xpLevelPerk = document.createElement("div");
+                    xpLevelPerk.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                        </svg>
+                        <div class="main">
+                            <p>Increased Review Character Limit</p>
+                            <p class="sub">Lets you submit reviews with up to 200 characters.</p>
+                        </div>
+                    `;
+                    promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
+                }
+                else if (level.level === 4) {
+                    let xpLevelPerk = document.createElement("div");
+                    xpLevelPerk.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                        </svg>
+                        <div class="main">
+                            <p>Nameplate Preview</p>
+                            <p class="sub">Show off your Discord nameplate on your profile and reviews.</p>
+                        </div>
+                    `;
+                    promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
+                }
+                else if (level.level === 5) {
+                    let xpLevelPerk = document.createElement("div");
+                    xpLevelPerk.innerHTML = `
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                        </svg>
+                        <div class="main">
+                            <p>Increased Review Character Limit</p>
+                            <p class="sub">Lets you submit reviews with up to 300 characters.</p>
+                        </div>
+                    `;
+                    promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                 }
 
-                data.featured.forEach(xpItem => {
-                    renderXpItemCard(xpItem);
-                });
-                data.shop.forEach(xpItem => {
-                    renderXpItemCard(xpItem);
-                });
-            }
-
-        } else if (tab === "xp_inventory") {
-            tabPageOutput.innerHTML = `
-                <h2>Inventory</h2>
-
-                <hr>
-
-                <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Coming in update 7.1</h2>
-                </div>
-            `;
+                
+                tabPageOutput.querySelector('.modalv3-xp-levels-container').appendChild(promoCard);
+            });
 
         } else if (tab === "experiments") {
             tabPageOutput.innerHTML = `
@@ -6675,6 +6522,17 @@ async function loadSite() {
                             </div>
                         </div>
                     </div>
+                    <div class="setting">
+                        <div class="setting-info">
+                            <p class="setting-title">Auth: Remove prompt=none</p>
+                            <p class="setting-description">You'll want to enable this if discord browser forces you to auth with the app when you don't want it to.</p>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="staff_auth_remove_none_promt_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
 
@@ -6731,6 +6589,11 @@ async function loadSite() {
 
             devtoolsContainer.querySelector('#staff_allow_category_only_event_claiming_in_events_tab_toggle').addEventListener("click", () => {
                 toggleSetting('staff_allow_category_only_event_claiming_in_events_tab');
+                updateToggleStates();
+            });
+
+            devtoolsContainer.querySelector('#staff_auth_remove_none_promt_toggle').addEventListener("click", () => {
+                toggleSetting('staff_auth_remove_none_promt');
                 updateToggleStates();
             });
 
@@ -6890,7 +6753,10 @@ function loginWithDiscord() {
     } else if (appType === "Pre-Release") {
         redirect = redneredAPI + endpoints.BETA_LOGIN_CALLBACK
     }
-    const discordUrl = `https://discord.com/api/oauth2/authorize?client_id=1342635740768501886&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&scope=identify`;
+    let discordUrl = `https://discord.com/api/oauth2/authorize?client_id=1342635740768501886&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&scope=identify&prompt=none`;
+    if (settingsStore.staff_auth_remove_none_promt === 1) {
+        discordUrl = `https://discord.com/api/oauth2/authorize?client_id=1342635740768501886&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&scope=identify`;
+    }
     window.location.href = discordUrl;
 }
 
@@ -7010,51 +6876,6 @@ function animateNumber(element, targetValue, duration = 1000, options = {}) {
         }
         
         targetElement.textContent = formattedValue;
-        
-        // Continue animation if not complete
-        if (progress < 1) {
-            requestAnimationFrame(updateNumber);
-        }
-    }
-    
-    requestAnimationFrame(updateNumber);
-}
-
-
-
-function animateXPNumber(elementId, targetValue, duration = 1000) {
-    const element = document.getElementById(elementId);
-    const startValue = parseFloat(element.textContent.replace(/,/g, '')) || 0;
-    const difference = targetValue - startValue;
-    const startTime = performance.now();
-    
-    // Easing function for smooth animation (ease-out)
-    function easeOut(t) {
-        return 1 - Math.pow(1 - t, 3);
-    }
-    
-    function updateNumber(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Apply easing function
-        const easedProgress = easeOut(progress);
-        
-        // Calculate current value
-        const currentValue = startValue + (difference * easedProgress);
-        
-        // Format number with commas for readability
-        const formattedValue = Math.round(currentValue).toLocaleString();
-        element.textContent = formattedValue;
-        usersXPBalance = Math.round(currentValue);
-
-        if (document.querySelector('.my-xp-value-container')) {
-            document.querySelector('.my-xp-value-container').setAttribute('data-tooltip', 'You have '+usersXPBalance.toLocaleString()+' XP');
-        }
-
-        if (document.querySelector('.xp-balance-modalv3-container')) {
-            document.querySelector('.xp-balance-modalv3-container').setAttribute('data-tooltip', 'You have '+usersXPBalance.toLocaleString()+' XP');
-        }
         
         // Continue animation if not complete
         if (progress < 1) {
