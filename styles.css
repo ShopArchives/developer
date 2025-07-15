@@ -4125,117 +4125,7 @@ hr {
 
 
 
-.modalv3-xp-featured-cards-container, .modalv3-xp-shop-cards-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 5px;
-}
 
-.xp-featured-card.loading {
-    animation: shop-fetching-anim 4s infinite;
-}
-
-.xp-featured-card, .xp-shop-card {
-    position: relative;
-    background-color: var(--card-outer);
-    border-radius: 5px;
-    padding: 5px;
-}
-
-.xp-featured-card .xp-card-bottom p, .xp-shop-card .xp-card-bottom p {
-    color: var(--text-secondary);
-}
-
-.xp-card-button-pad {
-    height: 40px;
-}
-
-.xp-featured-card .xp-card-preview, .xp-shop-card .xp-card-preview {
-    position: relative;
-    display: inline-flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-    padding: 10px;
-    box-sizing: border-box;
-    border-radius: 5px 5px 0px 0px;
-    background-color: var(--background-tertiary);
-}
-
-.xp-card-preview .section-1 {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    z-index: 2;
-}
-
-.xp-card-preview .section-2 {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 5px;
-    z-index: 2;
-}
-
-.xp-card-preview .section-3 {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 5px;
-    z-index: 2;
-}
-
-.xp-card-preview .section-2 div, .xp-card-preview .section-3 div {
-    background-color: var(--background-primary);
-    border-radius: 50px;
-    height: 20px;
-}
-
-.avatar-container {
-    position: relative;
-    height: 30px;
-    width: 30px;
-}
-
-.xp-card-preview .avatar {
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    scale: 0.83;
-    top: 0;
-    left: 0;
-    background-color: var(--background-primary);
-    border-radius: 50%;
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
-}
-
-.xp-card-preview .avatar-decoration {
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    top: 0;
-    left: 0;
-}
-
-.xp-card-bottom {
-    position: relative;
-    padding: 5px;
-}
-
-.xp-card-price-container {
-    position: absolute;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    bottom: 10px;
-    left: 10px;
-}
-
-.xp-card-price-container svg {
-    height: 20px;
-    width: 20px;
-}
 
 .xp-card-nameplate-container {
     position: absolute;
@@ -4330,11 +4220,6 @@ hr {
 .modalv3-xp-level-card .xp-level-card-perks .sub {
     color: var(--text-secondary);
     font-size: 12px;
-}
-
-.modalv3-xp-level-card .xp-level-card-perks .link {
-    text-decoration: underline;
-    cursor: pointer;
 }
 
 .modalv3-xp-level-card .xp-level-card-perks .main-err {

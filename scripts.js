@@ -3644,7 +3644,7 @@ async function loadSite() {
                             <div class="user-modal-part1">
                                 <div class="xp-card-nameplate-container"></div>
                                 <div class="user-modal-avatar-preview">
-                                    <img class="avatar" src="https://cdn.discordapp.com/avatars/${cacheUserData.id}/${cacheUserData.avatar}.png?size=480">
+                                    <img class="avatar">
                                     <img class="deco">
                                 </div>
                                 <div class="sub">
@@ -3652,6 +3652,10 @@ async function loadSite() {
                                         <h1 id="users-displayname"></h1>
                                         <div class="review-system-tag-container has-tooltip" data-tooltip="Official Shop Archives Account">
                                             <p class="review-system-tag">SYSTEM</p>
+                                        </div>
+                                        <div class="review-server-tag-container">
+                                            <img class="server-tag-img" src="https://cdn.yapper.shop/assets/31.png">
+                                            <p class="server-tag-title"></p>
                                         </div>
                                     </div>
                                     <p id="users-username"></p>
@@ -3689,10 +3693,6 @@ async function loadSite() {
                             </div>
                         </div>
                     `;
-
-                    if (cacheUserData.profile_information.xp_balance === 0) {
-                        modalInner.querySelector('#user-level-rank').remove();
-                    }
 
                     if (cacheUserData.collectibles?.nameplate.sa_override_src) {
                         let nameplatePreview = document.createElement("img");
@@ -3737,7 +3737,7 @@ async function loadSite() {
                     }
 
 
-                    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1) {
+                    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'render_user_level_stats')?.treatment === 1) {
                         animateNumber(modalInner.querySelector('#animate-level-xp'), cacheUserData.profile_information.xp_into_level, 2000, {
                             useCommas: false
                         });
@@ -3747,6 +3747,10 @@ async function loadSite() {
                                 modalInner.querySelector('.bar').style.width = cacheUserData.profile_information.level_percentage+'%';
                             });
                         });
+
+                        if (cacheUserData.profile_information.xp_balance === 0) {
+                            modalInner.querySelector('#user-level-rank').remove();
+                        }
                     } else {
                         document.querySelectorAll('.xp-exp-only').forEach(el => {
                             el.remove();
@@ -3760,7 +3764,25 @@ async function loadSite() {
 
                     if (!cacheUserData.types.system) modalInner.querySelector('.review-system-tag-container').remove();
 
+
+                    const serverTagAsset = modalInner.querySelector('.review-server-tag-container');
+    
+                    if (cacheUserData.primary_guild) {
+    
+                        serverTagAsset.querySelector('.server-tag-img').src = `https://cdn.discordapp.com/clan-badges/${cacheUserData.primary_guild.identity_guild_id}/${cacheUserData.primary_guild.badge}.png?size=24`;
+    
+                        serverTagAsset.querySelector('.server-tag-title').textContent = cacheUserData.primary_guild.tag;
+    
+                    } else {
+                        serverTagAsset.remove();
+                    }
+
+
                     const avatar = modalInner.querySelector('.avatar');
+                    let userAvatar = 'https://cdn.discordapp.com/avatars/'+cacheUserData.id+'/'+cacheUserData.avatar+'.webp?size=480';
+                    if (cacheUserData.avatar.includes('a_')) userAvatar = 'https://cdn.discordapp.com/avatars/'+cacheUserData.id+'/'+cacheUserData.avatar+'.gif?size=480';
+                    avatar.src = userAvatar;
+
                     avatar.addEventListener("load", () => {
                         if (avatar.naturalWidth === 0 || avatar.naturalHeight === 0) {
                             avatar.src = "https://cdn.yapper.shop/assets/183.png";
@@ -3769,6 +3791,7 @@ async function loadSite() {
                     avatar.addEventListener("error", () => {
                         avatar.src = "https://cdn.yapper.shop/assets/183.png";
                     });
+
                     
                     const deco = modalInner.querySelector('.deco');
                     if (cacheUserData.avatar_decoration_data) deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${cacheUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=true`;
@@ -5892,14 +5915,6 @@ async function loadSite() {
                     <div class="modalv3-xp-events-container" id="xp-events-unclaimed">
 
                     </div>
-                </div>
-
-                <hr>
-
-                <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Claimed Events</h2>
-                    <p class="modalv3-content-card-summary">Past events that you've claimed.</p>
-
                     <div class="modalv3-xp-events-container" id="xp-events-claimed">
 
                     </div>
@@ -5992,9 +6007,17 @@ async function loadSite() {
                         promoCard.classList.add('modalv3-xp-reward');
                         promoCard.classList.add('unclaimed');
 
+                        let renderedName = promo.name;
+
+                        if (promo.category_data.type === 1) {
+                            renderedName = `Check out the ${promo.name} category for ${promo.xp_reward.toLocaleString()} XP!`;
+                        } else if (promo.category_data.type === 2) {
+                            renderedName = `Check out the ${promo.name} leaks for ${promo.xp_reward.toLocaleString()} XP!`;
+                        }
+
                         promoCard.innerHTML = `
                             <div id="xp-event-expires-at"></div>
-                            <h3>${promo.name}</h3>
+                            <h3>${renderedName}</h3>
                             <p class="desc">You have ${promo.xp_reward.toLocaleString()} XP waiting for you, visit the category to claim it.</p>
                             <button id="take-me-there-xp-button">
                                 Take Me There
@@ -6066,20 +6089,7 @@ async function loadSite() {
                     }
                 });
 
-                if (claimedCount === 0) {
-                    let promoCard = document.createElement("div");
-
-                    promoCard.classList.add('modalv3-xp-reward');
-
-                    promoCard.innerHTML = `
-                        <h3>Nothing yet...</h3>
-                        <p class="desc">Looks like you haven't claimed any event rewards yet. When you do, they'll show up here.</p>
-                    `;
-                    
-                    claimedOutput.appendChild(promoCard)
-                }
-
-                if (unclaimedCount === 0) {
+                if (unclaimedCount === 0 && claimedCount === 0) {
                     let promoCard = document.createElement("div");
 
                     promoCard.classList.add('modalv3-xp-reward');
@@ -6090,6 +6100,8 @@ async function loadSite() {
                     `;
                     
                     unclaimedOutput.appendChild(promoCard);
+                } else if (unclaimedCount === 0) {
+                    unclaimedOutput.remove();
                 }
             }
 
@@ -6102,10 +6114,10 @@ async function loadSite() {
                 <hr>
 
                 <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Levels</h2>
+                    <h2 class="modalv3-content-card-header">Perks</h2>
                     <p class="modalv3-content-card-summary">Earn XP and level up! Higher levels grant you better perks.</p>
 
-                    <div class="modalv3-xp-levels-container">
+                    <div class="modalv3-xp-levels-container" id="all-levels">
 
                     </div>
                 </div>
@@ -6163,8 +6175,7 @@ async function loadSite() {
                             let cardError = document.createElement("div");
                             cardError.classList.add('main-err');
                             cardError.innerHTML = `
-                                <p>You are not eligible for this perk.</p>
-                                <a class="sub link has-tooltip" data-tooltip="You don't have an avatar decoration on your Discord profile.">Learn More</a>
+                                <p class="has-tooltip" data-tooltip="You don't have an avatar decoration on your Discord profile">You are not eligible for this perk.</p>
                             `;
                             xpLevelPerk.appendChild(cardError);
                         }
@@ -6185,8 +6196,7 @@ async function loadSite() {
                             let cardError = document.createElement("div");
                             cardError.classList.add('main-err');
                             cardError.innerHTML = `
-                                <p>You are not eligible for this perk.</p>
-                                <a class="sub link has-tooltip" data-tooltip="You don't have a server tag on your Discord profile.">Learn More</a>
+                                <p class="has-tooltip" data-tooltip="You don't have a server tag on your Discord profile">You are not eligible for this perk.</p>
                             `;
                             xpLevelPerk.appendChild(cardError);
                         }
@@ -6208,8 +6218,7 @@ async function loadSite() {
                                 let cardError = document.createElement("div");
                                 cardError.classList.add('main-err');
                                 cardError.innerHTML = `
-                                    <p>You are not eligible for this perk.</p>
-                                    <a class="sub link has-tooltip" data-tooltip="You don't have a display name style on your Discord profile.">Learn More</a>
+                                    <p class="has-tooltip" data-tooltip="You don't have a display name style on your Discord profile">You are not eligible for this perk.</p>
                                 `;
                                 xpLevelPerk.appendChild(cardError);
                             }
@@ -6242,8 +6251,7 @@ async function loadSite() {
                             let cardError = document.createElement("div");
                             cardError.classList.add('main-err');
                             cardError.innerHTML = `
-                                <p>You are not eligible for this perk.</p>
-                                <a class="sub link has-tooltip" data-tooltip="You don't have a nameplate on your Discord profile.">Learn More</a>
+                                <p class="has-tooltip" data-tooltip="You don't have a nameplate on your Discord profile">You are not eligible for this perk.</p>
                             `;
                             xpLevelPerk.appendChild(cardError);
                         }
@@ -6264,7 +6272,7 @@ async function loadSite() {
                     }
 
 
-                    tabPageOutput.querySelector('.modalv3-xp-levels-container').appendChild(promoCard);
+                    tabPageOutput.querySelector('#all-levels').appendChild(promoCard);
                 });
             } else {
                 tabPageOutput.innerHTML = `

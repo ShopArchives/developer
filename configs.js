@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.2";
+const appVersion = "7.3.3";
 const appType = "Dev";
 
 const endpoints = {
@@ -360,6 +360,22 @@ const nameplate_palettes = {
 };
 
 const experiments = [
+    {
+        title: `Render User Level Stats`,
+        codename: `render_user_level_stats`,
+        release_config: {
+            year: `2025`,
+            month: `07`
+        },
+        treatments: [
+            {
+                title: `Not Eligible`
+            },
+            {
+                title: `Display level stats on user profiles`
+            }
+        ]
+    },
     {
         title: `Display Name Style Render`,
         codename: `display_name_style_render`,
