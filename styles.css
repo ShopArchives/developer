@@ -1,4 +1,86 @@
 @import url(https://cdn.yapper.shop/custom-collectibles/marketing.css);
+@import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=BioRhyme:wght@600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cherry+Bomb+One&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chicle&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=MuseoModerno:ital,wght@0,600;1,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@600&display=swap');
+
+.dns-BANGERS {
+    font-family: "Bangers", system-ui;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.dns-BIO_RHYME {
+    font-family: "BioRhyme", serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-style: normal;
+    font-variation-settings: "wdth" 100;
+}
+
+.dns-CHERRY_BOMB {
+    font-family: "Cherry Bomb One", system-ui;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.dns-CHICLE {
+    font-family: "Chicle", serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: Compagnon;
+    src: url('https://cdn.yapper.shop/assets/fonts/Compagnon-Bold.ttf') format('truetype');
+}
+
+.dns-COMPAGNON {
+    font-family: Compagnon, serif;
+}
+
+.dns-MUSEO_MODERNO {
+    font-family: "MuseoModerno", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: Neo castel;
+    src: url('https://cdn.yapper.shop/assets/fonts/Neo-castel.ttf') format('truetype');
+}
+
+.dns-NEO_CASTEL {
+    font-family: Neo castel, serif;
+}
+
+.dns-PIXELIFY {
+    font-family: "Pixelify Sans", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: Ribes;
+    src: url('https://cdn.yapper.shop/assets/fonts/0640a78957378fbd.woff2') format('woff2');
+}
+
+.dns-RIBES {
+    font-family: Ribes, serif;
+}
+
+@font-face {
+    font-family: Sinistre;
+    src: url('https://cdn.yapper.shop/assets/fonts/bccdc9cd3d272519.woff2') format('woff2');
+}
+
+.dns-SINISTRE {
+    font-family: Sinistre, serif;
+}
 
 :root {
     --background-primary: #393A41;
@@ -2064,7 +2146,6 @@ hr {
 
 
 
-
 /* Modal Category */
 
 .category-modal {
@@ -2532,7 +2613,7 @@ hr {
 
 .review-nameplate-container video {
     height: 100%;
-    width: 100%;
+    width: auto;
     object-fit: cover;
     object-position: right;
     position: absolute;
@@ -2543,7 +2624,7 @@ hr {
 
 .review-nameplate-container img {
     height: 100%;
-    width: 100%;
+    width: auto;
     object-fit: cover;
     object-position: right;
     position: absolute;
@@ -3600,7 +3681,6 @@ hr {
 }
 
 .modalv3-side-tabs-container hr {
-    width: 90%;
     border-color: var(--modalv3-hr-color2);
 }
 
@@ -4148,7 +4228,7 @@ hr {
 
 .xp-card-nameplate-container video {
     height: 100%;
-    width: 100%;
+    width: auto;
     object-fit: cover;
     object-position: right;
     position: absolute;
@@ -4159,7 +4239,7 @@ hr {
 
 .xp-card-nameplate-container img {
     height: 100%;
-    width: 100%;
+    width: auto;
     object-fit: cover;
     object-position: right;
     position: absolute;

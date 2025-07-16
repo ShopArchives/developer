@@ -19,6 +19,8 @@ let discordCollectiblesCategoriesCache;
 let discordOrbsCategoriesCache;
 let discordMiscellaneousCategoriesCache;
 
+let hasDroveAdminPanelPlugin = false;
+
 
 const overridesKey = 'experimentOverrides';
 const serverKey = 'serverExperiments';
@@ -403,6 +405,17 @@ async function updateXpLevelBar() {
         xpBar2.querySelector('#my-xp-balance').textContent = 'Level '+currentUserData.xp_information.level;
     }
 }
+
+
+function findDisplayNameStyle(id) {
+    const num = Number(id);
+    const matchingName = Object.entries(display_name_styles_fonts).find(
+      ([name, value]) => value === num
+    )?.[0];
+
+    return matchingName;
+}
+
 
 async function loadSite() {
 
@@ -2836,6 +2849,10 @@ async function loadSite() {
     
                                     reviewDiv.querySelector('.review-user-display-name').textContent = review.user.global_name ? review.user.global_name : review.user.username;
                                     reviewDiv.querySelector('.review-text-content').textContent = review.text;
+                                    if (review.user.display_name_styles && JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_render')?.treatment === 1) {
+                                        const dns = findDisplayNameStyle(review.user.display_name_styles.font_id);
+                                        reviewDiv.querySelector('.review-user-display-name').classList.add('dns-'+dns);
+                                    }
                                 }
                                 
                                 if (review.types.pinned === true) {
@@ -3527,6 +3544,7 @@ async function loadSite() {
         } else if (type === "openUserModal") {
             const userID = data1;
             let cacheUserData;
+            let firstTimeOpeningModal = true;
 
 
             document.body.appendChild(modal_loading);
@@ -3544,11 +3562,26 @@ async function loadSite() {
                 });
             });
 
+            let methodAndHeaders = {
+                method: "GET"
+            };
+
+            if (hasDroveAdminPanelPlugin) {
+                methodAndHeaders = {
+                    method: "GET",
+                    headers: {
+                        "Authorization": localStorage.token
+                    }
+                };
+            }
 
             apiUrl = new URL(redneredAPI + endpoints.USERS + userID);
-            const rawUserData = await fetch(apiUrl, {
-                method: "GET"
-            });
+            if (hasDroveAdminPanelPlugin) {
+                apiUrl.searchParams.append("include-debug-info", "true");
+            }
+            const rawUserData = await fetch(apiUrl,
+                methodAndHeaders
+            );
 
             if (!rawUserData.ok) {
                 closeModal();
@@ -3594,6 +3627,12 @@ async function loadSite() {
                             </svg>
                             <p>Profile</p>
                         </div>
+                        <div class="tab" id="user-modal-tab-3">
+                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z" class=""></path>
+                            </svg>
+                            <p>Edit</p>
+                        </div>
                         <div class="tab" id="user-modal-tab-2">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M15.7376 3.18925C15.4883 2.93731 15.0814 2.93686 14.8316 3.18824L14.0087 4.01625C13.7618 4.26471 13.7614 4.66581 14.0078 4.91476L20.3804 11.3527C20.6265 11.6013 20.6265 12.0017 20.3804 12.2503L14.0078 18.6882C13.7614 18.9373 13.7618 19.3383 14.0087 19.5867L14.8316 20.4148C15.0814 20.6662 15.4883 20.6658 15.7376 20.4138L23.815 12.2503C24.061 12.0016 24.061 11.6014 23.815 11.3528L15.7376 3.18925Z" fill="currentColor"/>
@@ -3613,6 +3652,8 @@ async function loadSite() {
                             <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
                         </div>
                     </div>
+
+                    <textarea id="always-existing-user-json" style="display: none;"></textarea>
                 </div>
             `;
 
@@ -3738,15 +3779,20 @@ async function loadSite() {
 
 
                     if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'render_user_level_stats')?.treatment === 1) {
-                        animateNumber(modalInner.querySelector('#animate-level-xp'), cacheUserData.profile_information.xp_into_level, 2000, {
-                            useCommas: false
-                        });
-
-                        requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                                modalInner.querySelector('.bar').style.width = cacheUserData.profile_information.level_percentage+'%';
+                        if (firstTimeOpeningModal) {
+                            animateNumber(modalInner.querySelector('#animate-level-xp'), cacheUserData.profile_information.xp_into_level, 2000, {
+                                useCommas: false
                             });
-                        });
+
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                    modalInner.querySelector('.bar').style.width = cacheUserData.profile_information.level_percentage+'%';
+                                });
+                            });
+                        } else {
+                            modalInner.querySelector('#animate-level-xp').textContent = cacheUserData.profile_information.xp_into_level;
+                            modalInner.querySelector('.bar').style.width = cacheUserData.profile_information.level_percentage+'%';
+                        }
 
                         if (cacheUserData.profile_information.xp_balance === 0) {
                             modalInner.querySelector('#user-level-rank').remove();
@@ -3757,8 +3803,13 @@ async function loadSite() {
                         });
                     }
 
-                    if (cacheUserData.global_name) modalInner.querySelector('#users-displayname').textContent = cacheUserData.global_name;
-                    else modalInner.querySelector('#users-displayname').remove();
+                    const displayName = modalInner.querySelector('#users-displayname');
+                    if (cacheUserData.global_name) displayName.textContent = cacheUserData.global_name;
+                    else displayName.textcontent = cacheUserData.username;
+                    if (cacheUserData.display_name_styles && JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_render')?.treatment === 1) {
+                        const dns = findDisplayNameStyle(cacheUserData.display_name_styles.font_id);
+                        displayName.classList.add('dns-'+dns);
+                    }
 
                     if (cacheUserData.username) modalInner.querySelector('#users-username').textContent = cacheUserData.username;
 
@@ -3780,7 +3831,7 @@ async function loadSite() {
 
                     const avatar = modalInner.querySelector('.avatar');
                     let userAvatar = 'https://cdn.discordapp.com/avatars/'+cacheUserData.id+'/'+cacheUserData.avatar+'.webp?size=480';
-                    if (cacheUserData.avatar.includes('a_')) userAvatar = 'https://cdn.discordapp.com/avatars/'+cacheUserData.id+'/'+cacheUserData.avatar+'.gif?size=480';
+                    if (cacheUserData.avatar?.includes('a_')) userAvatar = 'https://cdn.discordapp.com/avatars/'+cacheUserData.id+'/'+cacheUserData.avatar+'.gif?size=480';
                     avatar.src = userAvatar;
 
                     avatar.addEventListener("load", () => {
@@ -3835,6 +3886,11 @@ async function loadSite() {
                         textbox.style.width = '100%';
                         textbox.style.height = textbox.scrollHeight + 'px';
                     });
+                } else if (tab === '3') {
+                    modalInner.innerHTML = `
+                        <div class="admin-panel-edit-user-inner">
+                        </div>
+                    `;
                 } else {
                     modalInner.innerHTML = ``;
                 }
@@ -3849,6 +3905,15 @@ async function loadSite() {
                 // Raw
                 changeModalTab('2');
             });
+            if (hasDroveAdminPanelPlugin) {
+                modal.querySelector('#user-modal-tab-3').addEventListener("click", function () {
+                    // Edit
+                    changeModalTab('3');
+                });
+                modal.querySelector('#always-existing-user-json').innerHTML = JSON.stringify(cacheUserData, null, 4);
+            } else {
+                modal.querySelector('#user-modal-tab-3').classList.add('hidden');
+            }
             
 
             document.body.appendChild(modal);
@@ -3860,6 +3925,8 @@ async function loadSite() {
 
         
             changeModalTab('1');
+
+            firstTimeOpeningModal = false;
 
 
             modal.querySelector("[data-close-product-card-button]").addEventListener('click', () => {
@@ -6214,7 +6281,7 @@ async function loadSite() {
                                     <p class="sub">Show off your Discord display name style on your profile and reviews.</p>
                                 </div>
                             `;
-                            if (!currentUserData.display_name_style) {
+                            if (!currentUserData.display_name_styles) {
                                 let cardError = document.createElement("div");
                                 cardError.classList.add('main-err');
                                 cardError.innerHTML = `

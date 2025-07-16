@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.3";
+const appVersion = "7.3.4";
 const appType = "Dev";
 
 const endpoints = {
@@ -118,7 +118,8 @@ const discord_categories = {
     NAMEPLATES_V3: "1382845914355470457",
     ODDS: "1385035256133849130",
     SUMMER_BLISS: "1385050947985735701",
-    PAPER: "1387888352891764947"
+    PAPER: "1387888352891764947",
+    PETAL: "1394404301496914173"
 };
 
 const category_client_overrides = [
@@ -357,6 +358,28 @@ const nameplate_palettes = {
         "darkBackground": "#FFFFFF",
         "lightBackground": "#FFFFFF"
     }
+};
+
+const display_name_styles_fonts = {
+    DEFAULT: 11,
+    BANGERS: 1,
+    BIO_RHYME: 2,
+    CHERRY_BOMB: 3,
+    CHICLE: 4,
+    COMPAGNON: 5,
+    MUSEO_MODERNO: 6,
+    NEO_CASTEL: 7,
+    PIXELIFY: 8,
+    RIBES: 9,
+    SINISTRE: 10
+};
+
+const display_name_styles_colors = {
+    SOLID: 1,
+    GRADIENT: 2,
+    NEON: 3,
+    TOON: 4,
+    POP: 5
 };
 
 const experiments = [
