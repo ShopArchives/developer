@@ -82,6 +82,11 @@
     font-family: Sinistre, serif;
 }
 
+.dns-gradient-type-2 {
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}
+
 :root {
     --background-primary: #393A41;
     --background-secondary: #323339;
@@ -2530,10 +2535,14 @@ hr {
 
 .review-text-content {
     position: relative;
-    font-family: gg sans five;
+    font-family: 'gg sans five', sans-serif;
     z-index: 2;
     word-break: break-word;
     overflow-wrap: break-word;
+    font-size: 16px;
+    line-height: 1.4;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 .review-rating-container {
@@ -4314,6 +4323,18 @@ hr {
     font-size: 14px;
 }
 
+.modalv3-xp-level-card .xp-level-card-perks .main-perk {
+    margin-left: auto;
+    display: unset;
+    background-color: var(--bg-feedback-positive);
+    border-radius: 5px;
+    padding: 4px;
+}
+
+.modalv3-xp-level-card .xp-level-card-perks .main-perk p:not(.sub) {
+    font-size: 14px;
+}
+
 
 
 
@@ -4403,27 +4424,34 @@ hr {
 
 /* Generic Styles */
 
-.generic-brand-button {
+.generic-button {
     display: inline-flex;
     align-items: center;
     gap: 3px;
     margin: 5px 0;
     padding: 10px 15px;
-    background-color: var(--color-brand);
     color: #fff;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    width: auto;
+    width: fit-content;
     box-shadow: none;
     transition: box-shadow 0.2s ease;
 }
 
-.generic-brand-button:hover {
+.generic-button.brand {
+    background-color: var(--color-brand);
+}
+
+.generic-button.red {
+    background-color: var(--color-red);
+}
+
+.generic-button:hover {
     box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.3);
 }
 
-.generic-brand-button svg {
+.generic-button svg {
     height: 17px;
     width: auto;
 }

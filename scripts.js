@@ -410,10 +410,19 @@ async function updateXpLevelBar() {
 function findDisplayNameStyle(id) {
     const num = Number(id);
     const matchingName = Object.entries(display_name_styles_fonts).find(
-      ([name, value]) => value === num
+        ([name, value]) => value === num
     )?.[0];
 
     return matchingName;
+}
+
+function decimalToHexColor(decimal) {
+    const hex = decimal.toString(16).padStart(6, '0');
+    return `#${hex.toUpperCase()}`;
+}
+function hexToDecimalColor(hex) {
+    const cleanedHex = hex.replace(/^#/, '');
+    return parseInt(cleanedHex, 16);
 }
 
 
@@ -2370,13 +2379,13 @@ async function loadSite() {
                             let maxLength = 100;
 
                             if (counter) {
-                                if (currentUserData.xp_information.level >= 3) {
+                                if (currentUserData.xp_information.level >= 3 || currentUserData.user_features.includes("REVIEW_200_CHAR")) {
                                     maxLength = 200;
                                     counter.classList.add('has-tooltip');
                                     counter.setAttribute('data-tooltip', 'Review length limit extended thanks to XP!');
                                 }
 
-                                if (currentUserData.xp_information.level >= 5) {
+                                if (currentUserData.xp_information.level >= 5 || currentUserData.user_features.includes("REVIEW_300_CHAR")) {
                                     maxLength = 300;
                                     counter.classList.add('has-tooltip');
                                     counter.setAttribute('data-tooltip', 'Review length limit extended thanks to XP!');
@@ -2507,19 +2516,19 @@ async function loadSite() {
                                         </svg>
                                         <p class="review-text-content">This review has been censored due to inappropriate content.</p>
                                         <div style="flex: 1;"></div>
-                                        <button class="generic-brand-button">
+                                        <button class="generic-button brand">
                                             Show
                                         </button>
                                     `;
                                     reviewDiv.style.display = 'inline-flex';
                                     reviewDiv.style.gap = '3px';
                                     reviewDiv.style.alignItems = 'center';
-                                    reviewDiv.querySelector('.generic-brand-button').addEventListener("click", function () {
+                                    reviewDiv.querySelector('.generic-button').addEventListener("click", function () {
                                         revealReview();
                                         reviewDiv.style.display = 'unset';
                                         reviewDiv.style.alignItems = 'unset';
                                     });
-                                    if (!currentUserData) reviewDiv.querySelector('.generic-brand-button').remove();
+                                    if (!currentUserData) reviewDiv.querySelector('.generic-button').remove();
                                 } else {
                                     revealReview();
                                 }
@@ -2846,12 +2855,21 @@ async function loadSite() {
                                             reviewDiv.querySelector('.star-rating').appendChild(starRate);
                                         }
                                     }
-    
-                                    reviewDiv.querySelector('.review-user-display-name').textContent = review.user.global_name ? review.user.global_name : review.user.username;
+                                    
                                     reviewDiv.querySelector('.review-text-content').textContent = review.text;
+
+                                    const displayname = reviewDiv.querySelector('.review-user-display-name');
+                                    displayname.textContent = review.user.global_name ? review.user.global_name : review.user.username;
                                     if (review.user.display_name_styles && JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_render')?.treatment === 1) {
                                         const dns = findDisplayNameStyle(review.user.display_name_styles.font_id);
-                                        reviewDiv.querySelector('.review-user-display-name').classList.add('dns-'+dns);
+                                        displayname.classList.add('dns-'+dns);
+                                        if (review.user.display_name_styles.effect_id === 1 && review.user.display_name_styles.colors[0]) {
+                                            displayname.style.color = decimalToHexColor(review.user.display_name_styles.colors[0]);
+                                        }
+                                        else if (review.user.display_name_styles.effect_id === 2 && review.user.display_name_styles.colors[0] && review.user.display_name_styles.colors[1]) {
+                                            displayname.style.background = `linear-gradient(90deg, ${decimalToHexColor(review.user.display_name_styles.colors[0])} 0%, ${decimalToHexColor(review.user.display_name_styles.colors[1])} 100%)`;
+                                            displayname.classList.add('dns-gradient-type-2');
+                                        }
                                     }
                                 }
                                 
@@ -3805,10 +3823,17 @@ async function loadSite() {
 
                     const displayName = modalInner.querySelector('#users-displayname');
                     if (cacheUserData.global_name) displayName.textContent = cacheUserData.global_name;
-                    else displayName.textcontent = cacheUserData.username;
+                    else displayName.textContent = cacheUserData.username;
                     if (cacheUserData.display_name_styles && JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_render')?.treatment === 1) {
                         const dns = findDisplayNameStyle(cacheUserData.display_name_styles.font_id);
                         displayName.classList.add('dns-'+dns);
+                        if (cacheUserData.display_name_styles.effect_id === 1 && cacheUserData.display_name_styles.colors[0]) {
+                            displayName.style.color = decimalToHexColor(cacheUserData.display_name_styles.colors[0]);
+                        }
+                        else if (cacheUserData.display_name_styles.effect_id === 2 && cacheUserData.display_name_styles.colors[0] && cacheUserData.display_name_styles.colors[1]) {
+                            displayName.style.background = `linear-gradient(90deg, ${decimalToHexColor(cacheUserData.display_name_styles.colors[0])} 0%, ${decimalToHexColor(cacheUserData.display_name_styles.colors[1])} 100%)`;
+                            displayName.classList.add('dns-gradient-type-2');
+                        }
                     }
 
                     if (cacheUserData.username) modalInner.querySelector('#users-username').textContent = cacheUserData.username;
@@ -6246,6 +6271,14 @@ async function loadSite() {
                             `;
                             xpLevelPerk.appendChild(cardError);
                         }
+                        else if (currentUserData.user_features.includes("DECO_PERK")) {
+                            let cardPerk = document.createElement("div");
+                            cardPerk.classList.add('main-perk');
+                            cardPerk.innerHTML = `
+                                <p class="has-tooltip" data-tooltip="You have been granted this perk to use without needing to reach this Level">Active</p>
+                            `;
+                            xpLevelPerk.appendChild(cardPerk);
+                        }
                         promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
                     else if (level.level === 2) {
@@ -6266,6 +6299,14 @@ async function loadSite() {
                                 <p class="has-tooltip" data-tooltip="You don't have a server tag on your Discord profile">You are not eligible for this perk.</p>
                             `;
                             xpLevelPerk.appendChild(cardError);
+                        }
+                        else if (currentUserData.user_features.includes("TAG_PERK")) {
+                            let cardPerk = document.createElement("div");
+                            cardPerk.classList.add('main-perk');
+                            cardPerk.innerHTML = `
+                                <p class="has-tooltip" data-tooltip="You have been granted this perk to use without needing to reach this Level">Active</p>
+                            `;
+                            xpLevelPerk.appendChild(cardPerk);
                         }
                         promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
@@ -6289,6 +6330,14 @@ async function loadSite() {
                                 `;
                                 xpLevelPerk.appendChild(cardError);
                             }
+                            else if (currentUserData.user_features.includes("NAME_STYLE_PERK")) {
+                                let cardPerk = document.createElement("div");
+                                cardPerk.classList.add('main-perk');
+                                cardPerk.innerHTML = `
+                                    <p class="has-tooltip" data-tooltip="You have been granted this perk to use without needing to reach this Level">Active</p>
+                                `;
+                                xpLevelPerk.appendChild(cardPerk);
+                            }
                             promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                         }
                         let xpLevelPerk = document.createElement("div");
@@ -6301,6 +6350,14 @@ async function loadSite() {
                                 <p class="sub">Lets you submit reviews with up to 200 characters.</p>
                             </div>
                         `;
+                        if (currentUserData.user_features.includes("REVIEW_200_CHAR")) {
+                            let cardPerk = document.createElement("div");
+                            cardPerk.classList.add('main-perk');
+                            cardPerk.innerHTML = `
+                                <p class="has-tooltip" data-tooltip="You have been granted this perk to use without needing to reach this Level">Active</p>
+                            `;
+                            xpLevelPerk.appendChild(cardPerk);
+                        }
                         promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
                     else if (level.level === 4) {
@@ -6322,6 +6379,14 @@ async function loadSite() {
                             `;
                             xpLevelPerk.appendChild(cardError);
                         }
+                        else if (currentUserData.user_features.includes("NAMEPLATE_PERK")) {
+                            let cardPerk = document.createElement("div");
+                            cardPerk.classList.add('main-perk');
+                            cardPerk.innerHTML = `
+                                <p class="has-tooltip" data-tooltip="You have been granted this perk to use without needing to reach this Level">Active</p>
+                            `;
+                            xpLevelPerk.appendChild(cardPerk);
+                        }
                         promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
                     else if (level.level === 5) {
@@ -6335,6 +6400,14 @@ async function loadSite() {
                                 <p class="sub">Lets you submit reviews with up to 300 characters.</p>
                             </div>
                         `;
+                        if (currentUserData.user_features.includes("REVIEW_300_CHAR")) {
+                            let cardPerk = document.createElement("div");
+                            cardPerk.classList.add('main-perk');
+                            cardPerk.innerHTML = `
+                                <p class="has-tooltip" data-tooltip="You have been granted this perk to use without needing to reach this Level">Active</p>
+                            `;
+                            xpLevelPerk.appendChild(cardPerk);
+                        }
                         promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
 
@@ -6504,30 +6577,30 @@ async function loadSite() {
 
                 <hr>
 
-                <button class="generic-brand-button" onclick="openModal('modalv3', 'userSettings');">Open User Settings Modal (Not Recommended)</button>
+                <button class="generic-button brand" onclick="openModal('modalv3', 'userSettings');">Open User Settings Modal (Not Recommended)</button>
 
                 <hr class="inv">
 
-                <button class="generic-brand-button" id="open-text-category-button">Open Category Modal</button>
+                <button class="generic-button brand" id="open-text-category-button">Open Category Modal</button>
 
                 <hr class="inv">
 
-                <button class="generic-brand-button" id="open-text-product-button">Open Product Modal</button>
+                <button class="generic-button brand" id="open-text-product-button">Open Product Modal</button>
 
                 <hr class="inv">
 
                 <input type="text" class="modalv3-input" autocomplete="off" placeholder="User ID" id="open-user-modal-input"></input>
-                <button class="generic-brand-button" id="open-user-modal">Open User Modal</button>
+                <button class="generic-button brand" id="open-user-modal">Open User Modal</button>
 
                 <hr class="inv">
 
                 <input type="text" class="modalv3-input" autocomplete="off" placeholder="Claimable ID" id="open-xp-claim-modal-input"></input>
-                <button class="generic-brand-button" id="open-xp-claim-modal">Open XP Claim Modal</button>
-                <button class="generic-brand-button" id="open-xp-redeem-modal">Open XP Redeem Modal</button>
+                <button class="generic-button brand" id="open-xp-claim-modal">Open XP Claim Modal</button>
+                <button class="generic-button brand" id="open-xp-redeem-modal">Open XP Redeem Modal</button>
 
                 <hr class="inv">
 
-                <button class="generic-brand-button" id="open-loading-animation-modal">Play Loading Animation</button>
+                <button class="generic-button brand" id="open-loading-animation-modal">Play Loading Animation</button>
             `;
 
             tabPageOutput.querySelector('#open-text-category-button').addEventListener("click", () => {
