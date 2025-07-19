@@ -2583,12 +2583,10 @@ async function loadSite() {
                                         <p class="review-text-content"></p>
                                     `;
 
-                                    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'open_profile_modals_on_reviews')?.treatment === 1) {
-                                        reviewDiv.querySelector('.review-user-display-name').classList.add('clickable');
-                                        reviewDiv.querySelector('.review-user-display-name').addEventListener("click", function () {
-                                            openModal('user-modal', 'openUserModal', review.user.id);
-                                        });
-                                    }
+                                    reviewDiv.querySelector('.review-user-display-name').classList.add('clickable');
+                                    reviewDiv.querySelector('.review-user-display-name').addEventListener("click", function () {
+                                        openModal('user-modal', 'openUserModal', review.user.id);
+                                    });
 
                                     const date = new Date(review.created_at);
 
@@ -5428,168 +5426,263 @@ async function loadSite() {
         document.getElementById("modal-v3-tab-" + tab).classList.add("modalv3-tab-selected");
 
         if (tab === "account") {
-            tabPageOutput.innerHTML = `
-                <h2>Account</h2>
-                <hr>
-                <div class="modalv3-content-card-1" id="discord-account-container">
-                    <h2 class="modalv3-content-card-header">Discord Account</h2>
-                    <p class="modalv3-content-card-summary">The Discord account linked to Shop Archives.</p>
-
-                    <div id="modalv3-account-account-outdated-container">
-                    </div>
-
-                    <div id="modalv3-account-account-details-container">
-                        <div class="modalv3-account-account-details">
-                            <div class="modalv3-account-banner-color" style="background-color: var(--background-secondary);"></div>
-                            <div class="modalv3-account-banner-image"></div>
-                            <div class="modalv3-account-banner-filler"></div>
-
-                            <div class="modalv3-account-avatar-preview-bg"></div>
-                            <img class="modalv3-account-avatar-preview" style="background-color: var(--background-secondary);">
-                            <p class="modalv3-account-displayname">Loading...</p>
-
-                            <div class="account-tab-edit-account-buttons-container">
-                                <svg class="has-tooltip" id="resync-profiles-button" data-tooltip="Re-sync your Discord profile with Shop Archives" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                                    <path fill="currentColor" d="M21 2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 1 1 0-2h3.93A8 8 0 0 0 6.97 5.78a1 1 0 0 1-1.26-1.56A9.98 9.98 0 0 1 20 6V3a1 1 0 0 1 1-1ZM3 22a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h6a1 1 0 1 1 0 2H5.07a8 8 0 0 0 11.96 2.22 1 1 0 1 1 1.26 1.56A9.99 9.99 0 0 1 4 18v3a1 1 0 0 1-1 1Z" class=""></path>
-                                </svg>
-                                <svg class="has-tooltip" id="logout-button" style="color: var(--text-feedback-critical)" data-tooltip="Log Out" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
-                                    <path fill="currentColor" d="M9 12a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1Z" class=""></path>
-                                    <path fill="currentColor" fill-rule="evenodd" d="M2.75 3.02A3 3 0 0 1 5 2h10a3 3 0 0 1 3 3v7.64c0 .44-.55.7-.95.55a3 3 0 0 0-3.17 4.93l.02.03a.5.5 0 0 1-.35.85h-.05a.5.5 0 0 0-.5.5 2.5 2.5 0 0 1-3.68 2.2l-5.8-3.09A3 3 0 0 1 2 16V5a3 3 0 0 1 .76-1.98Zm1.3 1.95A.04.04 0 0 0 4 5v11c0 .36.2.68.49.86l5.77 3.08a.5.5 0 0 0 .74-.44V8.02a.5.5 0 0 0-.32-.46l-6.63-2.6Z" clip-rule="evenodd" class=""></path>
-                                    <path fill="currentColor" d="M15.3 16.7a1 1 0 0 1 1.4-1.4l4.3 4.29V16a1 1 0 1 1 2 0v6a1 1 0 0 1-1 1h-6a1 1 0 1 1 0-2h3.59l-4.3-4.3Z" class=""></path>
-                                </svg>
+            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'enhanced_account_tab')?.treatment === 1) {
+                tabPageOutput.innerHTML = `
+                    <h2>Account</h2>
+                    <hr>
+                    <div class="enhanced-account-container">
+                        <div class="enhanced-account-block title-card">
+                            <div class="section">
+                                <h3>Discord Account</h3>
+                                <p>The Discord account linked to Shop Archives.</p>
                             </div>
-
-                            <div class="modalv3-account-account-details-inners-padding">
-                                <div class="modalv3-account-account-details-inner">
-                                    <div class="modalv3-account-account-details-card">
-                                        <p class="modalv3-account-displayname-header">Display Name</p>
-                                        <p class="modalv3-account-displayname-text">Loading...</p>
-                                    </div>
-                                    <div class="modalv3-account-account-details-card">
-                                        <p class="modalv3-account-username-header">Username</p>
-                                        <p class="modalv3-account-username-text">Loading...</p>
-                                    </div>
+                            <div class="buttons">
+                                <div class="button has-tooltip" data-tooltip="Open your public user profile" id="profile">
+                                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M14.0833 10.8334C15.2326 10.8334 16.3348 10.3769 17.1475 9.56421C17.9601 8.75155 18.4167 7.64935 18.4167 6.50008C18.4167 5.35081 17.9601 4.24861 17.1475 3.43595C16.3348 2.62329 15.2326 2.16675 14.0833 2.16675C12.9341 2.16675 11.8319 2.62329 11.0192 3.43595C10.2065 4.24861 9.75 5.35081 9.75 6.50008C9.75 7.64935 10.2065 8.75155 11.0192 9.56421C11.8319 10.3769 12.9341 10.8334 14.0833 10.8334Z" fill="currentColor"/>
+                                        <path d="M3.25 5.41667V4.60417C3.25 3.85667 3.85667 3.25 4.60417 3.25C5.35167 3.25 5.9475 3.85667 6.045 4.60417C6.63 9.37083 10.2483 13 14.0833 13H15.1667C17.4652 13 19.6696 13.9131 21.2949 15.5384C22.9202 17.1637 23.8333 19.3681 23.8333 21.6667C23.8333 22.2413 23.6051 22.7924 23.1987 23.1987C22.7924 23.6051 22.2413 23.8333 21.6667 23.8333C21.6179 23.833 21.5705 23.8171 21.5315 23.7878C21.4925 23.7586 21.4639 23.7176 21.45 23.6708C21.122 22.7634 20.6381 21.9201 20.02 21.1792C19.8575 20.9625 19.565 21.1142 19.5975 21.3633L19.8683 23.53C19.89 23.6925 19.76 23.8333 19.5975 23.8333H9.75C9.17536 23.8333 8.62426 23.6051 8.21793 23.1987C7.81161 22.7924 7.58333 22.2413 7.58333 21.6667V19.2617C7.58333 17.5608 6.8575 15.9575 5.92583 14.5275C4.1952 11.8025 3.26779 8.64476 3.25 5.41667Z" fill="currentColor"/>
+                                    </svg>
+                                    <p>View Profile</p>
+                                </div>
+                                <div class="button blue has-tooltip" data-tooltip="Re-sync your Discord profile with Shop Archives">
+                                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M22.7501 2.16668C23.0374 2.16668 23.313 2.28082 23.5161 2.48398C23.7193 2.68715 23.8334 2.9627 23.8334 3.25001V9.75001C23.8334 10.0373 23.7193 10.3129 23.5161 10.516C23.313 10.7192 23.0374 10.8333 22.7501 10.8333H16.2501C15.9628 10.8333 15.6872 10.7192 15.484 10.516C15.2809 10.3129 15.1667 10.0373 15.1667 9.75001C15.1667 9.4627 15.2809 9.18715 15.484 8.98398C15.6872 8.78082 15.9628 8.66668 16.2501 8.66668H20.5076C19.8814 7.58197 19.0276 6.64587 18.0049 5.92284C16.9822 5.19981 15.8149 4.70704 14.5835 4.47846C13.352 4.24988 12.0857 4.29093 10.8716 4.59877C9.65756 4.90662 8.52465 5.47394 7.55091 6.26168C7.32681 6.44269 7.03997 6.52726 6.75351 6.49679C6.46705 6.46631 6.20443 6.32329 6.02341 6.09918C5.8424 5.87507 5.75783 5.58824 5.78831 5.30178C5.81878 5.01531 5.96181 4.75269 6.18591 4.57168C7.31713 3.65318 8.62233 2.97283 10.0231 2.57149C11.4239 2.17016 12.8914 2.05612 14.3373 2.23623C15.7833 2.41635 17.178 2.8869 18.4375 3.61961C19.697 4.35232 20.7954 5.33208 21.6667 6.50001V3.25001C21.6667 2.9627 21.7809 2.68715 21.984 2.48398C22.1872 2.28082 22.4628 2.16668 22.7501 2.16668ZM3.25008 23.8333C2.96276 23.8333 2.68721 23.7192 2.48405 23.516C2.28088 23.3129 2.16675 23.0373 2.16675 22.75V16.25C2.16675 15.9627 2.28088 15.6871 2.48405 15.484C2.68721 15.2808 2.96276 15.1667 3.25008 15.1667H9.75008C10.0374 15.1667 10.3129 15.2808 10.5161 15.484C10.7193 15.6871 10.8334 15.9627 10.8334 16.25C10.8334 16.5373 10.7193 16.8129 10.5161 17.016C10.3129 17.2192 10.0374 17.3333 9.75008 17.3333H5.49258C6.11876 18.4181 6.9726 19.3542 7.9953 20.0772C9.018 20.8002 10.1853 21.293 11.4167 21.5216C12.6481 21.7501 13.9145 21.7091 15.1286 21.4013C16.3426 21.0934 17.4755 20.5261 18.4492 19.7383C18.5602 19.6487 18.6878 19.5818 18.8246 19.5415C18.9614 19.5012 19.1048 19.4882 19.2467 19.5032C19.3885 19.5183 19.526 19.5612 19.6512 19.6294C19.7765 19.6977 19.8871 19.7899 19.9767 19.9008C20.0664 20.0118 20.1333 20.1393 20.1736 20.2762C20.2139 20.413 20.2269 20.5564 20.2119 20.6983C20.1968 20.8401 20.1539 20.9776 20.0857 21.1028C20.0174 21.2281 19.9252 21.3387 19.8142 21.4283C18.6824 22.3454 17.3771 23.0245 15.9765 23.425C14.576 23.8255 13.109 23.9391 11.6634 23.759C10.2179 23.579 8.82357 23.1089 7.56404 22.3771C6.30451 21.6453 5.20569 20.6667 4.33341 19.5V22.75C4.33341 23.0373 4.21928 23.3129 4.01611 23.516C3.81295 23.7192 3.5374 23.8333 3.25008 23.8333Z" fill="currentColor"/>
+                                    </svg>
+                                    <p>Re-sync</p>
+                                </div>
+                                <div class="button red has-tooltip" data-tooltip="Log Out">
+                                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M9.75033 13C10.0376 13 10.3132 13.1141 10.5164 13.3173C10.7195 13.5205 10.8337 13.796 10.8337 14.0833V16.25C10.8337 16.5373 10.7195 16.8129 10.5164 17.016C10.3132 17.2192 10.0376 17.3333 9.75033 17.3333C9.46301 17.3333 9.18746 17.2192 8.98429 17.016C8.78113 16.8129 8.66699 16.5373 8.66699 16.25V14.0833C8.66699 13.796 8.78113 13.5205 8.98429 13.3173C9.18746 13.1141 9.46301 13 9.75033 13Z" fill="currentColor"/>
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M2.97949 3.2715C3.28405 2.92483 3.65894 2.64699 4.07922 2.45646C4.4995 2.26593 4.95554 2.16709 5.41699 2.1665H16.2503C17.1123 2.1665 17.9389 2.50891 18.5484 3.11841C19.1579 3.7279 19.5003 4.55455 19.5003 5.4165V13.6932C19.5003 14.1698 18.9045 14.4515 18.4712 14.289C17.7764 14.0307 17.0142 14.0177 16.311 14.252C15.6078 14.4864 15.0059 14.9541 14.605 15.5776C14.2041 16.201 14.0284 16.9428 14.107 17.6798C14.1855 18.4169 14.5137 19.1049 15.037 19.6298L15.0587 19.6623C15.1329 19.738 15.1833 19.8339 15.2035 19.9379C15.2238 20.042 15.2131 20.1498 15.1728 20.2478C15.1324 20.3458 15.0641 20.4299 14.9764 20.4895C14.8888 20.5491 14.7855 20.5817 14.6795 20.5832H14.6253C14.4817 20.5832 14.3439 20.6402 14.2423 20.7418C14.1407 20.8434 14.0837 20.9812 14.0837 21.1248C14.0829 21.5925 13.9611 22.0521 13.73 22.4587C13.4989 22.8653 13.1665 23.2051 12.765 23.4451C12.3636 23.6851 11.9069 23.817 11.4393 23.8281C10.9718 23.8391 10.5093 23.7289 10.097 23.5082L3.81366 20.1607C3.31366 19.8771 2.89782 19.466 2.60854 18.9693C2.31926 18.4725 2.1669 17.908 2.16699 17.3332V5.4165C2.17112 4.62511 2.46387 3.86241 2.99033 3.2715H2.97949ZM4.38783 5.384C4.38213 5.38239 4.37617 5.38196 4.3703 5.38274C4.36443 5.38352 4.35879 5.38549 4.35371 5.38854C4.34864 5.39158 4.34424 5.39563 4.34079 5.40044C4.33734 5.40525 4.33491 5.41072 4.33366 5.4165V17.3332C4.33366 17.7232 4.55033 18.0698 4.86449 18.2648L11.1153 21.6015C11.1979 21.6467 11.2909 21.6696 11.385 21.6679C11.4792 21.6662 11.5712 21.64 11.6522 21.5919C11.7331 21.5438 11.8001 21.4754 11.8465 21.3935C11.893 21.3116 11.9172 21.219 11.917 21.1248V8.68817C11.9156 8.57998 11.8818 8.4747 11.82 8.38588C11.7582 8.29706 11.6713 8.22878 11.5703 8.18984L4.38783 5.37317V5.384Z" fill="currentColor"/>
+                                        <path d="M16.575 18.0917C16.4185 17.883 16.3426 17.625 16.3611 17.3649C16.3795 17.1048 16.4912 16.86 16.6756 16.6756C16.86 16.4912 17.1048 16.3795 17.3649 16.3611C17.625 16.3426 17.883 16.4185 18.0917 16.575L22.75 21.2225V17.3333C22.75 17.046 22.8641 16.7705 23.0673 16.5673C23.2705 16.3641 23.546 16.25 23.8333 16.25C24.1207 16.25 24.3962 16.3641 24.5994 16.5673C24.8025 16.7705 24.9167 17.046 24.9167 17.3333V23.8333C24.9167 24.1207 24.8025 24.3962 24.5994 24.5994C24.3962 24.8025 24.1207 24.9167 23.8333 24.9167H17.3333C17.046 24.9167 16.7705 24.8025 16.5673 24.5994C16.3641 24.3962 16.25 24.1207 16.25 23.8333C16.25 23.546 16.3641 23.2705 16.5673 23.0673C16.7705 22.8641 17.046 22.75 17.3333 22.75H21.2225L16.5642 18.0917H16.575Z" fill="currentColor"/>
+                                    </svg>
+                                    <p>Log Out</p>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="modalv3-content-card-1">
-                    <div class="setting">
-                        <div class="setting-info">
-                            <p class="setting-title">Child Mode</p>
-                            <p class="setting-description">Automatically censor reviews containing inappropriate content.</p>
-                        </div>
-                        <div class="toggle-container">
-                            <div class="toggle" id="reviews_filter_setting_toggle">
-                                <div class="toggle-circle"></div>
+
+                        <div class="enhanced-account-block profile-card">
+                            <div class="banner"></div>
+                            <div class="section avatar-container">
+                                <img class="avatar">
+                                <img class="deco">
+                            </div>
+                            <div class="section">
+                                <h2 id="global_name"></h2>
+                                <p id="username"></p>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
 
-            if (currentUserData) {
-                if (currentUserData.banner) {
-                    tabPageOutput.querySelector(".modalv3-account-banner-image").style.backgroundImage = `url(https://cdn.discordapp.com/banners/${currentUserData.id}/${currentUserData.banner}.png?size=480)`;
-                }
+                if (currentUserData) {
+                    const displayName = tabPageOutput.querySelector('#global_name');
+                    const username = tabPageOutput.querySelector('#username');
+                    const avatar = tabPageOutput.querySelector('.avatar');
+                    const deco = tabPageOutput.querySelector('.deco');
 
-                if (currentUserData.avatar) {
-                    tabPageOutput.querySelector(".modalv3-account-avatar-preview").src = `https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128`;
-                }
+                    const profileButton = tabPageOutput.querySelector("#profile");
 
-                if (currentUserData.banner_color) {
-                    tabPageOutput.querySelector(".modalv3-account-banner-color").style.backgroundColor = currentUserData.banner_color;
-                }
-        
-                if (currentUserData.global_name === null) {
-                    tabPageOutput.querySelector(".modalv3-account-displayname").textContent = currentUserData.username;
-                    tabPageOutput.querySelector(".modalv3-account-displayname-text").textContent = currentUserData.username;
+                    if (currentUserData.global_name) displayName.textContent = currentUserData.global_name;
+                    else displayName.textContent = currentUserData.username;
+                    username.textContent = currentUserData.username;
+
+                    let userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.webp?size=128';
+                    if (currentUserData.avatar.includes('a_')) userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.gif?size=128';
+                    if (currentUserData.avatar) avatar.src = userAvatar;
+                    else avatar.remove();
+
+                    if (currentUserData.avatar_decoration_data) deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${currentUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=true`;
+                    else deco.remove();
+
+                    if (currentUserData.banner) tabPageOutput.querySelector(".banner").style.backgroundImage = `url(https://cdn.discordapp.com/banners/${currentUserData.id}/${currentUserData.banner}.png?size=480)`;
+
+
+                    profileButton.addEventListener('click', async () => {
+                        openModal('user-modal', 'openUserModal', currentUserData.id);
+                    });
                 } else {
-                    tabPageOutput.querySelector(".modalv3-account-displayname").textContent = currentUserData.global_name;
-                    tabPageOutput.querySelector(".modalv3-account-displayname-text").textContent = currentUserData.global_name;
-                }
-
-                tabPageOutput.querySelector(".modalv3-account-username-text").textContent = currentUserData.username;
-                
-                const resyncButton = tabPageOutput.querySelector("#resync-profiles-button");
-                resyncButton.addEventListener('click', async () => {
-                    resyncButton.classList.add('disabled');
-                    const success = await fetchAndSyncUserInfo();
-                    if (success === true) {
-                        try {
-                            loadPage(currentPageCache, true);
-                            document.getElementById('ubar-displayname').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
-                            document.getElementById('ubar-username').textContent = currentUserData.username;
-                        } catch {}
-                        setModalv3InnerContent('account');
-                    } else {
-                        tabPageOutput.querySelector("#modalv3-account-account-outdated-container").innerHTML = `
-                            <div class="modalv3-profile-tab-file-too-large-warning">
-                                <p class="title">There was an error syncing your profile!</p>
-                                <p class="summary">Your Discord access token has expired, please login again to sync your profile.</p>
-
-                                <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
+                    tabPageOutput.querySelector('.enhanced-account-container').innerHTML = `
+                        <div class="enhanced-account-block title-card">
+                            <div class="section">
+                                <h3>Discord Account</h3>
+                                <p>Login with Discord to preview your profile around the website, and more!</p>
+                            </div>
+                            <div class="section">
+                                <button class="generic-button brand" onclick="loginWithDiscord();">
                                     <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"/>
                                     </svg>
                                     Login with Discord
                                 </button>
                             </div>
-                        `;
-                    }
-                });
-
-                const logoutButton = tabPageOutput.querySelector("#logout-button");
-                logoutButton.addEventListener('click', async () => {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('currentUser');
-                    location.reload();
-                });
-
-
-
-                updateToggleStates();
-
-                tabPageOutput.querySelector('#reviews_filter_setting_toggle').addEventListener("click", () => {
-                    toggleSetting('reviews_filter_setting');
-                    updateToggleStates();
-                });
-
-                // Function to toggle a setting (0 or 1)
-                function toggleSetting(key) {
-                    if (key in settingsStore) {
-                        const newValue = settingsStore[key] === 0 ? 1 : 0;
-                        changeSetting(key, newValue);
-                    }
+                        </div>
+                    `;
                 }
+            } else {
+                tabPageOutput.innerHTML = `
+                    <h2>Account</h2>
+                    <hr>
+                    <div class="modalv3-content-card-1" id="discord-account-container">
+                        <h2 class="modalv3-content-card-header">Discord Account</h2>
+                        <p class="modalv3-content-card-summary">The Discord account linked to Shop Archives.</p>
 
-                // Update toggle visual states
-                function updateToggleStates() {
-                    for (let key in settingsStore) {
-                        const toggle = document.getElementById(key + '_toggle');
-                        if (toggle) {
-                            if (settingsStore[key] === 1) {
-                                toggle.classList.add('active');
-                            } else {
-                                toggle.classList.remove('active');
+                        <div id="modalv3-account-account-outdated-container">
+                        </div>
+
+                        <div id="modalv3-account-account-details-container">
+                            <div class="modalv3-account-account-details">
+                                <div class="modalv3-account-banner-color" style="background-color: var(--background-secondary);"></div>
+                                <div class="modalv3-account-banner-image"></div>
+                                <div class="modalv3-account-banner-filler"></div>
+
+                                <div class="modalv3-account-avatar-preview-bg"></div>
+                                <img class="modalv3-account-avatar-preview" style="background-color: var(--background-secondary);">
+                                <p class="modalv3-account-displayname">Loading...</p>
+
+                                <div class="account-tab-edit-account-buttons-container">
+                                    <svg class="has-tooltip" id="resync-profiles-button" data-tooltip="Re-sync your Discord profile with Shop Archives" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                        <path fill="currentColor" d="M21 2a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 1 1 0-2h3.93A8 8 0 0 0 6.97 5.78a1 1 0 0 1-1.26-1.56A9.98 9.98 0 0 1 20 6V3a1 1 0 0 1 1-1ZM3 22a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h6a1 1 0 1 1 0 2H5.07a8 8 0 0 0 11.96 2.22 1 1 0 1 1 1.26 1.56A9.99 9.99 0 0 1 4 18v3a1 1 0 0 1-1 1Z" class=""></path>
+                                    </svg>
+                                    <svg class="has-tooltip" id="logout-button" style="color: var(--text-feedback-critical)" data-tooltip="Log Out" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
+                                        <path fill="currentColor" d="M9 12a1 1 0 0 1 1 1v2a1 1 0 1 1-2 0v-2a1 1 0 0 1 1-1Z" class=""></path>
+                                        <path fill="currentColor" fill-rule="evenodd" d="M2.75 3.02A3 3 0 0 1 5 2h10a3 3 0 0 1 3 3v7.64c0 .44-.55.7-.95.55a3 3 0 0 0-3.17 4.93l.02.03a.5.5 0 0 1-.35.85h-.05a.5.5 0 0 0-.5.5 2.5 2.5 0 0 1-3.68 2.2l-5.8-3.09A3 3 0 0 1 2 16V5a3 3 0 0 1 .76-1.98Zm1.3 1.95A.04.04 0 0 0 4 5v11c0 .36.2.68.49.86l5.77 3.08a.5.5 0 0 0 .74-.44V8.02a.5.5 0 0 0-.32-.46l-6.63-2.6Z" clip-rule="evenodd" class=""></path>
+                                        <path fill="currentColor" d="M15.3 16.7a1 1 0 0 1 1.4-1.4l4.3 4.29V16a1 1 0 1 1 2 0v6a1 1 0 0 1-1 1h-6a1 1 0 1 1 0-2h3.59l-4.3-4.3Z" class=""></path>
+                                    </svg>
+                                </div>
+
+                                <div class="modalv3-account-account-details-inners-padding">
+                                    <div class="modalv3-account-account-details-inner">
+                                        <div class="modalv3-account-account-details-card">
+                                            <p class="modalv3-account-displayname-header">Display Name</p>
+                                            <p class="modalv3-account-displayname-text">Loading...</p>
+                                        </div>
+                                        <div class="modalv3-account-account-details-card">
+                                            <p class="modalv3-account-username-header">Username</p>
+                                            <p class="modalv3-account-username-text">Loading...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modalv3-content-card-1">
+                        <div class="setting">
+                            <div class="setting-info">
+                                <p class="setting-title">Child Mode</p>
+                                <p class="setting-description">Automatically censor reviews containing inappropriate content.</p>
+                            </div>
+                            <div class="toggle-container">
+                                <div class="toggle" id="reviews_filter_setting_toggle">
+                                    <div class="toggle-circle"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (currentUserData) {
+                    if (currentUserData.banner) {
+                        tabPageOutput.querySelector(".modalv3-account-banner-image").style.backgroundImage = `url(https://cdn.discordapp.com/banners/${currentUserData.id}/${currentUserData.banner}.png?size=480)`;
+                    }
+
+                    if (currentUserData.avatar) {
+                        tabPageOutput.querySelector(".modalv3-account-avatar-preview").src = `https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128`;
+                    }
+
+                    if (currentUserData.banner_color) {
+                        tabPageOutput.querySelector(".modalv3-account-banner-color").style.backgroundColor = currentUserData.banner_color;
+                    }
+        
+                    if (currentUserData.global_name === null) {
+                        tabPageOutput.querySelector(".modalv3-account-displayname").textContent = currentUserData.username;
+                        tabPageOutput.querySelector(".modalv3-account-displayname-text").textContent = currentUserData.username;
+                    } else {
+                        tabPageOutput.querySelector(".modalv3-account-displayname").textContent = currentUserData.global_name;
+                        tabPageOutput.querySelector(".modalv3-account-displayname-text").textContent = currentUserData.global_name;
+                    }
+
+                    tabPageOutput.querySelector(".modalv3-account-username-text").textContent = currentUserData.username;
+                    
+                    const resyncButton = tabPageOutput.querySelector("#resync-profiles-button");
+                    resyncButton.addEventListener('click', async () => {
+                        resyncButton.classList.add('disabled');
+                        const success = await fetchAndSyncUserInfo();
+                        if (success === true) {
+                            try {
+                                loadPage(currentPageCache, true);
+                                document.getElementById('ubar-displayname').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
+                                document.getElementById('ubar-username').textContent = currentUserData.username;
+                            } catch {}
+                            setModalv3InnerContent('account');
+                        } else {
+                            tabPageOutput.querySelector("#modalv3-account-account-outdated-container").innerHTML = `
+                                <div class="modalv3-profile-tab-file-too-large-warning">
+                                    <p class="title">There was an error syncing your profile!</p>
+                                    <p class="summary">Your Discord access token has expired, please login again to sync your profile.</p>
+
+                                    <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
+                                        <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"/>
+                                        </svg>
+                                        Login with Discord
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    });
+
+                    const logoutButton = tabPageOutput.querySelector("#logout-button");
+                    logoutButton.addEventListener('click', async () => {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('currentUser');
+                        location.reload();
+                    });
+
+
+
+                    updateToggleStates();
+
+                    tabPageOutput.querySelector('#reviews_filter_setting_toggle').addEventListener("click", () => {
+                        toggleSetting('reviews_filter_setting');
+                        updateToggleStates();
+                    });
+
+                    // Function to toggle a setting (0 or 1)
+                    function toggleSetting(key) {
+                        if (key in settingsStore) {
+                            const newValue = settingsStore[key] === 0 ? 1 : 0;
+                            changeSetting(key, newValue);
+                        }
+                    }
+
+                    // Update toggle visual states
+                    function updateToggleStates() {
+                        for (let key in settingsStore) {
+                            const toggle = document.getElementById(key + '_toggle');
+                            if (toggle) {
+                                if (settingsStore[key] === 1) {
+                                    toggle.classList.add('active');
+                                } else {
+                                    toggle.classList.remove('active');
+                                }
                             }
                         }
                     }
+
+                } else {
+                    tabPageOutput.querySelector('#discord-account-container').innerHTML = `
+                        <h2 class="modalv3-content-card-header">You are curently not logged in.</h2>
+                        <p class="modalv3-content-card-summary">Login with Discord to view your account details.</p>
+
+                        <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
+                            <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"/>
+                            </svg>
+                            Login with Discord
+                        </button>
+                    `;
                 }
-
-            } else {
-                tabPageOutput.querySelector('#discord-account-container').innerHTML = `
-                    <h2 class="modalv3-content-card-header">You are curently not logged in.</h2>
-                    <p class="modalv3-content-card-summary">Login with Discord to view your account details.</p>
-
-                    <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
-                        <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"/>
-                        </svg>
-                        Login with Discord
-                    </button>
-                `;
             }
 
         } else if (tab === "profile") {
@@ -6130,9 +6223,17 @@ async function loadSite() {
 
                         promoCard.classList.add('modalv3-xp-reward');
 
+                        let renderedName = promo.name;
+
+                        if (promo.category_data?.type === 1) {
+                            renderedName = `${promo.name} category.`;
+                        } else if (promo.category_data?.type === 2) {
+                            renderedName = `${promo.name} leaks.`;
+                        }
+
                         promoCard.innerHTML = `
                             <div id="xp-event-expires-at"></div>
-                            <h3>${promo.name}</h3>
+                            <h3>${renderedName}</h3>
                             <p class="desc">You already claimed this event reward for ${promo.xp_reward.toLocaleString()} XP.</p>
                         `;
                         

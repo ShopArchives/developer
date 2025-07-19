@@ -115,7 +115,7 @@
     --text-feedback-critical: #FF938E;
     --text-feedback-warning: #DAAD78;
     --text-feedback-positive: #6EC487;
-    --text-feedback-info: #5e7eac;
+    --text-feedback-info: #84B3F3;
     --premium-nitro-pink-text: #FF78DA;
 
     --bg-feedback-critical: #a76a6680;
@@ -316,6 +316,10 @@ p, h1, h2, h3, h4, h5, h6, a {
 }
 .toggle-container {
     margin-left: 20px;
+}
+.toggle-container.disabled .toggle {
+    opacity: 0.75;
+    cursor: not-allowed !important;
 }
 .toggle {
     width: 60px;
@@ -2966,6 +2970,7 @@ hr {
 .user-modal-banner-preview {
     position: absolute;
     width: 100%;
+    max-height: 225px;
     object-fit: cover;
     border-radius: 10px 10px 0px 0px;
     mask-image: linear-gradient(to bottom,#000 -50%,rgba(0,0,0,0)100%);
@@ -3658,7 +3663,7 @@ hr {
 
 .modalv3-right-content-container-inner {
     position: relative;
-    max-width: 750px;
+    max-width: 800px;
     height: auto;
     margin-top: 30px;
     margin-left: 80px;
@@ -3967,6 +3972,117 @@ hr {
     color: var(--text-secondary);
 }
 
+
+
+.enhanced-account-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.enhanced-account-block {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: var(--background-secondary);
+}
+
+.enhanced-account-block.title-card {
+    justify-content: space-between;
+}
+
+.enhanced-account-block.profile-card .banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 50%;
+    opacity: 0.5;
+    z-index: 1;
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    mask-image: linear-gradient(to right,#000 50%,rgba(0,0,0,0)100%);
+}
+
+.enhanced-account-block.profile-card .section {
+    position: relative;
+    z-index: 2;
+}
+
+.enhanced-account-block.profile-card .section.avatar-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.enhanced-account-block.profile-card .section.avatar-container img {
+    height: 100%;
+    width: auto;
+}
+
+.enhanced-account-block.profile-card .section.avatar-container .avatar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    scale: 0.83;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.enhanced-account-block.profile-card .section.avatar-container .deco {
+    position: relative;
+    z-index: 2;
+}
+
+.enhanced-account-block .section p {
+    color: var(--text-secondary);
+}
+
+.enhanced-account-block .buttons {
+    display: flex;
+    height: 100%;
+    box-sizing: border-box;
+    gap: 10px;
+}
+
+.enhanced-account-block .buttons .button {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    height: 100%;
+    width: 90px;
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: var(--background-tertiary);
+    border-radius: 10px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.theme-midnight .enhanced-account-block .buttons .button {
+    background-color: var(--background-primary);
+}
+
+.enhanced-account-block .buttons .button.blue {
+    color: var(--text-feedback-info);
+}
+.enhanced-account-block .buttons .button.red {
+    color: var(--text-feedback-critical);
+}
+
+.enhanced-account-block .buttons .button p {
+    font-size: 12px;
+}
+
+.enhanced-account-block .buttons .button svg {
+    height: 20px;
+    width: 20px;
+}
 
 
 

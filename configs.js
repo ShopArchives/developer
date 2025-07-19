@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.5";
+const appVersion = "7.3.6";
 const appType = "Dev";
 
 const endpoints = {
@@ -119,7 +119,8 @@ const discord_categories = {
     ODDS: "1385035256133849130",
     SUMMER_BLISS: "1385050947985735701",
     PAPER: "1387888352891764947",
-    PETAL: "1394404301496914173"
+    PETAL: "1394404301496914173",
+    TWO_SQUARED: "1395905165990694922"
 };
 
 const category_client_overrides = [
@@ -384,6 +385,22 @@ const display_name_styles_colors = {
 
 const experiments = [
     {
+        title: `Enhanced Account Tab`,
+        codename: `enhanced_account_tab`,
+        release_config: {
+            year: `2025`,
+            month: `07`
+        },
+        treatments: [
+            {
+                title: `Not Eligible`
+            },
+            {
+                title: `Enabled`
+            }
+        ]
+    },
+    {
         title: `Render User Level Stats`,
         codename: `render_user_level_stats`,
         release_config: {
@@ -418,22 +435,6 @@ const experiments = [
     {
         title: `Display Name Style XP Level Perk`,
         codename: `display_name_style_xp_level_perk`,
-        release_config: {
-            year: `2025`,
-            month: `07`
-        },
-        treatments: [
-            {
-                title: `Not Eligible`
-            },
-            {
-                title: `Enabled`
-            }
-        ]
-    },
-    {
-        title: `Open Profile Modal On Reviews`,
-        codename: `open_profile_modals_on_reviews`,
         release_config: {
             year: `2025`,
             month: `07`
