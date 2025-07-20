@@ -3667,6 +3667,7 @@ hr {
     height: auto;
     margin-top: 30px;
     margin-left: 80px;
+    margin-right: 80px;
     padding-bottom: 30px;
     top: 0px;
 }
@@ -3994,6 +3995,11 @@ hr {
     justify-content: space-between;
 }
 
+.enhanced-account-block.error-card {
+    justify-content: space-between;
+    background-color: var(--bg-feedback-critical);
+}
+
 .enhanced-account-block.profile-card .banner {
     position: absolute;
     top: 0;
@@ -4008,9 +4014,39 @@ hr {
     mask-image: linear-gradient(to right,#000 50%,rgba(0,0,0,0)100%);
 }
 
+.enhanced-account-block.profile-card .nameplate {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 50%;
+    opacity: 0.5;
+    z-index: 1;
+}
+
+.enhanced-account-block.profile-card .nameplate video, .enhanced-account-block.profile-card .nameplate img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    object-position: right;
+    position: absolute;
+    right: 0;
+    top: 0;
+    mask-image: linear-gradient(to left,#000 50%,rgba(0,0,0,0)100%);
+}
+
 .enhanced-account-block.profile-card .section {
     position: relative;
     z-index: 2;
+    overflow: visible;
+}
+
+.enhanced-account-block.profile-card .section h1 {
+    overflow: visible;
+    max-width: 400px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .enhanced-account-block.profile-card .section.avatar-container {
@@ -4050,6 +4086,7 @@ hr {
 }
 
 .enhanced-account-block .buttons .button {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -4062,6 +4099,14 @@ hr {
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    color: var(--text-primary);
+    border: none;
+    outline: none;
+}
+
+.enhanced-account-block .buttons .button:disabled {
+    box-shadow: none;
+    cursor: not-allowed;
 }
 
 .theme-midnight .enhanced-account-block .buttons .button {
@@ -4082,6 +4127,10 @@ hr {
 .enhanced-account-block .buttons .button svg {
     height: 20px;
     width: 20px;
+}
+
+.enhanced-account-block .buttons .button.svg-spin svg {
+    animation: spin 1s linear infinite;
 }
 
 
