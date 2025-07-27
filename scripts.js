@@ -18,6 +18,7 @@ let discordCollectiblesShopHomeCache;
 let discordCollectiblesCategoriesCache;
 let discordOrbsCategoriesCache;
 let discordMiscellaneousCategoriesCache;
+let discordQuestsCache;
 
 let hasDroveAdminPanelPlugin = false;
 
@@ -451,6 +452,10 @@ function renderDisplayNameStyle(data) {
     }
 }
 
+function secondsToMinutes(seconds) {
+    return Math.floor(seconds / 60);
+}
+
 
 async function loadSite() {
 
@@ -623,11 +628,25 @@ async function loadSite() {
                 </div>
                 <div class="pagination" id="pagination"></div>
             `
+        },
+        {
+            id: 6,
+            title: "Quests",
+            url: "quests",
+            body: `
+                <div class="quests-wrapper" id="quests-wrapper">
+                </div>
+            `
         }
     ];
 
 
-    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1 && currentUserData) {
+    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'quests_tab')?.treatment === 1 || JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'quests_tab')?.treatment === 2) {
+        document.getElementById('shop-tab-6').classList.remove('hidden');
+        document.getElementById('quests-sidebar-title').classList.remove('hidden');
+    }
+
+    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1 && currentUserData && currentUserData.ban_config.ban_type === 0) {
         let xpBalance = document.createElement("div");
 
         const xpNeeded = currentUserData.xp_information.xp_to_level - currentUserData.xp_information.xp_into_level;
@@ -651,19 +670,6 @@ async function loadSite() {
 
         await fetchAndUpdateXpEvents();
         await fetchAndUpdateXpLevels();
-    } else if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1 && isMobileCache != true) {
-        let xpBalance = document.createElement("div");
-
-        xpBalance.classList.add('my-xp-value-container');
-        xpBalance.addEventListener("click", () => {
-            setModalv3InnerContent('xp_perks');
-        });
-
-        xpBalance.innerHTML = `
-            <p id="my-xp-balance">Level 0</p>
-        `;
-        
-        document.querySelector('.topbar-content').appendChild(xpBalance);
     }
 
     if (currentUserData) {
@@ -2617,7 +2623,7 @@ async function loadSite() {
                                     const date = new Date(review.created_at);
 
                                     const day = String(date.getDate()).padStart(2, '0');
-                                    const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth is 0-indexed
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
                                     const year = date.getFullYear();
 
                                     const dateContainer = reviewDiv.querySelector(".review-date-container");
@@ -3225,7 +3231,7 @@ async function loadSite() {
                 </div>
             `;
 
-            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1 && isMobileCache != true) {
+            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system')?.treatment === 1&& currentUserData && currentUserData.ban_config.ban_type === 0) {
                 modal.querySelector("#xp-rewards-tabs-modalv3-container").innerHTML = `
                     <hr>
                     <div class="side-tabs-category-text-container">
@@ -4075,6 +4081,191 @@ async function loadSite() {
     });
 
 
+    async function renderQuest(quests, output) {
+
+        const sorted = quests.sort((a, b) => {
+            const dateA = new Date(a.expires_at);
+            const dateB = new Date(b.expires_at);
+        
+            return dateB - dateA;
+        });
+
+        sorted.forEach(quest => {
+            const expDate = new Date(quest.expires_at);
+
+            const day = String(expDate.getDate()).padStart(2, '0');
+            const month = String(expDate.getMonth() + 1).padStart(2, '0');
+
+            let formatted = `${month}/${day}`
+
+            if (settingsStore.non_us_timezone === 1) {
+                formatted = `${day}/${month}`;
+            }
+
+
+            const card = document.createElement("div");
+            card.classList.add('quest-card');
+            card.innerHTML = `
+                <div class="section1">
+                    <img class="hero" src="https://cdn.discordapp.com/quests/${quest.id}/${quest.assets.hero}">
+                    <img class="logo" src="https://cdn.discordapp.com/quests/${quest.id}/dark/${quest.assets.logotype}">
+                    <p class="publisher">Promoted by ${quest.messages.game_publisher}</p>
+                    <p class="date">${formatted}</p>
+                </div>
+                <div class="section2">
+                    <div class="reward-icon">
+                    </div>
+                    <div class="info-container">
+                        <p class="quest-name">${quest.messages.quest_name.toUpperCase()} QUEST</p>
+                        <p class="reward-name">something idk</p>
+                        <p class="reward-requirements"></p>
+                    </div>
+                </div>
+                <div class="section3">
+                    <button class="generic-button brand">
+                        Open In Discord
+                    </button>
+                </div>
+            `;
+            const rewardRequirements = card.querySelector('.reward-requirements');
+
+            const anyTarget = Object.values(quest.task_config.tasks).find(task => task?.target)?.target;
+
+            let section1 = `Play ${quest.messages.game_title} for ${secondsToMinutes(anyTarget)} minutes `
+            if (quest.task_config.tasks["WATCH_VIDEO"] || quest.task_config.tasks["WATCH_VIDEO_ON_MOBILE"]) {
+                section1 = `Watch the video `;
+            }
+
+            let section2 = ``;
+            if (quest.task_config.tasks["PLAY_ON_DESKTOP"] && !quest.task_config.tasks["PLAY_ON_PLAYSTATION"] && !quest.task_config.tasks["PLAY_ON_XBOX"]) {
+                section2 = `with your Discord client open `
+            }
+
+            let section3 = `and win `
+            if (quest.rewards_config.rewards[0].type === quest_reward_types.COLLECTIBLE) {
+                section3 = `to unlock `
+            } else if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+                section3 = `to earn `
+            }
+
+            let section4 = quest.rewards_config.rewards[0].messages.name_with_article;
+            if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+                section4 = `${quest.rewards_config.rewards[0].orb_quantity} Discord Orbs`;
+            }
+
+            let section5 = `.`;
+            if (quest.rewards_config.rewards[0].expiration_mode === 3) {
+                section5 = `. Keep it with Nitro!`
+            } else if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+                section5 = `!`
+            }
+
+            rewardRequirements.textContent = `${section1}${section2}${section3} ${section4}${section5}`;
+
+
+            const rewardName = card.querySelector('.reward-name');
+            if (quest.rewards_config.rewards[0].type === quest_reward_types.REWARD_CODE || quest.rewards_config.rewards[0].type === quest_reward_types.COLLECTIBLE || quest.rewards_config.rewards[0].type === quest_reward_types.FRACTIONAL_PREMIUM) {
+                rewardName.textContent = `Claim ${quest.rewards_config.rewards[0].messages.name_with_article}`;
+            }
+            else if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+                rewardName.textContent = `${quest.rewards_config.rewards[0].orb_quantity} Discord Orbs`;
+            }
+            else {
+                rewardName.textContent = quest.rewards_config.rewards[0].messages.name_with_article;
+            }
+
+            const rewardIcon = card.querySelector('.reward-icon');
+            if (quest.rewards_config.rewards[0].type === quest_reward_types.FRACTIONAL_PREMIUM) {
+                rewardIcon.innerHTML = `
+                    <svg width="187" height="187" viewBox="0 0 187 187" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M161.164 3.17212H30.5663C16.8601 3.17212 5.74902 14.3031 5.74902 28.0339V158.866C5.74902 172.597 16.8601 183.728 30.5663 183.728H161.164C174.87 183.728 185.982 172.597 185.982 158.866V28.0339C185.982 14.3031 174.87 3.17212 161.164 3.17212Z" fill="url(#paint0_linear_170_2)"></path>
+                    <g filter="url(#filter0_d_170_2)">
+                    <path d="M100.125 107.318C106.339 107.318 111.376 102.266 111.376 96.0332C111.376 89.8007 106.339 84.7483 100.125 84.7483C93.9113 84.7483 88.874 89.8007 88.874 96.0332C88.874 102.266 93.9113 107.318 100.125 107.318Z" fill="white"></path>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M55.1214 50.8938C52.0146 50.8938 49.496 53.42 49.496 56.5362C49.496 59.6525 52.0146 62.1787 55.1214 62.1787H71.9979C75.1048 62.1787 77.6235 64.7049 77.6235 67.8211C77.6235 70.9373 75.1048 73.4635 71.9979 73.4635H46.6832C43.5763 73.4635 41.0576 75.9897 41.0576 79.106C41.0576 82.2222 43.5763 84.7484 46.6832 84.7484H60.7469C63.8539 84.7484 66.3724 87.2746 66.3724 90.3908C66.3724 93.5071 63.8539 96.0333 60.7469 96.0333H49.496C46.389 96.0333 43.8704 98.5595 43.8704 101.676C43.8704 104.792 46.389 107.318 49.496 107.318H56.5393C61.5352 126.787 79.1553 141.173 100.125 141.173C124.981 141.173 145.13 120.963 145.13 96.0333C145.13 71.1035 124.981 50.8938 100.125 50.8938H55.1214ZM100.125 118.603C112.553 118.603 122.627 108.498 122.627 96.0333C122.627 83.5683 112.553 73.4635 100.125 73.4635C87.6979 73.4635 77.6235 83.5683 77.6235 96.0333C77.6235 108.498 87.6979 118.603 100.125 118.603Z" fill="white"></path>
+                    <path d="M29.8064 84.7485C32.9133 84.7485 35.4319 82.2223 35.4319 79.1061C35.4319 75.9898 32.9133 73.4636 29.8064 73.4636H26.9936C23.8868 73.4636 21.3682 75.9898 21.3682 79.1061C21.3682 82.2223 23.8868 84.7485 26.9936 84.7485H29.8064Z" fill="white"></path>
+                    </g>
+                    <defs>
+                    <filter id="filter0_d_170_2" x="7.48094" y="42.5615" width="151.536" height="118.053" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                    <feFlood flood-opacity="0" result="BackgroundImageFix"></feFlood>
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"></feColorMatrix>
+                    <feOffset dy="5.55489"></feOffset>
+                    <feGaussianBlur stdDeviation="6.94361"></feGaussianBlur>
+                    <feComposite in2="hardAlpha" operator="out"></feComposite>
+                    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"></feColorMatrix>
+                    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_170_2"></feBlend>
+                    <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_170_2" result="shape"></feBlend>
+                    </filter>
+                    <linearGradient id="paint0_linear_170_2" x1="160.748" y1="183.303" x2="46.3474" y2="36.4729" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#E978E6"></stop>
+                    <stop offset="1" stop-color="#2F3EBB"></stop>
+                    </linearGradient>
+                    </defs>
+                    </svg>
+                `;
+            } else {
+
+                if (quest.rewards_config.rewards[0]?.asset?.includes('mp4') || quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+                    const rewardImg = document.createElement("video");
+                    let src = `https://cdn.discordapp.com/quests/${quest.id}/${quest.rewards_config.rewards[0].asset}`;
+                    if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) src = `https://cdn.discordapp.com/assets/content/fb761d9c206f93cd8c4e7301798abe3f623039a4054f2e7accd019e1bb059fc8.webm`;
+                    rewardImg.src = src;
+
+                    card.addEventListener("mouseenter", () => {
+                        rewardImg.play();
+                    });
+                    card.addEventListener("mouseleave", () => {
+                        rewardImg.pause();
+                        rewardImg.currentTime = 0;
+                    });
+
+                    rewardImg.disablePictureInPicture = true;
+                    rewardImg.muted = true;
+                    rewardImg.loop = true;
+                    rewardImg.playsInline = true;
+
+                    rewardIcon.appendChild(rewardImg);
+                } else {
+                    const rewardImg = document.createElement("img");
+                    let src = `https://cdn.discordapp.com/quests/${quest.id}/${quest.rewards_config.rewards[0].asset}?format=webp`;
+                    rewardImg.src = src;
+
+                    rewardIcon.appendChild(rewardImg);
+                }
+            }
+
+            const openInDiscordButton = card.querySelector('.generic-button');
+
+
+            const now = new Date();
+            const timeDiff = expDate - now;
+        
+            if (timeDiff <= 0) {
+                openInDiscordButton.classList.add('disabled');
+                openInDiscordButton.textContent = `Quest ended ${formatted}`;
+            } else {
+                openInDiscordButton.addEventListener("click", () => {
+                    redirectToLink('https://discord.com/discovery/quests#'+quest.id)
+                });
+            }
+
+            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'quests_tab')?.treatment === 2) {
+                if (quest.task_config.tasks["WATCH_VIDEO"] || quest.task_config.tasks["WATCH_VIDEO_ON_MOBILE"]) {
+                    let button = document.createElement('button');
+                    button.classList.add('generic-button');
+                    button.classList.add('primary');
+                    button.innerHTML = `
+                        <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M9.25 3.35C7.87 2.45 6 3.38 6 4.96v14.08c0 1.58 1.87 2.5 3.25 1.61l10.85-7.04a1.9 1.9 0 0 0 0-3.22L9.25 3.35Z" class=""></path>
+                        </svg>
+                        Watch Video
+                    `;
+                    card.querySelector('.section3').insertBefore(button, openInDiscordButton)
+                }
+            }
+
+            output.appendChild(card);
+        });
+    }
 
 
     async function renderProduct(category, product) {
@@ -5410,6 +5601,24 @@ async function loadSite() {
             } else {
                 renderShopData(discordMiscellaneousCategoriesCache, output);
             }
+        } else if (currentPageCache === "quests") {
+            searchInput.classList.add('hidden');   
+            const output = document.getElementById('quests-wrapper');
+            if (!discordQuestsCache || discordQuestsCache && reFetch) {
+                const rawData = await fetch(redneredAPI + endpoints.DISCORD_QUESTS);
+
+                if (!rawData.ok) {
+                    renderShopLoadingError(rawData.status, output);
+                } else {
+                    const data = await rawData.json();
+
+                    discordQuestsCache = data;
+
+                    renderQuest(data, output);
+                }
+            } else {
+                renderQuest(discordQuestsCache, output);
+            }
         } else {
             loadPage('0')
         }
@@ -5590,9 +5799,22 @@ async function loadSite() {
                                     </button>
                                 </div>
                             `;
-                            tabPageOutput.querySelector('.enhanced-account-container').insertBefore(syncError, tabPageOutput.querySelector('.profile-card'));
+                            tabPageOutput.querySelector('.enhanced-account-container').insertBefore(syncError, tabPageOutput.querySelector('.title-card').nextSibling);
                         }
                     });
+
+                    if (currentUserData.ban_config.ban_type != 0) {
+                        let syncError = document.createElement("div");
+                        syncError.classList.add('enhanced-account-block');
+                        syncError.classList.add('error-card');
+                        syncError.innerHTML = `
+                            <div class="section">
+                                <h3>You have been banned.</h3>
+                                <p>You have been banned and will not be able to use some features on Shop Archives. This ban cannot be appealed.</p>
+                            </div>
+                        `;
+                        tabPageOutput.querySelector('.enhanced-account-container').insertBefore(syncError, tabPageOutput.querySelector('.title-card').nextSibling);
+                    }
                 } else {
                     tabPageOutput.querySelector('.enhanced-account-container').innerHTML = `
                         <div class="enhanced-account-block title-card">
@@ -6220,25 +6442,6 @@ async function loadSite() {
 
             if (usersXPEventsCache) {
                 refreshXPEventsList()
-            } else {
-                tabPageOutput.innerHTML = `
-                    <h2>XP Events</h2>
-
-                    <hr>
-
-                    <div class="modalv3-content-card-1">
-                        <h2 class="modalv3-content-card-header">You are curently not logged in.</h2>
-                        <p class="modalv3-content-card-summary">Login with Discord to level up and gain sweet perks!</p>
-                        <img style="width: 100%;" src="https://cdn.yapper.shop/assets/204.png">
-                        <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
-                            <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"></path>
-                            </svg>
-                            Login with Discord
-                        </button>
-                    </div>
-
-                `;
             }
 
             function refreshXPEventsList() {
@@ -6607,25 +6810,6 @@ async function loadSite() {
 
                     tabPageOutput.querySelector('#all-levels').appendChild(promoCard);
                 });
-            } else {
-                tabPageOutput.innerHTML = `
-                    <h2>XP Levels</h2>
-
-                    <hr>
-
-                    <div class="modalv3-content-card-1">
-                        <h2 class="modalv3-content-card-header">You are curently not logged in.</h2>
-                        <p class="modalv3-content-card-summary">Login with Discord to level up and gain sweet perks!</p>
-                        <img style="width: 100%;" src="https://cdn.yapper.shop/assets/203.png">
-                        <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
-                            <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"></path>
-                            </svg>
-                            Login with Discord
-                        </button>
-                    </div>
-
-                `;
             }
 
         } else if (tab === "experiments") {
