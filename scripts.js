@@ -4009,6 +4009,160 @@ async function loadSite() {
                     closeModal();
                 }
             });
+        } else if (type === "discordQuestInfo") {
+
+            const quest = data1;
+
+            modal.innerHTML = `
+                <div class="category-modal-inner">
+                    <div class="modalv2-tabs-container">
+                        <div class="tab selected" id="category-modal-tab-1">
+                            <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="24" r="6" fill="currentColor"/>
+                                <circle cx="12" cy="72" r="6" fill="currentColor"/>
+                                <circle cx="12" cy="48" r="6" fill="currentColor"/>
+                                <rect x="28" y="20" width="60" height="8" rx="4" fill="currentColor"/>
+                                <path d="M72.124 44.0029C64.5284 44.0668 57.6497 47.1046 52.6113 52H32C29.7909 52 28 50.2091 28 48C28 45.7909 29.7909 44 32 44H72C72.0415 44 72.0828 44.0017 72.124 44.0029Z" fill="currentColor"/>
+                                <path d="M44.2852 68C44.0983 69.3065 44 70.6418 44 72C44 73.3582 44.0983 74.6935 44.2852 76H32C29.7909 76 28 74.2091 28 72C28 69.7909 29.7909 68 32 68H44.2852Z" fill="currentColor"/>
+                                <circle cx="72" cy="72" r="16" stroke="currentColor" stroke-width="8"/>
+                                <rect x="81" y="85.9497" width="7" height="16" rx="3.5" transform="rotate(-45 81 85.9497)" fill="currentColor"/>
+                            </svg>
+                            <p>Overview</p>
+                        </div>
+                        <div class="tab" id="category-modal-tab-3">
+                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z" class=""></path>
+                            </svg>
+                            <p>Assets</p>
+                        </div>
+                        <div class="tab hidden disabled" id="category-modal-tab-4">
+                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M9.25 3.35C7.87 2.45 6 3.38 6 4.96v14.08c0 1.58 1.87 2.5 3.25 1.61l10.85-7.04a1.9 1.9 0 0 0 0-3.22L9.25 3.35Z" class=""></path>
+                            </svg>
+                            <p>Video</p>
+                        </div>
+                        <div class="tab" id="category-modal-tab-2">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M15.7376 3.18925C15.4883 2.93731 15.0814 2.93686 14.8316 3.18824L14.0087 4.01625C13.7618 4.26471 13.7614 4.66581 14.0078 4.91476L20.3804 11.3527C20.6265 11.6013 20.6265 12.0017 20.3804 12.2503L14.0078 18.6882C13.7614 18.9373 13.7618 19.3383 14.0087 19.5867L14.8316 20.4148C15.0814 20.6662 15.4883 20.6658 15.7376 20.4138L23.815 12.2503C24.061 12.0016 24.061 11.6014 23.815 11.3528L15.7376 3.18925Z" fill="currentColor"/>
+                                <path d="M9.99171 4.91476C10.2381 4.66581 10.2377 4.26471 9.99081 4.01625L9.16787 3.18824C8.91804 2.93686 8.51118 2.93731 8.2619 3.18925L0.184466 11.3528C-0.0614893 11.6014 -0.061488 12.0016 0.184466 12.2503L8.2619 20.4138C8.51118 20.6658 8.91803 20.6662 9.16787 20.4148L9.99081 19.5867C10.2377 19.3383 10.2381 18.9373 9.99171 18.6882L3.61906 12.2503C3.37298 12.0017 3.37298 11.6013 3.61906 11.3527L9.99171 4.91476Z" fill="currentColor"/>
+                            </svg>
+                            <p>Raw</p>
+                        </div>
+                    </div>
+
+                    <img class="category-modal-banner-preview" src="https://cdn.discordapp.com/quests/${quest.id}/${quest.assets.hero}">
+                    
+                    <div id="category-modal-inner-content">
+                    </div>
+        
+                    <div data-modal-top-product-buttons>
+                        <div class="has-tooltip" data-tooltip="Close" data-close-product-card-button>
+                            <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'quests_tab')?.treatment === 2) {
+                modal.querySelector('#category-modal-tab-4').classList.remove('hidden');
+            }
+
+            function changeModalTab(tab) {
+                modal.querySelectorAll('.selected').forEach((el) => {
+                    el.classList.remove("selected");
+                });
+        
+                modal.querySelector('#category-modal-tab-'+tab).classList.add('selected');
+        
+                const modalInner = modal.querySelector('#category-modal-inner-content');
+        
+                if (tab === '1') {
+                    modalInner.innerHTML = `
+                        <div class="category-modal-bottom-container">
+                            <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${quest.id}')">${quest.id}</p>
+                            <h1>${quest.messages.quest_name} Quest</h1>
+                        </div>
+                    `;
+        
+                } else if (tab === '2') {
+                    modalInner.innerHTML = `
+                        <div class="view-raw-modalv2-inner">
+                            <textarea class="view-raw-modal-textbox" readonly>${JSON.stringify(quest, undefined, 4)}</textarea>
+                        </div>
+                    `;
+                    document.querySelectorAll('.view-raw-modal-textbox').forEach(textbox => {
+                        textbox.style.height = 'auto';
+                        textbox.style.width = '100%';
+                        textbox.style.height = textbox.scrollHeight + 'px';
+                    });
+                } else if (tab === '4') {
+                    let asset;
+                    if (quest?.task_config_v2?.tasks?.WATCH_VIDEO?.assets?.video?.url) {
+                        asset = quest.task_config_v2.tasks.WATCH_VIDEO.assets.video.url;
+                    }
+                    else if (quest?.task_config_v2?.tasks?.WATCH_VIDEO_ON_MOBILE?.assets?.video?.url) {
+                        asset = quest.task_config_v2.tasks.WATCH_VIDEO_ON_MOBILE.assets.video.url;
+                    }
+                    modalInner.innerHTML = `
+                        <div class="category-modal-bottom-container">
+                            <video controls src="https://cdn.discordapp.com/quests/${quest.id}/${asset}"></video>
+                        </div>
+                    `;
+                    const video = modalInner.querySelector('video');
+                    video.disablePictureInPicture = true;
+                    if (data2 != 'startOnVideoTab') video.muted = true;
+                    if (data2 === 'startOnVideoTab') video.autoplay = true;
+                    video.playsInline = true;
+                    video.volume = 0.1;
+                } else {
+                    modalInner.innerHTML = ``;
+                }
+            }
+            window.changeModalTab = changeModalTab;
+
+            if (data2 === 'startOnVideoTab') {
+                changeModalTab('4')
+            } else {
+                changeModalTab('1')
+            }
+
+            modal.querySelector('#category-modal-tab-1').addEventListener("click", function () {
+                // Overview
+                changeModalTab('1');
+            });
+            modal.querySelector('#category-modal-tab-2').addEventListener("click", function () {
+                // Raw
+                changeModalTab('2');
+            });
+            modal.querySelector('#category-modal-tab-3').addEventListener("click", function () {
+                // Assets
+                changeModalTab('3');
+            });
+
+            const tab = modal.querySelector('#category-modal-tab-4');
+            if (quest.task_config.tasks["WATCH_VIDEO"] || quest.task_config.tasks["WATCH_VIDEO_ON_MOBILE"]) {
+                tab.classList.remove('disabled');
+                tab.classList.remove('has-tooltip');
+                tab.removeAttribute('data-tooltip');
+                tab.addEventListener("click", function () {
+                    // Video
+                    changeModalTab('4');
+                });
+            } else {
+                tab.classList.add('has-tooltip');
+                tab.setAttribute('data-tooltip', 'This quest does not have a video');
+            }
+
+
+            modal.querySelector("[data-close-product-card-button]").addEventListener('click', () => {
+                closeModal();
+            });
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
         }
 
         if (type != "fromCategoryBanner" && type != "userSettings" && type != "openUserModal" && type != "openLoadingTest") {
@@ -4095,11 +4249,12 @@ async function loadSite() {
 
             const day = String(expDate.getDate()).padStart(2, '0');
             const month = String(expDate.getMonth() + 1).padStart(2, '0');
+            const year = expDate.getFullYear();
 
-            let formatted = `${month}/${day}`
+            let formatted = `${month}/${day}/${year}`
 
             if (settingsStore.non_us_timezone === 1) {
-                formatted = `${day}/${month}`;
+                formatted = `${day}/${month}/${year}`;
             }
 
 
@@ -4110,7 +4265,7 @@ async function loadSite() {
                     <img class="hero" src="https://cdn.discordapp.com/quests/${quest.id}/${quest.assets.hero}">
                     <img class="logo" src="https://cdn.discordapp.com/quests/${quest.id}/dark/${quest.assets.logotype}">
                     <p class="publisher">Promoted by ${quest.messages.game_publisher}</p>
-                    <p class="date">${formatted}</p>
+                    <p class="date">Ends ${formatted}</p>
                 </div>
                 <div class="section2">
                     <div class="reward-icon">
@@ -4134,6 +4289,8 @@ async function loadSite() {
             let section1 = `Play ${quest.messages.game_title} for ${secondsToMinutes(anyTarget)} minutes `
             if (quest.task_config.tasks["WATCH_VIDEO"] || quest.task_config.tasks["WATCH_VIDEO_ON_MOBILE"]) {
                 section1 = `Watch the video `;
+            } else if (quest.task_config.tasks["STREAM_ON_DESKTOP"]) {
+                section1 = `Stream ${quest.messages.game_title} to a friend for ${secondsToMinutes(anyTarget)} minutes `;
             }
 
             let section2 = ``;
@@ -4204,7 +4361,7 @@ async function loadSite() {
                 `;
             } else {
 
-                if (quest.rewards_config.rewards[0]?.asset?.includes('mp4') || quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+                if (quest.rewards_config.rewards[0]?.asset?.includes('.mp4') || quest.rewards_config.rewards[0]?.asset?.includes('.webm') || quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
                     const rewardImg = document.createElement("video");
                     let src = `https://cdn.discordapp.com/quests/${quest.id}/${quest.rewards_config.rewards[0].asset}`;
                     if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) src = `https://cdn.discordapp.com/assets/content/fb761d9c206f93cd8c4e7301798abe3f623039a4054f2e7accd019e1bb059fc8.webm`;
@@ -4242,9 +4399,14 @@ async function loadSite() {
             if (timeDiff <= 0) {
                 openInDiscordButton.classList.add('disabled');
                 openInDiscordButton.textContent = `Quest ended ${formatted}`;
+                card.querySelector('.date').remove();
+                openInDiscordButton.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                });
             } else {
-                openInDiscordButton.addEventListener("click", () => {
-                    redirectToLink('https://discord.com/discovery/quests#'+quest.id)
+                openInDiscordButton.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    redirectToLink('https://discord.com/discovery/quests#'+quest.id);
                 });
             }
 
@@ -4259,9 +4421,17 @@ async function loadSite() {
                         </svg>
                         Watch Video
                     `;
-                    card.querySelector('.section3').insertBefore(button, openInDiscordButton)
+                    button.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                        openModal('category-modal', 'discordQuestInfo', quest, 'startOnVideoTab');
+                    });
+                    card.querySelector('.section3').insertBefore(button, openInDiscordButton);
                 }
             }
+
+            card.addEventListener("click", () => {
+                openModal('category-modal', 'discordQuestInfo', quest);
+            });
 
             output.appendChild(card);
         });
@@ -5405,7 +5575,7 @@ async function loadSite() {
                 </defs>
                 </svg>
                 <h2>Well, this is awkward.</h2>
-                <p>Hmmm, we weren't able to load the shop. Check back later.</p>
+                <p>Hmmm, we weren't able to load this page. Check back later.</p>
                 <p>Status: ${error}</p>
             </div>
         `;

@@ -1562,11 +1562,16 @@ hr {
     box-sizing: border-box;
 }
 
+.quests-wrapper:has(.shop-loading-error-container) {
+    display: block;
+}
+
 .quest-card {
     border-radius: 10px;
     background-color: var(--card-outer);
     display: flex;
     flex-direction: column;
+    cursor: pointer;
 }
 
 .quest-card .section1 {
