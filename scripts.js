@@ -179,6 +179,9 @@ function removeParams(params) {
 if (params.get("itemSkuId")) {
     currentOpenModalId = params.get("itemSkuId");
 }
+if (params.get("itemId")) {
+    currentOpenModalId = params.get("itemId");
+}
 
 if (params.get("scrollTo")) {
     scrollToCache = params.get("scrollTo");
@@ -4013,6 +4016,11 @@ async function loadSite() {
 
             const quest = data1;
 
+            modal.setAttribute('data-clear-param', 'itemId');
+            modal.setAttribute('data-clear-cache', 'currentOpenModalId');
+
+            addParams({itemId: quest.id})
+
             modal.innerHTML = `
                 <div class="category-modal-inner">
                     <div class="modalv2-tabs-container">
@@ -4095,6 +4103,74 @@ async function loadSite() {
                         textbox.style.width = '100%';
                         textbox.style.height = textbox.scrollHeight + 'px';
                     });
+                } else if (tab === '3') {
+                    modalInner.innerHTML = `
+                        <div class="category-modal-assets-container">
+                        </div>
+                    `;
+
+                    const assetsContainer = modalInner.querySelector('.category-modal-assets-container');
+
+                    const allAssets = {
+                        "Hero": quest.assets.hero,
+                        "Logo Type (Dark)": `dark/${quest.assets.logotype}`,
+                        "Logo Type (Light)": `light/${quest.assets.logotype}`,
+                        "Game Tile (Dark)": `dark/${quest.assets.game_tile}`,
+                        "Game Tile (Light)": `light/${quest.assets.game_tile}`,
+                        "Hero Video": quest.assets.hero_video,
+                        "Quest Bar Hero": quest.assets.quest_bar_hero,
+                        "Quest Bar Hero Video": quest.assets.quest_bar_hero_video,
+                        "Reward Asset": quest.rewards_config.rewards[0].asset
+                    };
+
+                    let nullAssets = true;
+
+                    Object.entries(allAssets).forEach(([asset, value]) => {
+                        if (!value) return; // skip null or undefined
+
+                        nullAssets = false;
+
+                        let assetDiv = document.createElement("div");
+
+                        assetDiv.classList.add('asset-div')
+
+                        if (value.includes(".webm") || value.includes(".mp4")) {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <video controls disablepictureinpicture muted loop src="https://cdn.discordapp.com/quests/${quest.id}/${value}"></video> 
+                            `;
+                        } else if (value.includes(".png") || value.includes(".jpg") || value.includes(".jpeg") || value.includes(".svg")) {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <img src="https://cdn.discordapp.com/quests/${quest.id}/${value}"></img> 
+                            `;
+                        }
+
+                        assetsContainer.appendChild(assetDiv);
+                    });
+
+                    if (nullAssets) {
+                        assetsContainer.innerHTML = `
+                            <div class="no-assets-container">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M13.96 5.46002L18.54 10.04C18.633 10.1337 18.7436 10.2081 18.8655 10.2589C18.9873 10.3097 19.118 10.3358 19.25 10.3358C19.3821 10.3358 19.5128 10.3097 19.6346 10.2589C19.7565 10.2081 19.8671 10.1337 19.96 10.04L21.34 8.66002C21.7125 8.28529 21.9216 7.77839 21.9216 7.25002C21.9216 6.72164 21.7125 6.21474 21.34 5.84002L18.16 2.66002C17.7853 2.28751 17.2784 2.07843 16.75 2.07843C16.2217 2.07843 15.7148 2.28751 15.34 2.66002L13.96 4.04002C13.8663 4.13298 13.7919 4.24358 13.7412 4.36544C13.6904 4.4873 13.6642 4.618 13.6642 4.75002C13.6642 4.88203 13.6904 5.01273 13.7412 5.13459C13.7919 5.25645 13.8663 5.36705 13.96 5.46002ZM2.11005 20.16L2.84005 15.94C2.94422 15.3306 3.2341 14.7683 3.67005 14.33L11.54 6.46002C11.633 6.36629 11.7436 6.29189 11.8655 6.24112C11.9873 6.19036 12.118 6.16422 12.25 6.16422C12.3821 6.16422 12.5128 6.19036 12.6346 6.24112C12.7565 6.29189 12.8671 6.36629 12.96 6.46002L17.54 11.04C17.6338 11.133 17.7082 11.2436 17.7589 11.3654C17.8097 11.4873 17.8358 11.618 17.8358 11.75C17.8358 11.882 17.8097 12.0127 17.7589 12.1346C17.7082 12.2565 17.6338 12.3671 17.54 12.46L9.67005 20.33C9.2344 20.7641 8.67585 21.0539 8.07005 21.16L3.84005 21.89C3.60388 21.9301 3.36155 21.9131 3.13331 21.8403C2.90508 21.7676 2.69759 21.6412 2.52821 21.4719C2.35882 21.3025 2.23247 21.095 2.15972 20.8667C2.08697 20.6385 2.06993 20.3962 2.11005 20.16Z" fill="currentColor"/>
+                                    <path d="M5 1L5.81027 3.18973L8 4L5.81027 4.81027L5 7L4.18973 4.81027L2 4L4.18973 3.18973L5 1Z" fill="currentColor"/>
+                                    <path d="M14 19L14.5402 20.4598L16 21L14.5402 21.5402L14 23L13.4598 21.5402L12 21L13.4598 20.4598L14 19Z" fill="currentColor"/>
+                                </svg>
+                                <p>This quest has no assets.</p>
+                            </div>
+                        `;
+                    }
+
+                    document.querySelectorAll('.asset_id').forEach((el) => {
+                        el.addEventListener("click", function () {
+                            el.classList.add('clicked');
+                            setTimeout(() => {
+                                el.classList.remove('clicked');
+                            }, 500);
+                        });
+                    });
+
                 } else if (tab === '4') {
                     let asset;
                     if (quest?.task_config_v2?.tasks?.WATCH_VIDEO?.assets?.video?.url) {
@@ -4114,6 +4190,7 @@ async function loadSite() {
                     if (data2 === 'startOnVideoTab') video.autoplay = true;
                     video.playsInline = true;
                     video.volume = 0.1;
+                    video.style.maxHeight = '550px';
                 } else {
                     modalInner.innerHTML = ``;
                 }
@@ -4150,7 +4227,7 @@ async function loadSite() {
                 });
             } else {
                 tab.classList.add('has-tooltip');
-                tab.setAttribute('data-tooltip', 'This quest does not have a video');
+                tab.setAttribute('data-tooltip', 'This is not a video quest');
             }
 
 
@@ -4260,6 +4337,7 @@ async function loadSite() {
 
             const card = document.createElement("div");
             card.classList.add('quest-card');
+            card.setAttribute('data-id', quest.id);
             card.innerHTML = `
                 <div class="section1">
                     <img class="hero" src="https://cdn.discordapp.com/quests/${quest.id}/${quest.assets.hero}">
@@ -4433,8 +4511,26 @@ async function loadSite() {
                 openModal('category-modal', 'discordQuestInfo', quest);
             });
 
+            if (currentOpenModalId && currentOpenModalId === quest.id) {
+                setTimeout(() => {
+                    openModal('category-modal', 'discordQuestInfo', quest);
+                }, 500);
+            }
+
             output.appendChild(card);
         });
+
+        if (currentOpenModalId != null && currentOpenModalId != undefined) {
+            const targetSkuId = currentOpenModalId;
+            const targetIndex = sorted.findIndex(q => q.id === targetSkuId );
+
+            setTimeout(() => {
+                const el = document.querySelector(`[data-id="${sorted[targetIndex].id}"]`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 500);
+        }
     }
 
 
