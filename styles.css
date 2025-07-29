@@ -1566,6 +1566,11 @@ hr {
     display: block;
 }
 
+.quest-card.loading {
+    animation: shop-fetching-anim 4s infinite;
+    height: 330px;
+}
+
 .quest-card {
     border-radius: 10px;
     background-color: var(--card-outer);
@@ -1672,7 +1677,50 @@ hr {
     justify-content: center;
 }
 
+.quest-video-player {
+    max-height: 500px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: var(--background-primary);
+    border-radius: 10px;
+}
 
+.video-quest-disclaimer {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    background-color: var(--bg-feedback-critical);
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.quest-modal-block {
+    background-color: var(--modal-block-bg);
+    width: 100%;
+    border-radius: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.quest-modal-block .reward-icon, .quest-modal-block .task-icon {
+    height: 80px;
+    width: 80px;
+    border-radius: 5px;
+}
+
+.quest-modal-block .reward-icon *, .quest-modal-block .task-icon * {
+    height: 80px;
+    width: 80px;
+}
+
+.quest-modal-block p {
+    color: var(--text-secondary);
+}
 
 
 

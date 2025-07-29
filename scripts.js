@@ -459,6 +459,56 @@ function secondsToMinutes(seconds) {
     return Math.floor(seconds / 60);
 }
 
+function renderQuestRequirement(quest) {
+    const anyTarget = Object.values(quest.task_config.tasks).find(task => task?.target)?.target;
+
+    let section1 = `Play ${quest.messages.game_title} for ${secondsToMinutes(anyTarget)} minutes `
+    if (quest.task_config.tasks["WATCH_VIDEO"] || quest.task_config.tasks["WATCH_VIDEO_ON_MOBILE"]) {
+        section1 = `Watch the video `;
+    }
+    else if (quest.task_config.tasks["STREAM_ON_DESKTOP"]) {
+        section1 = `Stream ${quest.messages.game_title} to a friend for ${secondsToMinutes(anyTarget)} minutes `;
+    }
+
+    let section2 = ``;
+    if (quest.task_config.tasks["PLAY_ON_DESKTOP"] && !quest.task_config.tasks["PLAY_ON_PLAYSTATION"] && !quest.task_config.tasks["PLAY_ON_XBOX"]) {
+        section2 = `with your Discord client open `
+    }
+
+    let section3 = `and win `
+    if (quest.rewards_config.rewards[0].type === quest_reward_types.COLLECTIBLE) {
+        section3 = `to unlock `
+    }
+    else if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+        section3 = `to earn `
+    }
+
+    let section4 = quest.rewards_config.rewards[0].messages.name_with_article;
+    if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+        section4 = `${quest.rewards_config.rewards[0].orb_quantity} Discord Orbs`;
+    }
+
+    let section5 = `.`;
+    if (quest.rewards_config.rewards[0].expiration_mode === 3) {
+        section5 = `. Keep it with Nitro!`
+    }
+    else if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+        section5 = `!`
+    }
+
+    let task = `${section1}${section2}`;
+    let reward = `${quest.rewards_config.rewards[0].messages.name}.`
+    if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+        reward = `${quest.rewards_config.rewards[0].orb_quantity} Discord Orbs!`
+    }
+
+    const data = {
+        requirements: `${section1}${section2}${section3} ${section4}${section5}`,
+        task: `${task.trim()}.`,
+        reward
+    }
+    return data;
+}
 
 async function loadSite() {
 
@@ -638,6 +688,24 @@ async function loadSite() {
             url: "quests",
             body: `
                 <div class="quests-wrapper" id="quests-wrapper">
+                    <div class="quest-card loading">
+                    </div>
+                    <div class="quest-card loading">
+                    </div>
+                    <div class="quest-card loading">
+                    </div>
+                    <div class="quest-card loading">
+                    </div>
+                    <div class="quest-card loading">
+                    </div>
+                    <div class="quest-card loading">
+                    </div>
+                    <div class="quest-card loading">
+                    </div>
+                    <div class="quest-card loading">
+                    </div>
+                    <div class="quest-card loading">
+                    </div>
                 </div>
             `
         }
@@ -4085,12 +4153,66 @@ async function loadSite() {
                 const modalInner = modal.querySelector('#category-modal-inner-content');
         
                 if (tab === '1') {
+                    const required = renderQuestRequirement(quest);
+
                     modalInner.innerHTML = `
                         <div class="category-modal-bottom-container">
                             <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${quest.id}')">${quest.id}</p>
                             <h1>${quest.messages.quest_name} Quest</h1>
+                            <div class="quest-modal-block">
+                                <div class="task-icon">
+                                    <img src="https://cdn.discordapp.com/quests/${quest.id}/dark/${quest.assets.game_tile}">
+                                </div>
+                                <div>
+                                    <h2>Task</h2>
+                                    <p>${required.task}</p>
+                                </div>
+                            </div>
+                            <div class="quest-modal-block">
+                                <div class="reward-icon">
+                                    <img src="https://cdn.discordapp.com/quests/${quest.id}/${quest.rewards_config.rewards[0].asset}?format=webp">
+                                </div>
+                                <div>
+                                    <h2>Reward</h2>
+                                    <p>${required.reward}</p>
+                                </div>
+                            </div>
                         </div>
                     `;
+
+                    const icon = modalInner.querySelector('.reward-icon');
+                    const img = modalInner.querySelector('.reward-icon').querySelector('img');
+
+                    if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
+                        img.src = `https://cdn.discordapp.com/assets/content/fb761d9c206f93cd8c4e7301798abe3f623039a4054f2e7accd019e1bb059fc8.webm?format=webp`;
+                    } else if (quest.rewards_config.rewards[0].type === quest_reward_types.FRACTIONAL_PREMIUM) {
+                        icon.innerHTML = `
+                            <svg width="187" height="187" viewBox="0 0 187 187" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M161.164 3.17212H30.5663C16.8601 3.17212 5.74902 14.3031 5.74902 28.0339V158.866C5.74902 172.597 16.8601 183.728 30.5663 183.728H161.164C174.87 183.728 185.982 172.597 185.982 158.866V28.0339C185.982 14.3031 174.87 3.17212 161.164 3.17212Z" fill="url(#paint0_linear_170_2)"></path>
+                            <g filter="url(#filter0_d_170_2)">
+                            <path d="M100.125 107.318C106.339 107.318 111.376 102.266 111.376 96.0332C111.376 89.8007 106.339 84.7483 100.125 84.7483C93.9113 84.7483 88.874 89.8007 88.874 96.0332C88.874 102.266 93.9113 107.318 100.125 107.318Z" fill="white"></path>
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M55.1214 50.8938C52.0146 50.8938 49.496 53.42 49.496 56.5362C49.496 59.6525 52.0146 62.1787 55.1214 62.1787H71.9979C75.1048 62.1787 77.6235 64.7049 77.6235 67.8211C77.6235 70.9373 75.1048 73.4635 71.9979 73.4635H46.6832C43.5763 73.4635 41.0576 75.9897 41.0576 79.106C41.0576 82.2222 43.5763 84.7484 46.6832 84.7484H60.7469C63.8539 84.7484 66.3724 87.2746 66.3724 90.3908C66.3724 93.5071 63.8539 96.0333 60.7469 96.0333H49.496C46.389 96.0333 43.8704 98.5595 43.8704 101.676C43.8704 104.792 46.389 107.318 49.496 107.318H56.5393C61.5352 126.787 79.1553 141.173 100.125 141.173C124.981 141.173 145.13 120.963 145.13 96.0333C145.13 71.1035 124.981 50.8938 100.125 50.8938H55.1214ZM100.125 118.603C112.553 118.603 122.627 108.498 122.627 96.0333C122.627 83.5683 112.553 73.4635 100.125 73.4635C87.6979 73.4635 77.6235 83.5683 77.6235 96.0333C77.6235 108.498 87.6979 118.603 100.125 118.603Z" fill="white"></path>
+                            <path d="M29.8064 84.7485C32.9133 84.7485 35.4319 82.2223 35.4319 79.1061C35.4319 75.9898 32.9133 73.4636 29.8064 73.4636H26.9936C23.8868 73.4636 21.3682 75.9898 21.3682 79.1061C21.3682 82.2223 23.8868 84.7485 26.9936 84.7485H29.8064Z" fill="white"></path>
+                            </g>
+                            <defs>
+                            <filter id="filter0_d_170_2" x="7.48094" y="42.5615" width="151.536" height="118.053" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                            <feFlood flood-opacity="0" result="BackgroundImageFix"></feFlood>
+                            <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"></feColorMatrix>
+                            <feOffset dy="5.55489"></feOffset>
+                            <feGaussianBlur stdDeviation="6.94361"></feGaussianBlur>
+                            <feComposite in2="hardAlpha" operator="out"></feComposite>
+                            <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"></feColorMatrix>
+                            <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_170_2"></feBlend>
+                            <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_170_2" result="shape"></feBlend>
+                            </filter>
+                            <linearGradient id="paint0_linear_170_2" x1="160.748" y1="183.303" x2="46.3474" y2="36.4729" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#E978E6"></stop>
+                            <stop offset="1" stop-color="#2F3EBB"></stop>
+                            </linearGradient>
+                            </defs>
+                            </svg>
+                        `;
+                    }
         
                 } else if (tab === '2') {
                     modalInner.innerHTML = `
@@ -4181,6 +4303,10 @@ async function loadSite() {
                     }
                     modalInner.innerHTML = `
                         <div class="category-modal-bottom-container">
+                            <div class="video-quest-disclaimer">
+                                <p>Watching this video here will not grant you the quest reward.</p>
+                                <p>Watch the video on Discord to claim the quest reward.</p>
+                            </div>
                             <video controls src="https://cdn.discordapp.com/quests/${quest.id}/${asset}"></video>
                         </div>
                     `;
@@ -4190,7 +4316,7 @@ async function loadSite() {
                     if (data2 === 'startOnVideoTab') video.autoplay = true;
                     video.playsInline = true;
                     video.volume = 0.1;
-                    video.style.maxHeight = '550px';
+                    video.classList.add('quest-video-player');
                 } else {
                     modalInner.innerHTML = ``;
                 }
@@ -4321,6 +4447,8 @@ async function loadSite() {
             return dateB - dateA;
         });
 
+        output.innerHTML = '';
+
         sorted.forEach(quest => {
             const expDate = new Date(quest.expires_at);
 
@@ -4362,41 +4490,9 @@ async function loadSite() {
             `;
             const rewardRequirements = card.querySelector('.reward-requirements');
 
-            const anyTarget = Object.values(quest.task_config.tasks).find(task => task?.target)?.target;
+            const required = renderQuestRequirement(quest);
 
-            let section1 = `Play ${quest.messages.game_title} for ${secondsToMinutes(anyTarget)} minutes `
-            if (quest.task_config.tasks["WATCH_VIDEO"] || quest.task_config.tasks["WATCH_VIDEO_ON_MOBILE"]) {
-                section1 = `Watch the video `;
-            } else if (quest.task_config.tasks["STREAM_ON_DESKTOP"]) {
-                section1 = `Stream ${quest.messages.game_title} to a friend for ${secondsToMinutes(anyTarget)} minutes `;
-            }
-
-            let section2 = ``;
-            if (quest.task_config.tasks["PLAY_ON_DESKTOP"] && !quest.task_config.tasks["PLAY_ON_PLAYSTATION"] && !quest.task_config.tasks["PLAY_ON_XBOX"]) {
-                section2 = `with your Discord client open `
-            }
-
-            let section3 = `and win `
-            if (quest.rewards_config.rewards[0].type === quest_reward_types.COLLECTIBLE) {
-                section3 = `to unlock `
-            } else if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
-                section3 = `to earn `
-            }
-
-            let section4 = quest.rewards_config.rewards[0].messages.name_with_article;
-            if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
-                section4 = `${quest.rewards_config.rewards[0].orb_quantity} Discord Orbs`;
-            }
-
-            let section5 = `.`;
-            if (quest.rewards_config.rewards[0].expiration_mode === 3) {
-                section5 = `. Keep it with Nitro!`
-            } else if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
-                section5 = `!`
-            }
-
-            rewardRequirements.textContent = `${section1}${section2}${section3} ${section4}${section5}`;
-
+            rewardRequirements.textContent = required.requirements;
 
             const rewardName = card.querySelector('.reward-name');
             if (quest.rewards_config.rewards[0].type === quest_reward_types.REWARD_CODE || quest.rewards_config.rewards[0].type === quest_reward_types.COLLECTIBLE || quest.rewards_config.rewards[0].type === quest_reward_types.FRACTIONAL_PREMIUM) {
