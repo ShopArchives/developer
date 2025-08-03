@@ -3625,7 +3625,7 @@ hr {
 [data-modal-top-product-buttons] div {
     height: 34px !important;
     width: 34px !important;
-    border-radius: 50px;
+    border-radius: 8px;
     overflow: hidden;
 }
 

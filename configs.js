@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.11";
+const appVersion = "7.3.12";
 const appType = "Dev";
 
 const endpoints = {
@@ -130,7 +130,8 @@ const discord_categories = {
     SUMMER_BLISS: "1385050947985735701",
     PAPER: "1387888352891764947",
     PETAL: "1394404301496914173",
-    TWO_SQUARED: "1395905165990694922"
+    TWO_SQUARED: "1395905165990694922",
+    ROCK: "1400163655689043998"
 };
 
 const category_client_overrides = [
