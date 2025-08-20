@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.12";
+const appVersion = "7.3.13";
 const appType = "Dev";
 
 const endpoints = {
@@ -54,7 +54,10 @@ const category_types = {
     HERO: 0,
     FEATURED: 1,
     FEED: 2,
-    WIDE_BANNER: 3
+    WIDE_BANNER: 3,
+    SHELF: 4,
+    COUNTDOWN_TIMER: 5,
+    IMMERSIVE_BANNER: 6
 };
 
 const quest_reward_types = {
@@ -131,7 +134,9 @@ const discord_categories = {
     PAPER: "1387888352891764947",
     PETAL: "1394404301496914173",
     TWO_SQUARED: "1395905165990694922",
-    ROCK: "1400163655689043998"
+    ROCK: "1400163655689043998",
+    RAWR_XD: "1402782203099746314",
+    SECRET_GARDEN: "1402730228094796314"
 };
 
 const category_client_overrides = [
@@ -383,7 +388,8 @@ const display_name_styles_fonts = {
     NEO_CASTEL: 7,
     PIXELIFY: 8,
     RIBES: 9,
-    SINISTRE: 10
+    SINISTRE: 10,
+    ZILLA_SLAB: 12
 };
 
 const display_name_styles_colors = {
@@ -391,10 +397,27 @@ const display_name_styles_colors = {
     GRADIENT: 2,
     NEON: 3,
     TOON: 4,
-    POP: 5
+    POP: 5,
+    GLOW: 6
 };
 
 const experiments = [
+    {
+        title: `User Item Favorites`,
+        codename: `user_item_favorites`,
+        release_config: {
+            year: `2025`,
+            month: `08`
+        },
+        treatments: [
+            {
+                title: `Not Eligible`
+            },
+            {
+                title: `Enabled`
+            }
+        ]
+    },
     {
         title: `Quests Tab`,
         codename: `quests_tab`,

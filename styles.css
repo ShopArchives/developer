@@ -693,6 +693,10 @@ hr {
     gap: 5px;
 }
 
+.shop-loading-error-container img {
+    height: 250px;
+}
+
 .categories-container {
     padding: 20px;
     display: flex;
