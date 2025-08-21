@@ -6034,7 +6034,13 @@ async function loadSite() {
         } else if (currentPageCache === "favorites") {
             searchInput.classList.add('hidden');
             const output = document.getElementById('categories-container');
-            renderShopLoadingError('Feature not finished', output);
+            output.innerHTML = `
+                <div class="shop-loading-error-container">
+                    <img src="https://cdn.yapper.shop/assets/208.png">
+                    <h2>You have no favorites.</h2>
+                    <p>Favorite an item and it will show up here.</p>
+                </div>
+            `;
         } else {
             loadPage('0')
         }
