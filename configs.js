@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.14";
+const appVersion = "7.3.15";
 const appType = "Dev";
 
 const endpoints = {
@@ -598,6 +598,7 @@ const settings = {
     "reviews_filter_setting": 1,
     "category_page_limit": 5,
     "dev": 0,
+
     "staff_force_leaks_dummy": 0,
     "staff_force_viewable_reviews_tab": 0,
     "staff_simulate_ban_type_1": 0,
@@ -608,7 +609,9 @@ const settings = {
     "staff_show_unpublished_xp_shop": 0,
     "staff_allow_category_only_event_claiming_in_events_tab": 0,
     "staff_show_test_categories_on_misc_page": 0,
-    "staff_auth_remove_none_promt": 0
+    "staff_auth_remove_none_promt": 0,
+
+    "dismissible_favorites_tab_new": 0
 };
 
 const leaks_dummy_data = {

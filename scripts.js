@@ -133,6 +133,28 @@ function changeSetting(key, value) {
     }
 }
 
+// Function to toggle a setting (0 or 1)
+function toggleSetting(key) {
+    if (key in settingsStore) {
+        const newValue = settingsStore[key] === 0 ? 1 : 0;
+        changeSetting(key, newValue);
+    }
+}
+
+// Update toggle visual states
+function updateToggleStates() {
+    for (let key in settingsStore) {
+        const toggle = document.getElementById(key + '_toggle');
+        if (toggle) {
+            if (settingsStore[key] === 1) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+    }
+}
+
 
 
 
@@ -923,6 +945,17 @@ async function loadSite() {
                 btn.innerHTML = `
                     <svg class="modalv2_top_icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L14.6942 8.2918H23.4127L16.3593 13.4164L19.0534 21.7082L12 16.5836L4.94658 21.7082L7.64074 13.4164L0.587322 8.2918H9.30583L12 0Z" fill="currentColor"/></svg>
                 `;
+                btn.addEventListener("click", () => {
+                    if (!btn.classList.contains('fav')) {
+                        copyNotice(3);
+                        btn.setAttribute('data-tooltip', 'Unfavorite');
+                        btn.classList.add('fav');
+                    } else {
+                        copyNotice(4);
+                        btn.setAttribute('data-tooltip', 'Favorite');
+                        btn.classList.remove('fav');
+                    }
+                });
                 modalbuttons.appendChild(btn);
             }
 
@@ -5880,6 +5913,10 @@ async function loadSite() {
     }
     window.setDiscordLeakedCategoriesCache = setDiscordLeakedCategoriesCache;
 
+    if (settingsStore.dismissible_favorites_tab_new === 1) {
+        document.getElementById('shop-tab-7').classList.add('hide-new-tag');
+    }
+
     async function loadPage(key, firstLoad, reFetch) {
         document.getElementById('searchInput').value = '';
         document.querySelectorAll('.selected').forEach((el) => {
@@ -6034,6 +6071,10 @@ async function loadSite() {
         } else if (currentPageCache === "favorites") {
             searchInput.classList.add('hidden');
             const output = document.getElementById('categories-container');
+            if (settingsStore.dismissible_favorites_tab_new === 0) {
+                changeSetting('dismissible_favorites_tab_new', 1);
+            }
+            document.getElementById('shop-tab-7').classList.add('hide-new-tag')
             output.innerHTML = `
                 <div class="shop-loading-error-container">
                     <img src="https://cdn.yapper.shop/assets/208.png">
@@ -6383,28 +6424,6 @@ async function loadSite() {
                         toggleSetting('reviews_filter_setting');
                         updateToggleStates();
                     });
-
-                    // Function to toggle a setting (0 or 1)
-                    function toggleSetting(key) {
-                        if (key in settingsStore) {
-                            const newValue = settingsStore[key] === 0 ? 1 : 0;
-                            changeSetting(key, newValue);
-                        }
-                    }
-
-                    // Update toggle visual states
-                    function updateToggleStates() {
-                        for (let key in settingsStore) {
-                            const toggle = document.getElementById(key + '_toggle');
-                            if (toggle) {
-                                if (settingsStore[key] === 1) {
-                                    toggle.classList.add('active');
-                                } else {
-                                    toggle.classList.remove('active');
-                                }
-                            }
-                        }
-                    }
 
                 } else {
                     tabPageOutput.querySelector('#discord-account-container').innerHTML = `
@@ -7775,7 +7794,12 @@ function updateThemeStore(theme, hasButtons) {
 }
 
 function copyValue(value) {
-    navigator.clipboard.writeText(value)
+    navigator.clipboard.writeText(value);
+    if (value.includes("http")) {
+        copyNotice(2);
+    } else {
+        copyNotice(1);
+    }
 }
 
 function redirectToLink(link) {
@@ -7851,6 +7875,33 @@ async function deleteReviewById(reviewId) {
 };
 
 
+
+function copyNotice(type) {
+    if (type === 1) {
+        string = "Content Copied to Clipboard";
+    } else if (type === 2) {
+        string = "Link Copied to Clipboard";
+    } else if (type === 3) {
+        string = "Item Added to Favorites";
+    } else if (type === 4) {
+        string = "Item Removed from Favorites";
+    } else {
+        string = "Something Went Wrong";
+        console.warn('Invalid copyNotice')
+    }
+
+    let copyNotice = document.createElement("div");
+
+    copyNotice.classList.add('copy-notice-container');
+    copyNotice.innerHTML = `
+        <p>${string}</p>
+    `;
+                 
+    document.body.appendChild(copyNotice);
+    setTimeout(() => {
+        copyNotice.remove();
+    }, 5000);
+}
 
 
 
