@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.15";
+const appVersion = "7.3.16";
 const appType = "Dev";
 
 const endpoints = {
@@ -734,3 +734,24 @@ const user_preview_usernames = [
         name: "TrellTrell"
     }
 ];
+
+const favorites_category = {
+    "full_src": true,
+    "sku_id": "5",
+    "name": "My Favorites",
+    "summary": " ",
+    "store_listing_id": null,
+    "banner": null,
+    "unpublished_at": null,
+    "logo": "https://cdn.yapper.shop/assets/210.png",
+    "hero_ranking": null,
+    "mobile_bg": null,
+    "pdp_bg": "https://cdn.yapper.shop/assets/209.png",
+    "success_modal_bg": null,
+    "mobile_banner": null,
+    "featured_block": null,
+    "hero_banner": null,
+    "wide_banner": null,
+    "hero_logo": null,
+    "products": []
+};

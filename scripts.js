@@ -535,6 +535,18 @@ function renderQuestRequirement(quest) {
     return data;
 }
 
+function favorite(type, data) {
+    if (type === "add") {
+        const favorites = JSON.parse(localStorage.getItem("favoritesStore")) || [];
+        favorites.unshift(data);
+        localStorage.setItem("favoritesStore", JSON.stringify(favorites));
+    } else if (type === "remove") {
+        const favorites = JSON.parse(localStorage.getItem("favoritesStore")) || [];
+        const updatedFavorites = favorites.filter(item => String(item.sku_id) !== String(data));
+        localStorage.setItem("favoritesStore", JSON.stringify(updatedFavorites));
+    }
+}
+
 async function loadSite() {
 
     if (localStorage.sa_theme) {
@@ -770,6 +782,16 @@ async function loadSite() {
 
     if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'user_item_favorites')?.treatment === 1) {
         document.getElementById('shop-tab-7').classList.remove('hidden');
+        let favorites;
+        try {
+            favorites = JSON.parse(localStorage.getItem("favoritesStore"));
+            if (!Array.isArray(favorites)) {
+                throw new Error("Not an array");
+            }
+        } catch {
+            favorites = [];
+            localStorage.setItem("favoritesStore", JSON.stringify(favorites));
+        }
     }
 
     if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'quests_tab')?.treatment === 1 || JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'quests_tab')?.treatment === 2) {
@@ -941,18 +963,27 @@ async function loadSite() {
             if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'user_item_favorites')?.treatment === 1) {
                 const btn = document.createElement('div');
                 btn.classList.add('has-tooltip');
-                btn.setAttribute('data-tooltip', 'Favorite');
                 btn.innerHTML = `
                     <svg class="modalv2_top_icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L14.6942 8.2918H23.4127L16.3593 13.4164L19.0534 21.7082L12 16.5836L4.94658 21.7082L7.64074 13.4164L0.587322 8.2918H9.30583L12 0Z" fill="currentColor"/></svg>
                 `;
+                if (JSON.parse(localStorage.getItem("favoritesStore"))[JSON.parse(localStorage.getItem("favoritesStore")).findIndex(i => i.sku_id === product.sku_id)]) {
+                    btn.classList.add('fav');
+                    btn.setAttribute('data-tooltip', 'Unfavorite');
+                } else {
+                    btn.setAttribute('data-tooltip', 'Favorite');
+                }
                 btn.addEventListener("click", () => {
                     if (!btn.classList.contains('fav')) {
                         copyNotice(3);
                         btn.setAttribute('data-tooltip', 'Unfavorite');
+                        updateTooltipText('Unfavorite');
+                        favorite("add", product);
                         btn.classList.add('fav');
                     } else {
                         copyNotice(4);
                         btn.setAttribute('data-tooltip', 'Favorite');
+                        updateTooltipText('Favorite');
+                        favorite("remove", product.sku_id);
                         btn.classList.remove('fav');
                     }
                 });
@@ -6075,13 +6106,20 @@ async function loadSite() {
                 changeSetting('dismissible_favorites_tab_new', 1);
             }
             document.getElementById('shop-tab-7').classList.add('hide-new-tag')
-            output.innerHTML = `
-                <div class="shop-loading-error-container">
-                    <img src="https://cdn.yapper.shop/assets/208.png">
-                    <h2>You have no favorites.</h2>
-                    <p>Favorite an item and it will show up here.</p>
-                </div>
-            `;
+
+            let items = JSON.parse(localStorage.getItem("favoritesStore"));
+            const data = [{ ...favorites_category, products: items }];
+            if (Array(items) && items.length !== 0) {
+                renderShopData(data, output);
+            } else {
+                output.innerHTML = `
+                    <div class="shop-loading-error-container">
+                        <img src="https://cdn.yapper.shop/assets/208.png">
+                        <h2>You have no favorites.</h2>
+                        <p>Favorite an item and it will show up here.</p>
+                    </div>
+                `;
+            }
         } else {
             loadPage('0')
         }
@@ -8003,7 +8041,43 @@ function cleanupTooltip() {
     currentTarget = null;
 }
 
+function updateTooltipText(text) {
+    if (!tooltip) return false;
+    
+    tooltip.textContent = text;
+    
+    // Reposition tooltip in case the new text changes its size
+    if (currentTarget) {
+        const rect = currentTarget.getBoundingClientRect();
+        const tooltipRect = tooltip.getBoundingClientRect();
+
+        let top = rect.top - tooltipRect.height - 8;
+        let left = rect.left + (rect.width - tooltipRect.width) / 2;
+
+        // Adjust if tooltip would go off screen
+        if (top < 0) {
+            top = rect.bottom + 8;
+        }
+        if (left < 0) {
+            left = 8;
+        } else if (left + tooltipRect.width > window.innerWidth) {
+            left = window.innerWidth - tooltipRect.width - 8;
+        }
+
+        tooltip.style.top = `${top + window.scrollY}px`;
+        tooltip.style.left = `${left + window.scrollX}px`;
+    }
+    
+    return true;
+}
+
 function createTooltip(target, text) {
+    // If tooltip exists and it's for the same target, just update the text
+    if (tooltip && currentTarget === target) {
+        updateTooltipText(text);
+        return;
+    }
+    
     // Clean up any existing tooltip first
     cleanupTooltip();
     

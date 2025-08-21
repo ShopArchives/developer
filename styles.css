@@ -4849,6 +4849,9 @@ hr {
     transform: translateY(-50%);
 }
 
+[data-sku-id="5"] .banner-container {
+    display: none;
+}
 
 
 
