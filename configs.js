@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.16";
+const appVersion = "7.3.17";
 const appType = "Dev";
 
 const endpoints = {
@@ -275,15 +275,22 @@ const category_client_overrides = [
     },
     {
         sku_id: discord_categories.DARK_FANTASY,
-        addAttributionLogo: !0
+        addAttributionLogo: !0,
+        modal_hero_banner: "https://cdn.yapper.shop/discord-assets/64.png"
     },
     {
         sku_id: discord_categories.ROBERT,
-        showDarkBannerText: !0
+        showDarkBannerText: !0,
+        modal_hero_banner: "https://cdn.yapper.shop/discord-assets/63.png"
+    },
+    {
+        sku_id: discord_categories.STORM,
+        modal_hero_banner: "https://cdn.yapper.shop/discord-assets/62.png"
     },
     {
         sku_id: discord_categories.DOJO,
-        showDarkBannerText: !0
+        showDarkBannerText: !0,
+        modal_hero_banner: "https://cdn.yapper.shop/discord-assets/61.png"
     },
     {
         sku_id: discord_categories.THE_VAULT,

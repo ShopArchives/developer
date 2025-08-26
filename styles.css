@@ -439,13 +439,20 @@ body:has(.notice) .container {
     display: block;
     margin-left: auto;
     margin-right: auto;
-    height: 100px;
-    width: 100px;
+    height: 150px;
     animation: loadingSakuraLoop 2s linear infinite;
+}
+
+.brick-wall div .spin-logo.no {
+    animation: unset;
 }
 
 @keyframes loadingSakuraLoop {
     0% {transform: rotateY(0deg);}
+    10% {transform: rotateY(30deg);}
+    40% {transform: rotateY(150deg);}
+    60% {transform: rotateY(210deg);}
+    90% {transform: rotateY(330deg);}
     100% {transform: rotateY(360deg);}
 }
 
@@ -1749,8 +1756,8 @@ hr {
     display: flex;
     gap: 8px;
     justify-content: center;
-    margin-top: 20px;
-    margin-bottom: 20px;
+    margin-top: 10px;
+    margin-bottom: 10px;
     flex-wrap: wrap;
 }
   
@@ -1787,6 +1794,10 @@ hr {
 .pagination button:disabled {
     opacity: 0.4;
     cursor: default;
+}
+
+.fail-search .pagination {
+    display: none;
 }
 
 
