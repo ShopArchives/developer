@@ -711,6 +711,9 @@ hr {
     gap: 50px;
     align-items: center;
 }
+.content:has(.pagination) .categories-container {
+    padding: 0 20px;
+}
 
 .category-container {
     width: 100%;
@@ -1756,8 +1759,7 @@ hr {
     display: flex;
     gap: 8px;
     justify-content: center;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    padding: 20px;
     flex-wrap: wrap;
 }
   
@@ -1798,6 +1800,13 @@ hr {
 
 .fail-search .pagination {
     display: none;
+}
+.pagination.hidden {
+    display: flex !important;
+    opacity: 0 !important;
+    user-select: none !important;
+    padding: 10px !important;
+    height: 0 !important;
 }
 
 

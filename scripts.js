@@ -5750,44 +5750,56 @@ async function loadSite() {
             const targetListingId = scrollToCache;
             if (!targetSkuId && !targetListingId) return;
 
-            if (targetListingId) {
-                const targetIndex = filteredData.findIndex(cat =>
-                    cat.store_listing_id === targetListingId ||
-                    (cat.products?.some(p => p.store_listing_id === targetListingId))
-                );
-
-                if (targetIndex !== -1) {
-                    const targetPage = Math.floor(targetIndex / itemsPerPage) + 1;
-                    if (targetPage !== currentPage) {
-                        renderPage(targetPage);
-                    } else {
-                        setTimeout(() => {
-                            const el = document.querySelector(`[data-listing-id="${filteredData[targetIndex].store_listing_id}"]`);
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            removeParams('scrollTo');
-                            scrollToCache = '';
-                        }, 500);
-                    }
+            const scrollToTarget = (targetIndex, selectorAttr, selectorValue) => {
+                const targetPage = Math.floor(targetIndex / itemsPerPage) + 1;
+                if (targetPage !== currentPage) {
+                    renderPage(targetPage);
+                } else {
+                    setTimeout(() => {
+                        const el = document.querySelector(`[${selectorAttr}="${selectorValue}"]`);
+                        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                        if (targetListingId) {
+                            removeParams("scrollTo");
+                            scrollToCache = "";
+                        }
+                    }, 500);
                 }
-            } else {
+            };
+        
+            if (targetListingId) {
+                let targetIndex = filteredData.findIndex(cat =>
+                    cat.store_listing_id === targetListingId ||
+                    cat.products?.some(p => p.store_listing_id === targetListingId)
+                );
+            
+                if (targetIndex !== -1) {
+                    scrollToTarget(targetIndex, "data-listing-id", filteredData[targetIndex].store_listing_id);
+                    return;
+                }
+            
+                targetIndex = filteredData.findIndex(cat =>
+                    cat.sku_id === targetListingId ||
+                    cat.products?.some(p => p.sku_id === targetListingId)
+                );
+            
+                if (targetIndex !== -1) {
+                    scrollToTarget(targetIndex, "data-sku-id", filteredData[targetIndex].sku_id);
+                    return;
+                }
+            }
+        
+            if (targetSkuId) {
                 const targetIndex = filteredData.findIndex(cat =>
                     cat.sku_id === targetSkuId ||
-                    (cat.products?.some(p => p.sku_id === targetSkuId))
+                    cat.products?.some(p => p.sku_id === targetSkuId)
                 );
-
+            
                 if (targetIndex !== -1) {
-                    const targetPage = Math.floor(targetIndex / itemsPerPage) + 1;
-                    if (targetPage !== currentPage) {
-                        renderPage(targetPage);
-                    } else {
-                        setTimeout(() => {
-                            const el = document.querySelector(`[data-sku-id="${filteredData[targetIndex].sku_id}"]`);
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }, 500);
-                    }
+                    scrollToTarget(targetIndex, "data-sku-id", filteredData[targetIndex].sku_id);
                 }
             }
         };
+
     
         searchInput.addEventListener('input', () => {
             filteredData = filterCategories(data, searchInput.value);
