@@ -6091,7 +6091,13 @@ async function loadSite() {
             searchInput.classList.remove('hidden');   
             const output = document.getElementById('categories-container');
             if (!discordCollectiblesCategoriesCache || discordCollectiblesCategoriesCache && reFetch) {
-                const rawData = await fetch(redneredAPI + endpoints.DISCORD_COLLECTIBLES_CATEGORIES);
+                let url = redneredAPI + endpoints.DISCORD_COLLECTIBLES_CATEGORIES;
+
+                if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'database_categories_handling')?.treatment === 1) {
+                    url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_CATALOG;
+                }
+
+                const rawData = await fetch(url);
 
                 if (!rawData.ok) {
                     renderShopLoadingError(rawData.status, output);
@@ -6109,7 +6115,13 @@ async function loadSite() {
             searchInput.classList.remove('hidden');   
             const output = document.getElementById('categories-container');
             if (!discordOrbsCategoriesCache || discordOrbsCategoriesCache && reFetch) {
-                const rawData = await fetch(redneredAPI + endpoints.DISCORD_ORBS_CATEGORIES);
+                let url = redneredAPI + endpoints.DISCORD_ORBS_CATEGORIES;
+
+                if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'database_categories_handling')?.treatment === 1) {
+                    url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_ORBS;
+                }
+
+                const rawData = await fetch(url);
 
                 if (!rawData.ok) {
                     renderShopLoadingError(rawData.status, output);
@@ -6127,13 +6139,19 @@ async function loadSite() {
             searchInput.classList.remove('hidden');
             const output = document.getElementById('categories-container');
             if (!discordMiscellaneousCategoriesCache || discordMiscellaneousCategoriesCache && reFetch) {
-                url = redneredAPI + endpoints.DISCORD_MISCELLANEOUS_CATEGORIES;
+
+                let url = redneredAPI + endpoints.DISCORD_MISCELLANEOUS_CATEGORIES;
+
+                if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'database_categories_handling')?.treatment === 1) {
+                    url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_MISCELLANEOUS;
+                }
+
                 apiUrl = new URL(url);
                 if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'published_items_category')?.treatment === 1) {
-                    apiUrl.searchParams.append("include-published-items-category", "true");
+                    apiUrl.searchParams.append("include_published_items_category", "true");
                 }
                 if (settingsStore.staff_show_test_categories_on_misc_page === 1) {
-                    apiUrl.searchParams.append("include-test-categories", "true");
+                    apiUrl.searchParams.append("include_unpublished", "true");
                 }
                 const rawData = await fetch(apiUrl, {
                     method: "GET",
