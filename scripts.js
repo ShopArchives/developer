@@ -844,7 +844,7 @@ async function loadSite() {
         }
 
         document.getElementById('ubar-avatar').src = userAvatar;
-        document.getElementById('log-in-with-discord-button-ubar').remove();
+        if (document.getElementById('log-in-with-discord-button-ubar')) document.getElementById('log-in-with-discord-button-ubar').remove();
     } else {
         document.getElementById('ubar-displayname').remove();
         document.getElementById('ubar-username').remove();

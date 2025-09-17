@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.19";
+const appVersion = "7.3.20";
 const appType = "Dev";
 
 const endpoints = {
@@ -141,7 +141,8 @@ const discord_categories = {
     ROCK: "1400163655689043998",
     RAWR_XD: "1402782203099746314",
     SECRET_GARDEN: "1402783991349772371",
-    LUNAR_ECLIPSE: "1409898408076116140"
+    LUNAR_ECLIPSE: "1409898408076116140",
+    BOX: "1409898408392748561"
 };
 
 const category_client_overrides = [
