@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.20";
+const appVersion = "7.3.21";
 const appType = "Dev";
 
 const endpoints = {
@@ -142,7 +142,8 @@ const discord_categories = {
     RAWR_XD: "1402782203099746314",
     SECRET_GARDEN: "1402783991349772371",
     LUNAR_ECLIPSE: "1409898408076116140",
-    BOX: "1409898408392748561"
+    BOX: "1409898408392748561",
+    NAMEPLATE_BONANZA: "1416443525192614001"
 };
 
 const category_client_overrides = [
@@ -770,7 +771,7 @@ const favorites_category = {
     "name": "My Favorites",
     "summary": " ",
     "store_listing_id": null,
-    "banner": null,
+    "banner": "https://cdn.yapper.shop/assets/213.png",
     "unpublished_at": null,
     "logo": "https://cdn.yapper.shop/assets/210.png",
     "hero_ranking": null,

@@ -5712,9 +5712,69 @@ async function loadSite() {
                 }
 
 
-                bannerContainer.addEventListener("click", function () {
-                    openModal('category-modal', 'fromCategoryBanner', categoryData, modalBanner);
-                });
+                if (categoryData.sku_id === "5") {
+                    const favorites = JSON.parse(localStorage.getItem("favoritesStore")) || [];
+                    // Initialize totals
+                    let totals = {
+                        usd_0: 0,
+                        usd_4: 0,
+                        orb_0: 0,
+                        orb_4: 0
+                    };
+
+                    for (const product of favorites) {
+                        try {
+                            for (const key of ["0", "4"]) {
+                                const countryPrices = product.prices[key]?.country_prices?.prices || [];
+                                for (const price of countryPrices) {
+                                    if (price.currency === "usd") {
+                                        // divide by 10^exponent to get real amount in dollars
+                                        totals[`usd_${key}`] += price.amount / Math.pow(10, price.exponent);
+                                    } else if (price.currency === "discord_orb") {
+                                        totals[`orb_${key}`] += price.amount; // orbs don't use exponent
+                                    }
+                                }
+                            }
+                        } catch(err) {}
+                    }
+                    bannerContainer.style.cursor = `unset`;
+                    bannerContainer.style.height = `180px`;
+                    bannerContainer.innerHTML = `
+                        <div class="fav-banner-objects">
+                            <h1>My Favorites</h1>
+                            <div class="fav-info-grid">
+                                <div>
+                                    <h3>Total Items:</h3>
+                                    <p>${favorites.length}</p>
+                                </div>
+                                <div>
+                                    <p>
+                                        <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+                                            <path fill="currentColor" d="M15 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" class=""></path>
+                                            <path fill="currentColor" fill-rule="evenodd" d="M7 4a1 1 0 0 0 0 2h3a1 1 0 1 1 0 2H5.5a1 1 0 0 0 0 2H8a1 1 0 1 1 0 2H6a1 1 0 1 0 0 2h1.25A8 8 0 1 0 15 4H7Zm8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" clip-rule="evenodd" class=""></path>
+                                            <path fill="currentColor" d="M2.5 10a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2h.5Z" class=""></path>
+                                        </svg>
+                                        $${totals.usd_4.toFixed(2)}
+                                    </p>
+                                    <p>$${totals.usd_0.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                    <p>
+                                        <svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M10.4092 0.076753C10.1616 -0.0255843 9.88336 -0.0255844 9.63569 0.076753L3.26336 2.71036C3.01574 2.8127 2.81901 3.00899 2.71644 3.25605L0.0769252 9.61416C-0.0256417 9.86122 -0.0256418 10.1388 0.0769252 10.3858L2.71644 16.744C2.81901 16.991 3.01574 17.1873 3.26336 17.2897L9.63569 19.9233C9.88336 20.0256 10.1616 20.0256 10.4092 19.9233L16.7816 17.2897C17.0292 17.1873 17.2259 16.991 17.3285 16.744L19.9679 10.3858C20.0705 10.1388 20.0705 9.86122 19.9679 9.61416L17.3285 3.25605C17.2259 3.00899 17.0292 2.8127 16.7816 2.71036L10.4092 0.076753ZM9.68733 2.76214C9.87214 2.57769 10.1719 2.57768 10.3567 2.76212L17.2614 9.65093C17.4462 9.83539 17.4462 10.1344 17.2614 10.3189L10.3567 17.2077C10.1719 17.3921 9.87214 17.3921 9.68733 17.2077L2.78337 10.3189C2.59853 10.1344 2.59853 9.83539 2.78337 9.65093L9.68733 2.76214Z" fill="currentColor"></path>
+                                            <path d="M10.321 6.3001C10.5005 7.10241 10.9042 7.83763 11.4852 8.42053C12.0662 9.0035 12.8008 9.41031 13.6039 9.5939C13.6825 9.61203 13.7526 9.65618 13.8028 9.71915C13.853 9.78211 13.8803 9.86021 13.8803 9.94063C13.8803 10.0211 13.853 10.0992 13.8028 10.1622C13.7526 10.2251 13.6825 10.2693 13.6039 10.2874C12.8018 10.4666 12.0672 10.8696 11.4859 11.4497C10.9046 12.0296 10.5006 12.7626 10.321 13.563C10.3029 13.6414 10.2586 13.7113 10.1955 13.7614C10.1324 13.8115 10.0541 13.8388 9.97348 13.8388C9.89283 13.8388 9.81461 13.8115 9.75151 13.7614C9.6884 13.7113 9.64415 13.6414 9.62598 13.563C9.44267 12.7628 9.03632 12.0307 8.4538 11.4511C7.87129 10.8715 7.13636 10.4681 6.33387 10.2874C6.25534 10.2693 6.18522 10.2251 6.13502 10.1622C6.08483 10.0992 6.0575 10.0211 6.0575 9.94063C6.0575 9.86021 6.08483 9.78211 6.13502 9.71915C6.18522 9.65618 6.25534 9.61203 6.33387 9.5939C7.13661 9.41056 7.87122 9.00506 8.45355 8.4241C9.03582 7.84314 9.44217 7.1101 9.62598 6.30923C9.64309 6.23055 9.68639 6.15999 9.74881 6.10906C9.81129 6.05812 9.88919 6.02981 9.96985 6.02876C10.0505 6.02769 10.1292 6.05395 10.1929 6.10322C10.2567 6.1525 10.3019 6.2219 10.321 6.3001Z" fill="currentColor"></path>
+                                        </svg>
+                                        ${totals.orb_0}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    bannerContainer.addEventListener("click", function () {
+                        openModal('category-modal', 'fromCategoryBanner', categoryData, modalBanner);
+                    });
+                }
 
                 if (currentOpenModalId === categoryData.sku_id) {
                     setTimeout(() => {
