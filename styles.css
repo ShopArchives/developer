@@ -5,6 +5,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Chicle&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=MuseoModerno:ital,wght@0,600;1,600&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500&display=swap');
 
 .dns-BANGERS {
     font-family: "Bangers", system-ui;
@@ -80,6 +81,12 @@
 
 .dns-SINISTRE {
     font-family: Sinistre, serif;
+}
+
+.dns-ZILLA_SLAB {
+    font-family: "Zilla Slab", serif;
+    font-weight: 500;
+    font-style: normal;
 }
 
 .dns-gradient-type-2 {

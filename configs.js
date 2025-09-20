@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.21";
+const appVersion = "7.3.22";
 const appType = "Dev";
 
 const endpoints = {
@@ -417,6 +417,22 @@ const display_name_styles_colors = {
 
 const experiments = [
     {
+        title: `XP Revamp`,
+        codename: `xp_system_v2`,
+        release_config: {
+            year: `2025`,
+            month: `09`
+        },
+        treatments: [
+            {
+                title: `Not Eligible`
+            },
+            {
+                title: `Enabled`
+            }
+        ]
+    },
+    {
         title: `Database Categories Handling`,
         codename: `database_categories_handling`,
         release_config: {
@@ -445,57 +461,6 @@ const experiments = [
             },
             {
                 title: `Enabled`
-            }
-        ]
-    },
-    {
-        title: `Quests Tab`,
-        codename: `quests_tab`,
-        release_config: {
-            year: `2025`,
-            month: `07`
-        },
-        treatments: [
-            {
-                title: `Not Eligible`
-            },
-            {
-                title: `Enabled`
-            },
-            {
-                title: `With Video Player`
-            }
-        ]
-    },
-    {
-        title: `Enhanced Account Tab`,
-        codename: `enhanced_account_tab`,
-        release_config: {
-            year: `2025`,
-            month: `07`
-        },
-        treatments: [
-            {
-                title: `Not Eligible`
-            },
-            {
-                title: `Enabled`
-            }
-        ]
-    },
-    {
-        title: `Render User Level Stats`,
-        codename: `render_user_level_stats`,
-        release_config: {
-            year: `2025`,
-            month: `07`
-        },
-        treatments: [
-            {
-                title: `Not Eligible`
-            },
-            {
-                title: `Display level stats on user profiles`
             }
         ]
     },
@@ -553,22 +518,6 @@ const experiments = [
         release_config: {
             year: `2025`,
             month: `06`
-        },
-        treatments: [
-            {
-                title: `Not Eligible`
-            },
-            {
-                title: `Enabled`
-            }
-        ]
-    },
-    {
-        title: `XP System`,
-        codename: `xp_system`,
-        release_config: {
-            year: `2025`,
-            month: `05`
         },
         treatments: [
             {
@@ -636,7 +585,6 @@ const settings = {
     "staff_simulate_guidelines_block": 0,
     "staff_simulate_sus_block": 0,
     "staff_show_unpublished_xp_events": 0,
-    "staff_show_unpublished_xp_shop": 0,
     "staff_allow_category_only_event_claiming_in_events_tab": 0,
     "staff_show_test_categories_on_misc_page": 0,
     "staff_auth_remove_none_promt": 0,
@@ -784,4 +732,13 @@ const favorites_category = {
     "wide_banner": null,
     "hero_logo": null,
     "products": []
+};
+
+const claimable_types = {
+    REDEEM: 0,
+    CLAIM: 1,
+    MULTI_CLAIM: 2,
+    EXTERNAL: 3,
+    CATEGORY: 4,
+    CATEGORY_LEAK: 5
 };
