@@ -1,5 +1,5 @@
 
-const appVersion = "7.3.23";
+const appVersion = "7.3.24";
 const appType = "Dev";
 
 const endpoints = {
@@ -11,6 +11,7 @@ const endpoints = {
     USERS: "/users/",
     XP_EVENTS: "/xp-events",
     XP_LEVELS: "/xp-levels",
+    TRADING_CONFIG: "/trading-config",
 
     STABLE_LOGIN_CALLBACK: "/callback",
     DEV_LOGIN_CALLBACK: "/dev/callback",
@@ -742,46 +743,3 @@ const claimable_types = {
     CATEGORY: 4,
     CATEGORY_LEAK: 5
 };
-
-const placeholder_trading_cards = [ 
-    {
-        id: 1,
-        name: "Sand Spade",
-        rarity: 2
-    },
-    {   
-        id: 2,
-        name: "Sand Bucket",
-        rarity: 2
-    },
-    {   
-        id: 3,
-        name: "Beach Umbrella",
-        rarity: 3
-    },
-    {   
-        id: 4,
-        name: "Beach Ball",
-        rarity: 10
-    },
-    {   
-        id: 5,
-        name: "Sun",
-        rarity: 10
-    },
-    {   
-        id: 6,
-        name: "Sakura",
-        rarity: 20
-    },
-    {   
-        id: 7,
-        name: "Headphones",
-        rarity: 20
-    },
-    {   
-        id: 8,
-        name: "Trixie",
-        rarity: 50
-    }
-];
