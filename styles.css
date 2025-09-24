@@ -746,6 +746,29 @@ hr {
     z-index: 1;
 }
 
+.catalog-banner-container {
+    position: relative;
+    min-width: 500px;
+    max-width: 1200px;
+    width: 100%;
+    height: 200px;
+    border-radius: 20px;
+    cursor: pointer;
+}
+.catalog-banner-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.catalog-banner-container video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 .banner-container {
     position: relative;
     min-width: 500px;
