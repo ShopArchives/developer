@@ -5469,6 +5469,8 @@ async function loadSite() {
                 }
             });
 
+            let firstTime = true;
+
             function applyVariant(selectedVariant) {
                 card.querySelector("[data-shop-card-var-title]").textContent = `(${selectedVariant.variant_label})`;
 
@@ -5589,21 +5591,6 @@ async function loadSite() {
                     }
                 } else if (selectedVariant.type === item_types.NAMEPLATE) {
 
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-                    // dont forget to make these animate after variant is selecteed, kinda like how profile effects do
-
                     previewContainer.classList.add('type-2-preview-container')
 
                     function createDudNameplatePreview(type) {
@@ -5663,8 +5650,13 @@ async function loadSite() {
 
                     nameplate_user.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
 
+                    if (firstTime === false) {
+                        videoElement.play();
+                    }
+
                     card.addEventListener("mouseenter", () => {
                         videoElement.play();
+                        firstTime = false;
                     });
                     card.addEventListener("mouseleave", () => {
                         videoElement.pause();
