@@ -267,6 +267,10 @@ p, h1, h2, h3, h4, h5, h6, a {
     font-weight: normal;
 }
 
+* {
+    box-sizing: border-box;
+}
+
 .notice {
     background-color: var(--notice-default);
     width: 100%;
@@ -3716,6 +3720,7 @@ hr {
     gap: 10px;
     grid-template-columns: repeat(auto-fill, minmax(29px, 1fr));
     z-index: 2;
+    box-sizing: unset;
 }
 
 [data-modal-top-product-buttons] div {
@@ -3723,6 +3728,7 @@ hr {
     width: 34px !important;
     border-radius: 8px;
     overflow: hidden;
+    box-sizing: unset;
 }
 
 
@@ -3731,6 +3737,7 @@ hr {
     padding: 5px;
     color: #B1B5BB;
     background-color: #0000005d;
+    box-sizing: unset;
 }
 
 .modalv2_top_icon:hover {
@@ -3906,7 +3913,6 @@ hr {
     position: fixed;
     z-index: 1001;
     background-color: var(--background-primary);
-    padding: 20px;
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     display: flex;
@@ -4611,6 +4617,8 @@ hr {
 .xp-balance-modalv3-container {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     height: 30px;
     left: 5px;
@@ -4622,12 +4630,13 @@ hr {
 
 
 .xp-balance-modalv3-container .bar {
+    position: absolute;
+    left: 0;
     height: 100%;
     background: var(--color-premium);
     border-radius: 16px;
     width: 0%;
     transition: width 1s ease;
-    position: relative;
     box-shadow: 0 0 20px rgba(255, 107, 157, 0.4);
 }
 
@@ -4645,9 +4654,6 @@ hr {
 .xp-balance-modalv3-container p {
     position: absolute;
     display: flex;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
     font-size: 14px;
     color: var(--text-primary);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
@@ -5048,6 +5054,180 @@ hr {
     margin-right: 140px;
 }
 
+
+
+
+
+.trading-card-browse-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 301;
+    opacity: 0;
+    transform: scale(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.trading-card-browse-modal.show {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.trading-card-browse-modal-inner {
+    position: relative;
+    background-color: var(--background-primary);
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    width: 1000px;
+    height: 700px;
+    overflow: visible;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.trading-card-browse-modal-back {
+    z-index: 300;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #00000063;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.trading-card-browse-modal-back.show {
+    opacity: 1;
+}
+
+
+.trading-card-browse-modal-inner > * {
+    z-index: 2;
+}
+
+.trading-card-browse-modal .bg {
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    object-fit: cover;
+    border-radius: 10px 10px 0px 0px;
+    mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0) 100%);
+    z-index: 1 !important;
+}
+.trading-card-browse-modal .bg-color {
+    background: linear-gradient(-135deg, #374ba1 0%, #764ba2 70%);
+    height: 500px;
+    width: 100%;
+}
+
+
+
+.trading-card-browse-modal .top {
+    display: flex;
+    gap: 10px;
+    height: fit-content;
+}
+
+.trading-card-browse-modal .logo {
+    display: flex;
+    gap: 10px;
+    height: fit-content;
+}
+.trading-card-browse-modal .logo * {
+    font-family: ABC Ginto Nord;
+}
+.trading-card-browse-modal .logo .right-top h1 {
+    margin-top: -7px;
+}
+.trading-card-browse-modal .logo .right-top h2 {
+    font-size: 16px;
+}
+.trading-card-browse-modal .logo svg {
+    height: 58px;
+    width: 58px;
+}
+
+
+.trading-card-browse-modal .top .info-blocks {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.trading-card-browse-modal .top .info-blocks div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    background-color: #2c2d3294;
+    border-radius: 5px;
+    height: fit-content;
+}
+.trading-card-browse-modal .top .info-blocks div svg {
+    height: 20px;
+    width: 20px;
+    margin-right: 5px;
+}
+
+
+.trading-card-browse-modal .middle {
+    flex: 1;
+    padding-top: 10px;
+    display: flex;
+    gap: 20px;
+}
+
+.trading-card-browse-modal .middle .left {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: #2c2d3294;
+    border-radius: 10px;
+    width: 300px;
+}
+
+.trading-card-browse-modal .middle .left > div {
+    position: relative;
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+    width: 100%;
+    height: 160px;
+    border-radius: 10px;
+    padding: 10px;
+    cursor: pointer;
+}
+.trading-card-browse-modal .middle .left > div img {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    object-fit: cover;
+    height: 100%;
+    opacity: 25%;
+}
+.trading-card-browse-modal .middle .left > div h1 {
+    font-family: ABC Ginto Nord;
+    font-size: 18px;
+}
+
+
+.trading-card-browse-modal .middle .right {
+    flex: 1;
+    padding-top: 10px;
+    display: flex;
+    gap: 20px;
+    background-color: #2c2d3294;
+    border-radius: 10px;
+}
 
 
 

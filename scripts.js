@@ -564,6 +564,32 @@ function renderQuestRequirement(quest) {
     return data;
 }
 
+function calculateCardStats(tradingConfigCache) {
+    const packCardIds = new Set(
+        tradingConfigCache.packs.flatMap(pack => pack.cards.map(c => c.id))
+    );
+
+    const totalCardCount = tradingConfigCache.packs.reduce(
+        (sum, pack) => sum + pack.cards.length,
+        0
+    );
+
+    let totalUniqueCards = 0;
+    const seenCards = new Set();
+
+    for (const card of tradingConfigCache.inventory) {
+        if (!seenCards.has(card.id) && packCardIds.has(card.id)) {
+            totalUniqueCards++;
+            seenCards.add(card.id);
+        }
+    }
+
+    return {
+        totalCardCount,
+        totalUniqueCards
+    };
+}
+
 function favorite(type, data) {
     if (type === "add") {
         const favorites = JSON.parse(localStorage.getItem("favoritesStore")) || [];
@@ -4705,9 +4731,124 @@ async function loadSite() {
                 });
             });
 
+        } else if (type === "tradingCardPackBrowse") {
+
+            modal.innerHTML = `
+                <div class="trading-card-browse-modal-inner">
+                    <div class="bg"><div class="bg-color"></div></div>
+                    <div class="top">
+                        <div class="logo">
+                            <svg width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4.64349 8.16714C4.31747 8.54693 4.15568 9.04068 4.19371 9.53976L5.91422 32.121C5.95225 32.6201 6.18698 33.0836 6.56677 33.4096C6.94656 33.7356 7.4403 33.8974 7.93939 33.8594L26.7573 32.4258C27.2563 32.3878 27.7199 32.1531 28.0459 31.7733C28.3719 31.3935 28.5337 30.8997 28.4957 30.4007L26.7752 7.81943C26.7371 7.32035 26.5024 6.85682 26.1226 6.5308C25.7428 6.20479 25.2491 6.043 24.75 6.08102L19.1046 6.51095L18.8179 2.74738L24.4632 2.31745C25.9605 2.20337 27.4417 2.68874 28.5811 3.66679C29.7205 4.64483 30.4247 6.03544 30.5387 7.53268L32.6894 35.7593C32.8035 37.2565 32.3181 38.7377 31.34 39.8771C30.362 41.0165 28.9714 41.7207 27.4742 41.8348L8.65627 43.2683C7.15903 43.3824 5.67779 42.897 4.53842 41.919C3.39904 40.9409 2.69486 39.5503 2.58078 38.0531L0.430133 9.82651C0.316055 8.32927 0.801426 6.84803 1.77947 5.70866C2.75752 4.56928 4.14812 3.8651 5.64536 3.75102L18.5826 2.7653L18.8694 6.52887L5.93211 7.51459C5.43303 7.55262 4.9695 7.78735 4.64349 8.16714Z" fill="currentColor"></path>
+                                <path d="M18.5826 2.7653L18.8179 2.74738L19.1046 6.51095L18.8694 6.52887L18.5826 2.7653Z" fill="currentColor"></path>
+                                <path d="M35.7864 2.31689C37.2836 2.20282 38.7652 2.68846 39.9045 3.6665C41.0437 4.64449 41.7484 6.03468 41.8625 7.53174L44.0129 35.7583C44.127 37.2555 43.6414 38.7371 42.6633 39.8765C41.6853 41.0158 40.2943 41.7204 38.7971 41.8345L32.2551 42.3325C32.6524 42.0421 33.0173 41.6976 33.3362 41.3013C34.3089 40.0924 34.7868 38.5168 34.6653 36.9214L34.344 32.7095L38.0803 32.4253C38.5793 32.3873 39.0434 32.1526 39.3694 31.7729C39.6954 31.3932 39.8566 30.899 39.8186 30.3999L38.0989 7.81885C38.0609 7.31977 37.8253 6.8558 37.4456 6.52979C37.0658 6.20403 36.5724 6.04257 36.0735 6.08057L32.3167 6.36572C32.1033 4.95926 31.4317 3.66759 30.4094 2.72607L35.7864 2.31689Z" fill="currentColor"></path>
+                            </svg>
+                            <div class="right-top">
+                                <h1>Trading Cards</h1>
+                                <h2>Collect, Upgrade, Trade</h2>
+                            </div>
+                        </div>
+                        <div class="info-blocks">
+                        </div>
+                    </div>
+
+                    <div class="middle">
+                        <div class="left">
+                        </div>
+                        <div class="right">
+                        </div>
+                    </div>
+
+                    <div data-modal-top-product-buttons>
+                        <div class="has-tooltip" data-tooltip="Close" data-close-product-card-button>
+                            <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            for (const pack of tradingConfigCache.packs) {
+                let count = 0;
+                for (const card of pack.cards) {
+                    if (tradingConfigCache.inventory.find(c => c.id === card.id)) {
+                        count++
+                    }
+                }
+                const card = document.createElement('div');
+                card.innerHTML = `
+                    <h1>${pack.title}</h1>
+                    <p>${count}/${pack.cards.length} Cards Collected!</p>
+                    <img src="https://cdn.yapper.shop/assets/${pack.banner}.png">
+                `;
+                card.style.background = `linear-gradient(-135deg, ${pack.colors[0]} 0%, ${pack.colors[1]} 70%)`;
+                modal.querySelector('.left').appendChild(card);
+            }
+
+            function tcbmRefreshStats() {
+
+                const stats = calculateCardStats(tradingConfigCache);
+
+                modal.querySelector('.info-blocks').innerHTML = `
+                    <div class="has-tooltip" data-tooltip="Your XP Level">
+                        <p>Level ${currentUserData.xp_information.level.toLocaleString()}</p>
+                    </div>
+                    <div class="has-tooltip" data-tooltip="Your XP Balance">
+                        <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
+                        </svg>
+                        <p>${currentUserData.xp_balance.toLocaleString()}</p>
+                    </div>
+                    <div class="has-tooltip" data-tooltip="Your Unique Cards">
+                        <svg width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4.64349 8.16714C4.31747 8.54693 4.15568 9.04068 4.19371 9.53976L5.91422 32.121C5.95225 32.6201 6.18698 33.0836 6.56677 33.4096C6.94656 33.7356 7.4403 33.8974 7.93939 33.8594L26.7573 32.4258C27.2563 32.3878 27.7199 32.1531 28.0459 31.7733C28.3719 31.3935 28.5337 30.8997 28.4957 30.4007L26.7752 7.81943C26.7371 7.32035 26.5024 6.85682 26.1226 6.5308C25.7428 6.20479 25.2491 6.043 24.75 6.08102L19.1046 6.51095L18.8179 2.74738L24.4632 2.31745C25.9605 2.20337 27.4417 2.68874 28.5811 3.66679C29.7205 4.64483 30.4247 6.03544 30.5387 7.53268L32.6894 35.7593C32.8035 37.2565 32.3181 38.7377 31.34 39.8771C30.362 41.0165 28.9714 41.7207 27.4742 41.8348L8.65627 43.2683C7.15903 43.3824 5.67779 42.897 4.53842 41.919C3.39904 40.9409 2.69486 39.5503 2.58078 38.0531L0.430133 9.82651C0.316055 8.32927 0.801426 6.84803 1.77947 5.70866C2.75752 4.56928 4.14812 3.8651 5.64536 3.75102L18.5826 2.7653L18.8694 6.52887L5.93211 7.51459C5.43303 7.55262 4.9695 7.78735 4.64349 8.16714Z" fill="currentColor"></path>
+                            <path d="M18.5826 2.7653L18.8179 2.74738L19.1046 6.51095L18.8694 6.52887L18.5826 2.7653Z" fill="currentColor"></path>
+                            <path d="M35.7864 2.31689C37.2836 2.20282 38.7652 2.68846 39.9045 3.6665C41.0437 4.64449 41.7484 6.03468 41.8625 7.53174L44.0129 35.7583C44.127 37.2555 43.6414 38.7371 42.6633 39.8765C41.6853 41.0158 40.2943 41.7204 38.7971 41.8345L32.2551 42.3325C32.6524 42.0421 33.0173 41.6976 33.3362 41.3013C34.3089 40.0924 34.7868 38.5168 34.6653 36.9214L34.344 32.7095L38.0803 32.4253C38.5793 32.3873 39.0434 32.1526 39.3694 31.7729C39.6954 31.3932 39.8566 30.899 39.8186 30.3999L38.0989 7.81885C38.0609 7.31977 37.8253 6.8558 37.4456 6.52979C37.0658 6.20403 36.5724 6.04257 36.0735 6.08057L32.3167 6.36572C32.1033 4.95926 31.4317 3.66759 30.4094 2.72607L35.7864 2.31689Z" fill="currentColor"></path>
+                        </svg>
+                        <p>${stats.totalUniqueCards}/${stats.totalCardCount}</p>
+                    </div>
+                    <div class="has-tooltip" data-tooltip="Your Total Cards">
+                        <svg width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4.64349 8.16714C4.31747 8.54693 4.15568 9.04068 4.19371 9.53976L5.91422 32.121C5.95225 32.6201 6.18698 33.0836 6.56677 33.4096C6.94656 33.7356 7.4403 33.8974 7.93939 33.8594L26.7573 32.4258C27.2563 32.3878 27.7199 32.1531 28.0459 31.7733C28.3719 31.3935 28.5337 30.8997 28.4957 30.4007L26.7752 7.81943C26.7371 7.32035 26.5024 6.85682 26.1226 6.5308C25.7428 6.20479 25.2491 6.043 24.75 6.08102L19.1046 6.51095L18.8179 2.74738L24.4632 2.31745C25.9605 2.20337 27.4417 2.68874 28.5811 3.66679C29.7205 4.64483 30.4247 6.03544 30.5387 7.53268L32.6894 35.7593C32.8035 37.2565 32.3181 38.7377 31.34 39.8771C30.362 41.0165 28.9714 41.7207 27.4742 41.8348L8.65627 43.2683C7.15903 43.3824 5.67779 42.897 4.53842 41.919C3.39904 40.9409 2.69486 39.5503 2.58078 38.0531L0.430133 9.82651C0.316055 8.32927 0.801426 6.84803 1.77947 5.70866C2.75752 4.56928 4.14812 3.8651 5.64536 3.75102L18.5826 2.7653L18.8694 6.52887L5.93211 7.51459C5.43303 7.55262 4.9695 7.78735 4.64349 8.16714Z" fill="currentColor"></path>
+                            <path d="M18.5826 2.7653L18.8179 2.74738L19.1046 6.51095L18.8694 6.52887L18.5826 2.7653Z" fill="currentColor"></path>
+                            <path d="M35.7864 2.31689C37.2836 2.20282 38.7652 2.68846 39.9045 3.6665C41.0437 4.64449 41.7484 6.03468 41.8625 7.53174L44.0129 35.7583C44.127 37.2555 43.6414 38.7371 42.6633 39.8765C41.6853 41.0158 40.2943 41.7204 38.7971 41.8345L32.2551 42.3325C32.6524 42.0421 33.0173 41.6976 33.3362 41.3013C34.3089 40.0924 34.7868 38.5168 34.6653 36.9214L34.344 32.7095L38.0803 32.4253C38.5793 32.3873 39.0434 32.1526 39.3694 31.7729C39.6954 31.3932 39.8566 30.899 39.8186 30.3999L38.0989 7.81885C38.0609 7.31977 37.8253 6.8558 37.4456 6.52979C37.0658 6.20403 36.5724 6.04257 36.0735 6.08057L32.3167 6.36572C32.1033 4.95926 31.4317 3.66759 30.4094 2.72607L35.7864 2.31689Z" fill="currentColor"></path>
+                        </svg>
+                        <p>${tradingConfigCache.inventory.length}</p>
+                    </div>
+                `;
+            }
+            window.tcbmRefreshStats = tcbmRefreshStats;
+
+            tcbmRefreshStats();
+
+
+
+            document.body.appendChild(modal);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.classList.add('show');
+                });
+            });
+
+            document.body.appendChild(modal_back);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_back.classList.add('show');
+                });
+            });
+
+
+            modal.querySelector("[data-close-product-card-button]").addEventListener('click', () => {
+                closeModal();
+            });
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
         }
 
-        if (type != "tradingCardPackOpening" && type != "fromCategoryBanner" && type != "userSettings" && type != "openUserModal" && type != "openLoadingTest") {
+        if (type != "fromCategoryBanner" && type != "userSettings" && type != "openUserModal" && type != "openLoadingTest" && type != "tradingCardPackOpening" && type != "tradingCardPackBrowse") {
             document.body.appendChild(modal);
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
@@ -4780,7 +4921,7 @@ async function loadSite() {
     function getCategoryBanners(categoryData) {
         const categoryClientDataId = category_client_overrides.findIndex(cat => cat.sku_id === categoryData.sku_id);
 
-        let categoryBanner = null;
+        let categoryBanner = 'https://cdn.yapper.shop/assets/217.png';
         if (category_client_overrides[categoryClientDataId]?.banner_override) {
             categoryBanner = category_client_overrides[categoryClientDataId]?.banner_override;
         }
@@ -5861,9 +6002,14 @@ async function loadSite() {
                 if (categoryData.catalog_banner_asset) {
                     bannerContainer.classList.add('catalog-banner-container');
                     bannerContainer.innerHTML = `
-                        <video disablepictureinpicture muted loop autoplay src="${categoryData.catalog_banner_asset.animated}"></video>
                         <img src="${categoryData.catalog_banner_asset.static}">
                     `;
+                    if (categoryData.catalog_banner_asset.animated) {
+                        bannerContainer.innerHTML = `
+                            <video disablepictureinpicture muted loop autoplay src="${categoryData.catalog_banner_asset.animated}"></video>
+                            <img src="${categoryData.catalog_banner_asset.static}">
+                        `;
+                    }
                 } else if (categoryBanner) {
                     bannerContainer.classList.add('banner-container');
                     bannerContainer.style.backgroundImage = `url(${categoryBanner})`;
@@ -6932,7 +7078,7 @@ async function loadSite() {
             `;
 
             if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system_v2')?.treatment === 1) {
-                const cardsCount = tradingConfigCache?.pack_event?.cards?.length || 0;
+                const stats = calculateCardStats(tradingConfigCache);
                 tabPageOutput.querySelector('#trading-cards-banner-container').innerHTML = `
                     <div class="trading-card-banner">
                         <div class="top">
@@ -6943,15 +7089,15 @@ async function loadSite() {
                             </svg>
                             <div class="right-top">
                                 <h1>Trading Cards</h1>
-                                <h2>Earn, Collect, Trade</h2>
+                                <h2>Collect, Upgrade, Trade</h2>
                             </div>
                         </div>
-                        <p>Collect All ${cardsCount} Cards!</p>
+                        <p>Collect All ${stats.totalCardCount} Cards!</p>
                         <div class="right">
                             <img class="cards" src="https://cdn.yapper.shop/assets/215.png">
                             <img class="trixie" src="https://cdn.yapper.shop/assets/214.png">
                         </div>
-                        <button class="generic-button premium">View Packs</button>
+                        <button class="generic-button premium" onclick="openModal('trading-card-browse-modal', 'tradingCardPackBrowse')">View Packs</button>
                     </div>
                     <hr class="inv">
                     <hr>
