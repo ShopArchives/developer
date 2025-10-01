@@ -565,20 +565,17 @@ function renderQuestRequirement(quest) {
 }
 
 function calculateCardStats(tradingConfigCache) {
-    const packCardIds = new Set(
-        tradingConfigCache.packs.flatMap(pack => pack.cards.map(c => c.id))
+    const allPackCardIds = tradingConfigCache.packs.flatMap(pack =>
+        pack.cards.map(c => c.id)
     );
 
-    const totalCardCount = tradingConfigCache.packs.reduce(
-        (sum, pack) => sum + pack.cards.length,
-        0
-    );
+    const totalCardCount = new Set(allPackCardIds).size;
 
     let totalUniqueCards = 0;
     const seenCards = new Set();
 
     for (const card of tradingConfigCache.inventory) {
-        if (!seenCards.has(card.id) && packCardIds.has(card.id)) {
+        if (!seenCards.has(card.id) && allPackCardIds.includes(card.id)) {
             totalUniqueCards++;
             seenCards.add(card.id);
         }
@@ -589,6 +586,7 @@ function calculateCardStats(tradingConfigCache) {
         totalUniqueCards
     };
 }
+
 
 function favorite(type, data) {
     if (type === "add") {
@@ -4651,27 +4649,27 @@ async function loadSite() {
                 }
             });
         } else if (type === "tradingCardPackOpening") {
-
+            packId = data1;
             modal_back.innerHTML = `
                 <div class="modal-card-review-container">
                     <div class="cards"></div>
                     <div class="modal-card-buttons-container">
-                        <button class="generic-button brand" onclick="closeModal(); openModal('modalv2', 'tradingCardPackOpening')">Roll Again</button>
+                        <button class="generic-button brand" onclick="closeModal(); openModal('modalv2', 'tradingCardPackOpening', ${packId})">Roll Again</button>
                         <button class="generic-button brand" onclick="closeModal()">Claim Rewards</button>
                     </div>
                 </div>
             `;
 
-            const tradingCardList = tradingConfigCache?.pack_event?.cards || [];
+            const packCards = tradingConfigCache.packs.find(p => p.id === packId).cards || [];
 
-            let delay = 100;
+            let delay = 300;
             let counter = 0
 
             for (let i = 0; i < 3; i++) {
-                delay += 500;
+                delay += 200;
                 counter += 1;
 
-                const data = selectRandomItem(tradingCardList)
+                const data = selectRandomItem(packCards)
                 const card = document.createElement('div');
                 card.classList.add('card-container');
                 card.innerHTML = `
@@ -4720,7 +4718,7 @@ async function loadSite() {
 
                 setTimeout(() => {
                     modal_back.querySelector('.modal-card-buttons-container').classList.add('open');
-                }, 2000);
+                }, 1500);
             }
 
 
@@ -4732,6 +4730,8 @@ async function loadSite() {
             });
 
         } else if (type === "tradingCardPackBrowse") {
+
+            let currentPackPage = tradingConfigCache.packs[0];
 
             modal.innerHTML = `
                 <div class="trading-card-browse-modal-inner">
@@ -4767,24 +4767,30 @@ async function loadSite() {
                 </div>
             `;
 
-            for (const pack of tradingConfigCache.packs) {
-                let count = 0;
-                for (const card of pack.cards) {
-                    if (tradingConfigCache.inventory.find(c => c.id === card.id)) {
-                        count++
-                    }
-                }
-                const card = document.createElement('div');
-                card.innerHTML = `
-                    <h1>${pack.title}</h1>
-                    <p>${count}/${pack.cards.length} Cards Collected!</p>
-                    <img src="https://cdn.yapper.shop/assets/${pack.banner}.png">
-                `;
-                card.style.background = `linear-gradient(-135deg, ${pack.colors[0]} 0%, ${pack.colors[1]} 70%)`;
-                modal.querySelector('.left').appendChild(card);
-            }
 
             function tcbmRefreshStats() {
+                modal.querySelector('.left').innerHTML = ``;
+                for (const pack of tradingConfigCache.packs) {
+                    let count = 0;
+                    for (const card of pack.cards) {
+                        if (tradingConfigCache.inventory.find(c => c.id === card.id)) {
+                            count++
+                        }
+                    }
+                    const card = document.createElement('div');
+                    card.addEventListener("click", (e) => {
+                        setPackPage(pack);
+                        currentPackPage = pack;
+                    });
+                    card.innerHTML = `
+                        <h1>${pack.title}</h1>
+                        <p>${count}/${pack.cards.length} Cards Collected!</p>
+                        <img src="https://cdn.yapper.shop/assets/218.png">
+                    `;
+                    card.id = `trading-pack-${pack.id}`;
+                    card.style.background = `linear-gradient(-135deg, ${pack.colors[0]} 0%, ${pack.colors[1]} 70%)`;
+                    modal.querySelector('.left').appendChild(card);
+                }
 
                 const stats = calculateCardStats(tradingConfigCache);
 
@@ -4815,10 +4821,32 @@ async function loadSite() {
                         <p>${tradingConfigCache.inventory.length}</p>
                     </div>
                 `;
+
+                setPackPage(currentPackPage);
             }
             window.tcbmRefreshStats = tcbmRefreshStats;
 
             tcbmRefreshStats();
+
+
+            function setPackPage(pack) {
+                const selectedPacks = modal.querySelector('.left').querySelectorAll('.selected');
+                selectedPacks.forEach(card => {
+                    card.classList.remove('selected');
+                });
+                modal.querySelector('.left').querySelector(`#trading-pack-${pack.id}`).classList.add('selected');
+                modal.querySelector('.right').innerHTML = `
+                    <div class="r-top">
+                    </div>
+                    <div class="r-bottom">
+                        <h1>${pack.title}</h1>
+                        <button class="generic-button premium" onclick="openModal('modalv2', 'tradingCardPackOpening', ${pack.id})">Open ${pack.title} for ${pack.price} XP</button>
+                    </div>
+                `;
+            }
+            window.setPackPage = setPackPage;
+
+            setPackPage(currentPackPage);
 
 
 
@@ -7097,7 +7125,7 @@ async function loadSite() {
                             <img class="cards" src="https://cdn.yapper.shop/assets/215.png">
                             <img class="trixie" src="https://cdn.yapper.shop/assets/214.png">
                         </div>
-                        <button class="generic-button premium" onclick="openModal('trading-card-browse-modal', 'tradingCardPackBrowse')">View Packs</button>
+                        <button class="generic-button green" onclick="openModal('trading-card-browse-modal', 'tradingCardPackBrowse')">View Packs</button>
                     </div>
                     <hr class="inv">
                     <hr>
@@ -7840,11 +7868,9 @@ async function loadSite() {
                 <hr class="inv">
 
                 <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Test Pack Opening</h2>
+                    <h2 class="modalv3-content-card-header">Pack Opening Stats</h2>
 
                     <div class="modalv3-content-card-summary" id="gfidgfsdgiuhg"></div>
-
-                    <button class="generic-button brand" onclick="openModal('modalv2', 'tradingCardPackOpening')">Open Pack</button>
                 </div>
 
                 <hr>
@@ -7857,7 +7883,7 @@ async function loadSite() {
                 </div>
             `;
 
-            const tradingCardList = tradingConfigCache?.pack_event?.cards || [];
+            const tradingCardList = tradingConfigCache?.packs?.flatMap(pack => pack.cards) || [];
 
             const animationTestData = tradingCardList[0];
 
