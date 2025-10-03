@@ -1323,7 +1323,7 @@ async function loadSite() {
 
                         if (productId && discordProfileEffectsCache) {
                             // Find the profile effect configuration
-                            const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId);
+                            const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, product.items[0]);
 
                             if (profileEffect) {
                                 // Set container to full width and auto height
@@ -1412,7 +1412,7 @@ async function loadSite() {
 
                         if (productId && discordProfileEffectsCache) {
                             // Find the profile effect configuration
-                            const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId);
+                            const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, product.items[0]);
 
                             if (profileEffect) {
                                 // Set container to full width and auto height
@@ -1549,10 +1549,11 @@ async function loadSite() {
 
                             // Get the product ID from the first item
                             const productId = product.items && product.items.find(item => item.type === item_types.PROFILE_EFFECT) ? product.items.find(item => item.type === item_types.PROFILE_EFFECT).id : null;
+                            const productItem = product.items && product.items.find(item => item.type === item_types.PROFILE_EFFECT) ? product.items.find(item => item.type === item_types.PROFILE_EFFECT) : null;
 
                             if (productId && discordProfileEffectsCache) {
                                 // Find the profile effect configuration
-                                const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId);
+                                const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, productItem);
 
                                 if (profileEffect) {
                                     // Set container to full width and auto height
@@ -1637,7 +1638,7 @@ async function loadSite() {
 
                             if (productId && discordProfileEffectsCache) {
                                 // Find the profile effect configuration
-                                const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId);
+                                const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, productItem);
 
                                 if (profileEffect) {
                                     // Set container to full width and auto height
@@ -1657,6 +1658,48 @@ async function loadSite() {
                             } else {
                                 // Fallback if no product ID or cache
                                 effectPreview.innerHTML = ``;
+                            }
+                        }
+                        if (product.items.find(item => item.type === item_types.NAMEPLATE)) {
+                            modalSummary.textContent = `Bundle includes: ${product.bundled_products.find(item => item.type === item_types.AVATAR_DECORATION).name} Decoration, ${product.bundled_products.find(item => item.type === item_types.PROFILE_EFFECT).name} Profile Effect & ${product.bundled_products.find(item => item.type === item_types.NAMEPLATE).name} Nameplate`;
+
+                            let nameplate_user = document.createElement("div");
+                
+                            nameplate_user.classList.add('nameplate-null-user');
+                            nameplate_user.classList.add('nameplate-preview');
+                            nameplate_user.innerHTML = `
+                                <video disablepictureinpicture muted loop class="nameplate-null-user nameplate-video-preview" style="position: absolute; height: 100%; width: auto; right: 0;"></video>
+                                <div class="nameplate-user-avatar avatar1"></div>
+                                <p class="nameplate-user-name name1">Nameplate</p>
+                            `;
+
+                            const item = product.items.find(item => item.type === item_types.NAMEPLATE);
+                            const paletteName = item.palette;
+                            const bgcolor = nameplate_palettes[paletteName].darkBackground;
+
+                            const videoElement = nameplate_user.querySelector(".nameplate-video-preview");
+
+                            videoElement.src = `https://cdn.discordapp.com/assets/collectibles/${item.asset}asset.webm`;
+
+                            nameplate_user.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
+
+                            nameplate_user.addEventListener("mouseenter", () => {
+                                videoElement.play();
+                            });
+                            nameplate_user.addEventListener("mouseleave", () => {
+                                videoElement.pause();
+                            });
+
+                            modalPreviewContainer.appendChild(nameplate_user);
+
+                            if (currentUserData) {
+                                nameplate_user.querySelector('.name1').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
+                                let userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.webp?size=128';
+                                if (currentUserData.avatar.includes('a_')) {
+                                    userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.gif?size=128';
+                                }
+
+                                nameplate_user.querySelector('.avatar1').style.backgroundImage = `url(${userAvatar})`;
                             }
                         }
                     } else if (product.type === item_types.VARIANTS_GROUP) {
@@ -1745,7 +1788,7 @@ async function loadSite() {
 
                                 if (productId && discordProfileEffectsCache) {
                                     // Find the profile effect configuration
-                                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId);
+                                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, product.items[0]);
 
                                     if (profileEffect) {
                                         // Set container to full width and auto height
@@ -1834,7 +1877,7 @@ async function loadSite() {
 
                                 if (productId && discordProfileEffectsCache) {
                                     // Find the profile effect configuration
-                                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId);
+                                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, product.items[0]);
 
                                     if (profileEffect) {
                                         // Set container to full width and auto height
@@ -2309,6 +2352,8 @@ async function loadSite() {
                                         type0count += 1;
                                     } else if (variant.type === 1) {
                                         type1count += 1;
+                                    } else if (variant.type === 2) {
+                                        type2count += 1;
                                     }
                                 });
                             }
@@ -4735,8 +4780,8 @@ async function loadSite() {
 
             modal.innerHTML = `
                 <div class="trading-card-browse-modal-inner">
-                    <div class="bg"><div class="bg-color"></div></div>
-                    <div class="top">
+                    <div class="modal-bg"><div class="modal-bg-color"></div></div>
+                    <div class="modal-top">
                         <div class="logo">
                             <svg width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M4.64349 8.16714C4.31747 8.54693 4.15568 9.04068 4.19371 9.53976L5.91422 32.121C5.95225 32.6201 6.18698 33.0836 6.56677 33.4096C6.94656 33.7356 7.4403 33.8974 7.93939 33.8594L26.7573 32.4258C27.2563 32.3878 27.7199 32.1531 28.0459 31.7733C28.3719 31.3935 28.5337 30.8997 28.4957 30.4007L26.7752 7.81943C26.7371 7.32035 26.5024 6.85682 26.1226 6.5308C25.7428 6.20479 25.2491 6.043 24.75 6.08102L19.1046 6.51095L18.8179 2.74738L24.4632 2.31745C25.9605 2.20337 27.4417 2.68874 28.5811 3.66679C29.7205 4.64483 30.4247 6.03544 30.5387 7.53268L32.6894 35.7593C32.8035 37.2565 32.3181 38.7377 31.34 39.8771C30.362 41.0165 28.9714 41.7207 27.4742 41.8348L8.65627 43.2683C7.15903 43.3824 5.67779 42.897 4.53842 41.919C3.39904 40.9409 2.69486 39.5503 2.58078 38.0531L0.430133 9.82651C0.316055 8.32927 0.801426 6.84803 1.77947 5.70866C2.75752 4.56928 4.14812 3.8651 5.64536 3.75102L18.5826 2.7653L18.8694 6.52887L5.93211 7.51459C5.43303 7.55262 4.9695 7.78735 4.64349 8.16714Z" fill="currentColor"></path>
@@ -4837,12 +4882,24 @@ async function loadSite() {
                 modal.querySelector('.left').querySelector(`#trading-pack-${pack.id}`).classList.add('selected');
                 modal.querySelector('.right').innerHTML = `
                     <div class="r-top">
+                        <div class="modal-trading-cards-container">
+
+                        </div>
                     </div>
                     <div class="r-bottom">
                         <h1>${pack.title}</h1>
                         <button class="generic-button premium" onclick="openModal('modalv2', 'tradingCardPackOpening', ${pack.id})">Open ${pack.title} for ${pack.price} XP</button>
                     </div>
                 `;
+                pack.cards.forEach(data => {
+                    const card = document.createElement('div');
+                    card.classList.add('card');
+                    card.innerHTML = `
+                        <h3>${data.name}</h3>
+                    `;
+
+                    modal.querySelector('.right').querySelector('.modal-trading-cards-container').appendChild(card)
+                });
             }
             window.setPackPage = setPackPage;
 
@@ -5211,7 +5268,6 @@ async function loadSite() {
         `;
 
         if (product.name) card.querySelector('.shop-card-name').textContent = product.name;
-        if (product.summary) card.querySelector('.shop-card-summary').textContent = product.summary;
 
         const cardTag = card.querySelector("[data-shop-card-tag-container]");
 
@@ -5337,7 +5393,6 @@ async function loadSite() {
 
         const previewContainer = card.querySelector('[data-shop-card-preview-container]');
         const itemName = card.querySelector('.shop-card-name');
-        const itemSummary = card.querySelector('.shop-card-summary');
 
         if (product.type === item_types.AVATAR_DECORATION) {
             previewContainer.classList.add('type-0-preview-container-container')
@@ -5408,7 +5463,7 @@ async function loadSite() {
             
             if (productId && discordProfileEffectsCache) {
                 // Find the profile effect configuration
-                const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId);
+                const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, product.items[0]);
                 
                 if (profileEffect) {
                     // Set container to full width and auto height
@@ -5505,7 +5560,7 @@ async function loadSite() {
         } else if (product.type === item_types.BUNDLE) {
             previewContainer.classList.add('type-1000-preview-container')
 
-            if (product.items.find(item => item.type === 0)) {
+            if (product.items.find(item => item.type === item_types.AVATAR_DECORATION)) {
 
                 let decorationBundleContainer = document.createElement("div");
 
@@ -5576,10 +5631,11 @@ async function loadSite() {
                 const effectBundleContainerDiv = effectBundleContainer.querySelector('.effectBundleContainerDiv');
                 // Get the product ID from the first item
                 const productId = product.items.find(item => item.type === item_types.PROFILE_EFFECT) ? product.items.find(item => item.type === item_types.PROFILE_EFFECT).id : null;
+                const productItem = product.items && product.items.find(item => item.type === item_types.PROFILE_EFFECT) ? product.items.find(item => item.type === item_types.PROFILE_EFFECT) : null;
                 
                 if (productId && discordProfileEffectsCache) {
                     // Find the profile effect configuration
-                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId);
+                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, productItem);
 
                     if (profileEffect) {
                         // Set container to full width and auto height
@@ -5601,7 +5657,55 @@ async function loadSite() {
                     effectBundleContainerDiv.innerHTML = ``;
                 }
             }
-            itemSummary.textContent = `Bundle includes: ${product.bundled_products.find(item => item.type === item_types.AVATAR_DECORATION).name} Decoration & ${product.bundled_products.find(item => item.type === item_types.PROFILE_EFFECT).name} Profile Effect`;
+            if (product.items.find(item => item.type === item_types.NAMEPLATE)) {
+
+                previewContainer.classList.add('three-way-bundle')
+
+
+                let nameplateBundleContainer = document.createElement("div");
+
+                nameplateBundleContainer.classList.add('type-2-preview-container')
+
+                let nameplate_user = document.createElement("div");
+
+                nameplate_user.classList.add('nameplate-null-user');
+                nameplate_user.classList.add('nameplate-preview');
+                nameplate_user.innerHTML = `
+                    <video disablepictureinpicture muted loop class="nameplate-null-user nameplate-video-preview" style="position: absolute; height: 100%; width: auto; right: 0;"></video>
+                    <div class="nameplate-user-avatar"></div>
+                    <p class="nameplate-user-name">Nameplate</p>
+                `;
+
+                if (currentUserData) {
+                    nameplate_user.querySelector('.nameplate-user-name').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
+                    let userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.webp?size=128';
+                    if (currentUserData.avatar.includes('a_')) {
+                        userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.gif?size=128';
+                    }
+
+                    nameplate_user.querySelector('.nameplate-user-avatar').style.backgroundImage = `url(${userAvatar})`;
+                }
+
+                const item = product.items.find(item => item.type === item_types.NAMEPLATE);
+                const paletteName = item.palette;
+                const bgcolor = nameplate_palettes[paletteName].darkBackground;
+
+                const videoElement = nameplate_user.querySelector(".nameplate-video-preview");
+
+                videoElement.src = `https://cdn.discordapp.com/assets/collectibles/${item.asset}asset.webm`;
+
+                nameplate_user.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
+
+                card.addEventListener("mouseenter", () => {
+                    videoElement.play();
+                });
+                card.addEventListener("mouseleave", () => {
+                    videoElement.pause();
+                });
+
+                nameplateBundleContainer.appendChild(nameplate_user);
+                previewContainer.appendChild(nameplateBundleContainer);
+            }
         } else if (product.type === item_types.VARIANTS_GROUP) {
             previewContainer.classList.add('type-2000-preview-container')
 
@@ -5728,7 +5832,7 @@ async function loadSite() {
 
                     if (productId && discordProfileEffectsCache) {
                         // Find the profile effect configuration
-                        const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId);
+                        const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, selectedVariant.items[0]);
 
                         if (profileEffect) {
                             // Set container to full width and auto height
@@ -8952,9 +9056,13 @@ class ProfileEffectsCard {
 }
 
 // Helper function to find profile effect by product ID
-function findProfileEffectByProductId(discordProfileEffectsCache, productId) {
-    if (!discordProfileEffectsCache || !discordProfileEffectsCache.profile_effect_configs) {
+function findProfileEffectByProductId(discordProfileEffectsCache, productId, itemData) {
+    if (!discordProfileEffectsCache || !discordProfileEffectsCache.profile_effect_configs || !itemData) {
         return null;
+    }
+
+    if (itemData && itemData.thumbnailPreviewSrc) {
+        return itemData;
     }
     
     return discordProfileEffectsCache.profile_effect_configs.find(effect => 
