@@ -4011,8 +4011,8 @@ hr {
     top: 20px;
     right: 100px;
     color: var(--modalv3-card-text);
-    height: 50px;
-    width: 34px;
+    height: fit-content;
+    width: fit-content;
     text-align: center;
     cursor: pointer;
     z-index: 5;
@@ -4025,16 +4025,18 @@ hr {
 .container_c2b141:hover {
     color: var(--white);
 }
-
-.closeButton_c2b141 {
-    border: 2px solid currentColor;
-    border-radius: 50%;
-    height: 30px;
-    width: 30px;
+.container_c2b141 p {
+    width: 100%;
 }
 
-.closeButton_c2b141 svg {
-    margin-top: 6px;
+.closeButton_c2b141 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    height: 35px;
+    width: 35px;
 }
 
 
@@ -5273,7 +5275,7 @@ hr {
 
 .modal-trading-cards-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 10px;
     width: 100%;
     height: fit-content;
@@ -5281,15 +5283,46 @@ hr {
     overflow-y: auto;
 }
 .modal-trading-cards-container .card {
+    position: relative;
     background-color: var(--trading-card-modal-block);
     border-radius: 10px;
-    height: 250px;
+    height: 200px;
+    display: flex;
+    justify-content: center;
+}
+.modal-trading-cards-container .card .bg {
+    position: absolute;
+    width: 100%;
+    height: 70%;
+    object-fit: cover;
+}
+.modal-trading-cards-container .card .icon {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    top: 20px;
+}
+.modal-trading-cards-container .card h3 {
+    position: absolute;
+    bottom: 30px;
+}
+.modal-trading-cards-container .card h2 {
+    position: absolute;
+    bottom: 5px;
+    font-size: 20px;
+}
+.modal-trading-cards-container .card p {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    z-index: 5;
 }
 
 .trading-card-browse-modal .middle .right .r-bottom {
     position: relative;
     display: flex;
-    gap: 20px;
+    flex-direction: column;
     background-color: var(--trading-card-modal-block);
     border-radius: 10px;
     height: 120px;
@@ -5297,6 +5330,9 @@ hr {
 }
 .trading-card-browse-modal .middle .right .r-bottom h1 {
     font-family: ABC Ginto Nord;
+}
+.trading-card-browse-modal .middle .right .r-bottom p {
+    color: var(--text-secondary);
 }
 .trading-card-browse-modal .middle .right .r-bottom .generic-button {
     position: absolute;

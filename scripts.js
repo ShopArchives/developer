@@ -3562,7 +3562,7 @@ async function loadSite() {
                                         <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path>
                                     </svg>
                                 </div>
-                                <div class="keybind_c2b141 remove-on-mobile" aria-hidden="true">ESC</div>
+                                <p class="keybind_c2b141 remove-on-mobile" aria-hidden="true">ESC</p>
                             </div>
                         </div>
                     </div>
@@ -4694,78 +4694,14 @@ async function loadSite() {
                 }
             });
         } else if (type === "tradingCardPackOpening") {
-            packId = data1;
-            modal_back.innerHTML = `
-                <div class="modal-card-review-container">
-                    <div class="cards"></div>
-                    <div class="modal-card-buttons-container">
-                        <button class="generic-button brand" onclick="closeModal(); openModal('modalv2', 'tradingCardPackOpening', ${packId})">Roll Again</button>
-                        <button class="generic-button brand" onclick="closeModal()">Claim Rewards</button>
-                    </div>
-                </div>
-            `;
+            pack_id = data1;
 
-            const packCards = tradingConfigCache.packs.find(p => p.id === packId).cards || [];
-
-            let delay = 300;
-            let counter = 0
-
-            for (let i = 0; i < 3; i++) {
-                delay += 200;
-                counter += 1;
-
-                const data = selectRandomItem(packCards)
-                const card = document.createElement('div');
-                card.classList.add('card-container');
-                card.innerHTML = `
-                    <div class="flip-card" id="flip-card-test">
-                        <div class="flip-card-inner">
-                            <div class="flip-card-front">
-                                <img src="https://cdn.yapper.shop/assets/216.png">
-                            </div>
-                            <div class="flip-card-back" id="flip-card-back-test">
-                                <div class="trading-card">
-                                    <div class="top">
-                                        <div>
-                                            <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
-                                            </svg>
-                                            <p>0</p>
-                                        </div>
-                                        <div>
-                                            <p>Trading Card</p>
-                                            <img src="${tradingCardIconDataUrl}" alt="" />
-                                        </div>
-                                    </div>
-                                    <div class="image">
-                                        <p>1/${data.rarity}</p>
-                                        <img class="icon" src="https://cdn.yapper.shop/trading-cards/icon/${data.id}.png">
-                                        <img class="bg" src="https://cdn.yapper.shop/trading-cards/bg/${data.bg}.png">
-                                    </div>
-                                    <div class="bottom">
-                                        <h2>${data.name}</h2>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                if (counter === 1) card.classList.add('v1');
-                if (counter === 2) card.classList.add('v2');
-                if (counter === 3) card.classList.add('v3');
-
-                modal_back.querySelector('.cards').appendChild(card);
-
-                setTimeout(() => {
-                    card.querySelector('#flip-card-test').classList.add('flip')
-                }, delay);
-
-                setTimeout(() => {
-                    modal_back.querySelector('.modal-card-buttons-container').classList.add('open');
-                }, 1500);
-            }
-
+            document.body.appendChild(modal_loading);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_loading.classList.add('show');
+                });
+            });
 
             document.body.appendChild(modal_back);
             requestAnimationFrame(() => {
@@ -4773,6 +4709,99 @@ async function loadSite() {
                     modal_back.classList.add('show');
                 });
             });
+
+            const rawData = await fetch(redneredAPI + endpoints.TRADING_PACK_CLAIM + pack_id, {
+                method: 'GET',
+                headers: {
+                    "Authorization": localStorage.token
+                }
+            });
+
+            if (!rawData.ok) {
+
+            } else {
+                const cardIds = await rawData.json();
+
+                await fetchAndUpdateUserInfo();
+                await updateXpLevelBar();
+                await fetchAndUpdateTradingCache();
+                await tcbmRefreshStats();
+
+                modal_back.innerHTML = `
+                    <div class="modal-card-review-container">
+                        <div class="cards"></div>
+                        <div class="modal-card-buttons-container">
+                            <button class="generic-button brand" onclick="closeModal()">Claim Rewards</button>
+                        </div>
+                    </div>
+                `;
+
+                let delay = 300;
+                let counter = 0
+
+                for (const cardId of cardIds) {
+                    delay += 200;
+                    counter += 1;
+
+                    const tradingCardList = tradingConfigCache?.packs?.flatMap(pack => pack.cards) || [];
+                    const data = tradingCardList.find(c => String(c.id) === String(cardId));
+
+                    const card = document.createElement('div');
+                    card.classList.add('card-container');
+                    card.innerHTML = `
+                        <div class="flip-card" id="flip-card-test">
+                            <div class="flip-card-inner">
+                                <div class="flip-card-front">
+                                    <img src="https://cdn.yapper.shop/assets/216.png">
+                                </div>
+                                <div class="flip-card-back" id="flip-card-back-test">
+                                    <div class="trading-card">
+                                        <div class="top">
+                                            <div>
+                                                <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
+                                                </svg>
+                                                <p>0</p>
+                                            </div>
+                                            <div>
+                                                <p>Trading Card</p>
+                                                <img src="${tradingCardIconDataUrl}" alt="" />
+                                            </div>
+                                        </div>
+                                        <div class="image">
+                                            <p>1/${data.rarity}</p>
+                                            <img class="icon" src="https://cdn.yapper.shop/trading-cards/icon/${data.id}.png">
+                                            <img class="bg" src="https://cdn.yapper.shop/trading-cards/bg/${data.bg}.png">
+                                        </div>
+                                        <div class="bottom">
+                                            <h2>${data.name}</h2>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    if (counter === 1) card.classList.add('v1');
+                    if (counter === 2) card.classList.add('v2');
+                    if (counter === 3) card.classList.add('v3');
+
+                    modal_back.querySelector('.cards').appendChild(card);
+
+                    setTimeout(() => {
+                        card.querySelector('#flip-card-test').classList.add('flip')
+                    }, delay);
+
+                    setTimeout(() => {
+                        modal_back.querySelector('.modal-card-buttons-container').classList.add('open');
+                    }, 1500);
+                }
+                
+                if (modal_loading) modal_loading.classList.remove('show');
+                setTimeout(() => {
+                    if (modal_loading) modal_loading.remove();
+                }, 300);
+            }
 
         } else if (type === "tradingCardPackBrowse") {
 
@@ -4813,7 +4842,7 @@ async function loadSite() {
             `;
 
 
-            function tcbmRefreshStats() {
+            async function tcbmRefreshStats() {
                 modal.querySelector('.left').innerHTML = ``;
                 for (const pack of tradingConfigCache.packs) {
                     let count = 0;
@@ -4888,14 +4917,28 @@ async function loadSite() {
                     </div>
                     <div class="r-bottom">
                         <h1>${pack.title}</h1>
+                        <p>You will receive up to 3 cards upon opening '${pack.title}'.</p>
                         <button class="generic-button premium" onclick="openModal('modalv2', 'tradingCardPackOpening', ${pack.id})">Open ${pack.title} for ${pack.price} XP</button>
                     </div>
                 `;
+                if (pack.price > currentUserData.xp_balance) {
+                    const btn = modal.querySelector('.right').querySelector('.r-bottom').querySelector('button');
+                    btn.disabled = true;
+                    btn.classList.add('has-tooltip');
+                    btn.setAttribute('data-tooltip', 'Cannot afford');
+                }
+                const totalWeight = pack.cards.reduce((sum, item) => sum + (1 / item.rarity), 0);
                 pack.cards.forEach(data => {
+                    const probability = (1 / data.rarity) / totalWeight;
+                    const percentage = (probability * 100).toFixed(1);
                     const card = document.createElement('div');
                     card.classList.add('card');
                     card.innerHTML = `
+                        <p>1/${data.rarity}</p>
+                        <img class="bg" src="https://cdn.yapper.shop/trading-cards/bg/${data.bg}.png">
+                        <img class="icon" src="https://cdn.yapper.shop/trading-cards/icon/${data.id}.png">
                         <h3>${data.name}</h3>
+                        <h2>${percentage}%</h2>
                     `;
 
                     modal.querySelector('.right').querySelector('.modal-trading-cards-container').appendChild(card)
@@ -4952,7 +4995,7 @@ async function loadSite() {
             }
         }
 
-        if (type != "openLoadingTest") {
+        if (type != "openLoadingTest" && type != "tradingCardPackOpening") {
             if (modal_loading) modal_loading.classList.remove('show');
             setTimeout(() => {
                 if (modal_loading) modal_loading.remove();
@@ -8296,24 +8339,6 @@ async function loadSite() {
 
 }
 window.loadSite = loadSite;
-
-function selectRandomItem(items) {
-    const weights = items.map(item => 1 / item.rarity);
-              
-    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-              
-    const random = Math.random() * totalWeight;
-
-    let currentWeight = 0;
-    for (let i = 0; i < items.length; i++) {
-        currentWeight += weights[i];
-        if (random <= currentWeight) {
-            return items[i];
-        }
-    }
-    
-    return items[items.length - 1];
-}
 
 const removeonMobileObserver = new MutationObserver(() => {
     if (isMobileCache) {
