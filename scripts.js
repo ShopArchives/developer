@@ -2914,7 +2914,7 @@ async function loadSite() {
                                 let reviewDiv = document.createElement("div");
                                 reviewDiv.classList.add('category-modal-review-container');
             
-                                if (review.types.flag != 0 && review.user.id != currentUserData?.id && settingsStore.reviews_filter_setting === 1) {
+                                if (review.types.flag != 0 && review.user.id != currentUserData?.id) {
                                     reviewDiv.innerHTML = `
                                         <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                                             <path fill="currentColor" d="M1.3 21.3a1 1 0 1 0 1.4 1.4l20-20a1 1 0 0 0-1.4-1.4l-20 20ZM3.16 16.05c.18.24.53.26.74.05l.72-.72c.18-.18.2-.45.05-.66a15.7 15.7 0 0 1-1.43-2.52.48.48 0 0 1 0-.4c.4-.9 1.18-2.37 2.37-3.72C7.13 6.38 9.2 5 12 5c.82 0 1.58.12 2.28.33.18.05.38 0 .52-.13l.8-.8c.25-.25.18-.67-.15-.79A9.79 9.79 0 0 0 12 3C4.89 3 1.73 10.11 1.11 11.7a.83.83 0 0 0 0 .6c.25.64.9 2.15 2.05 3.75Z" class=""></path>
@@ -3621,17 +3621,6 @@ async function loadSite() {
                         <p>Levels</p>
                     </div>
                 `;
-
-                if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system_v2')?.treatment === 1) {
-                    const xpTrading = document.createElement("div");
-                    xpTrading.classList.add('side-tabs-button');
-                    xpTrading.addEventListener("click", function () {
-                        setModalv3InnerContent('xp_trading');
-                    });
-                    xpTrading.id = `modal-v3-tab-xp_trading`;
-                    xpTrading.innerHTML = `<p>Inventory</p>`;
-                    xpSettingssContainer.querySelector('#modal-v3-tab-xp_perks').parentNode.insertBefore(xpTrading, xpSettingssContainer.querySelector('#modal-v3-tab-xp_perks'));
-                }
             }
 
             if (settingsStore.dev === 1) {
@@ -4843,7 +4832,14 @@ async function loadSite() {
 
 
             async function tcbmRefreshStats() {
-                modal.querySelector('.left').innerHTML = ``;
+                modal.querySelector('.left').innerHTML = `
+                    <div class="l-top">
+                        <div class="trading-card-packs-scroll"></div>
+                    </div>
+                    <div class="l-bottom">
+                        <button class="generic-button brand"><p>Open Inventory</p></button>
+                    </div>
+                `;
                 for (const pack of tradingConfigCache.packs) {
                     let count = 0;
                     for (const card of pack.cards) {
@@ -4857,13 +4853,47 @@ async function loadSite() {
                         currentPackPage = pack;
                     });
                     card.innerHTML = `
+                        <div id="trading-card-pack-exp-date"></div>
                         <h1>${pack.title}</h1>
                         <p>${count}/${pack.cards.length} Cards Collected!</p>
                         <img src="https://cdn.yapper.shop/assets/218.png">
                     `;
                     card.id = `trading-pack-${pack.id}`;
                     card.style.background = `linear-gradient(-135deg, ${pack.colors[0]} 0%, ${pack.colors[1]} 70%)`;
-                    modal.querySelector('.left').appendChild(card);
+                    modal.querySelector('.left').querySelector('.trading-card-packs-scroll').appendChild(card);
+
+                    const expiresAt = new Date(pack.expires_at);
+                    
+                    if (pack.expires_at && !isNaN(expiresAt.getTime())) {
+                    
+                        function updateTimer() {
+                            const now = new Date();
+                            const timeDiff = expiresAt - now;
+                        
+                            if (timeDiff <= 0) {
+                                card.remove();
+                                clearInterval(timerInterval);
+                            } else {
+                                const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                                const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                                const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+                                const date = `ENDS IN ${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+                                renderedDate = date.replace(" 0d 0h 0m", "").replace(" 0d 0h", "").replace(" 0d", "")
+
+                                card.querySelector('#trading-card-pack-exp-date').innerHTML = `
+                                    <p class="trading-card-pack-exp-date-text">${renderedDate}</p>
+                                `;
+                            }
+                        }
+                    
+                        const timerInterval = setInterval(updateTimer, 1000);
+                        updateTimer();
+                    } else {
+                        card.querySelector('#trading-card-pack-exp-date').remove();
+                    }
                 }
 
                 const stats = calculateCardStats(tradingConfigCache);
@@ -4934,12 +4964,16 @@ async function loadSite() {
                     const card = document.createElement('div');
                     card.classList.add('card');
                     card.innerHTML = `
+                        <svg class="hidden" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="38" height="38" fill="none" viewBox="0 0 24 24">
+                            <path fill="currentColor" fill-rule="evenodd" d="M22.06 4.94a1.5 1.5 0 0 1 0 2.12l-12 12a1.5 1.5 0 0 1-2.12 0l-6-6a1.5 1.5 0 0 1 2.12-2.12L9 15.88 19.94 4.94a1.5 1.5 0 0 1 2.12 0Z" clip-rule="evenodd" class=""></path>
+                        </svg>
                         <p>1/${data.rarity}</p>
                         <img class="bg" src="https://cdn.yapper.shop/trading-cards/bg/${data.bg}.png">
                         <img class="icon" src="https://cdn.yapper.shop/trading-cards/icon/${data.id}.png">
                         <h3>${data.name}</h3>
                         <h2>${percentage}%</h2>
                     `;
+                    if (tradingConfigCache.inventory.find(c => c.id === data.id)) card.querySelector('svg').classList.remove('hidden');
 
                     modal.querySelector('.right').querySelector('.modal-trading-cards-container').appendChild(card)
                 });
@@ -7272,7 +7306,10 @@ async function loadSite() {
                             <img class="cards" src="https://cdn.yapper.shop/assets/215.png">
                             <img class="trixie" src="https://cdn.yapper.shop/assets/214.png">
                         </div>
-                        <button class="generic-button green" onclick="openModal('trading-card-browse-modal', 'tradingCardPackBrowse')">View Packs</button>
+                        <div class="button-container">
+                            <button class="generic-button green" onclick="openModal('trading-card-browse-modal', 'tradingCardPackBrowse')"><p>View Packs</p></button>
+                            <button class="generic-button brand"><p>Open Inventory</p></button>
+                        </div>
                     </div>
                     <hr class="inv">
                     <hr>
@@ -7433,6 +7470,8 @@ async function loadSite() {
                     
                         const timerInterval = setInterval(updateTimer, 1000);
                         updateTimer();
+                    } else {
+                        promoCard.querySelector('#xp-event-expires-at').remove();
                     }
                 });
 
@@ -7453,82 +7492,6 @@ async function loadSite() {
             }
 
             window.refreshXPEventsList = refreshXPEventsList;
-
-        } else if (tab === "xp_trading") {
-            tabPageOutput.innerHTML = `
-                <h2>Inventory</h2>
-
-                <hr>
-
-                <hr class="inv">
-
-                <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Trading Cards</h2>
-                    <p class="modalv3-content-card-summary">All your Shop Archives trading cards.</p>
-                    
-                    <hr class="inv">
-                    <div class="trading-cards-list" id="inventory-output"></div>
-                </div>
-
-                <hr class="inv">
-
-                <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Trade Requests</h2>
-                    <p class="modalv3-content-card-summary">All the trade requests people have sent you.</p>
-                </div>
-            `;
-
-            const tradingCardList = tradingConfigCache?.inventory || [];
-
-            // Track how many times each id has been rendered
-            const renderCount = new Map();
-
-            tradingCardList.forEach(data => {
-                const count = renderCount.get(data.id) || 0;
-            
-                if (count >= 3) {
-                    return;
-                }
-            
-                renderCount.set(data.id, count + 1);
-            
-                const card = document.createElement('div');
-            
-                if (count > 0) {
-                    card.classList.add('trading-card');
-                    card.classList.add('dupe');
-                    if (count === 1) card.classList.add('dupe1');
-                    else if (count === 2) card.classList.add('dupe2');
-                    tabPageOutput.querySelector('#trading-card-'+data.id).parentElement.appendChild(card);
-                } else {
-                    card.classList.add('card-container');
-                    card.innerHTML = `
-                        <div class="trading-card" id="trading-card-${data.id}">
-                            <div class="top">
-                                <div>
-                                    <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
-                                    </svg>
-                                    <p>${data.value.toLocaleString()}</p>
-                                </div>
-                                <div>
-                                    <p>Trading Card</p>
-                                    <img src="${tradingCardIconDataUrl}" alt="" />
-                                </div>
-                            </div>
-                            <div class="image">
-                                <p>1/${data.rarity}</p>
-                                <img class="icon" src="https://cdn.yapper.shop/trading-cards/icon/${data.id}.png">
-                                <img class="bg" src="https://cdn.yapper.shop/trading-cards/bg/${data.bg}.png">
-                            </div>
-                            <div class="bottom">
-                                <h2>${data.name}</h2>
-                            </div>
-                        </div>
-                    `;
-                    tabPageOutput.querySelector('#inventory-output').appendChild(card);
-                }
-            });
 
         } else if (tab === "xp_perks") {
             tabPageOutput.innerHTML = `

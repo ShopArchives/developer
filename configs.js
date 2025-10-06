@@ -1,5 +1,5 @@
 
-const appVersion = "7.4.1";
+const appVersion = "7.4.2";
 const appType = "Dev";
 
 const endpoints = {
@@ -582,7 +582,6 @@ const reviews_system_types = [
 const settings = {
     "non_us_timezone": 0,
     "profile_effect_tweaks_fix": 0,
-    "reviews_filter_setting": 1,
     "category_page_limit": 5,
     "dev": 0,
 
@@ -748,5 +747,6 @@ const claimable_types = {
     MULTI_CLAIM: 2,
     EXTERNAL: 3,
     CATEGORY: 4,
-    CATEGORY_LEAK: 5
+    CATEGORY_LEAK: 5,
+    TRADING_CARD_PACK: 6
 };
