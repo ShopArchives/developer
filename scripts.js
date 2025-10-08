@@ -1183,22 +1183,6 @@ async function loadSite() {
     
                             priceContainer2.appendChild(us_price);
                         }
-    
-                        if (priceOrbCrossed != null) {
-                            let orb_price = document.createElement("div");
-        
-                            orb_price.innerHTML = `
-                                <div class="orb-icon"></div>
-                                <a>${priceOrbCrossed}</a>
-                            `;
-                            if (priceStandard != null) {
-                                orb_price.style.marginLeft = `auto`;
-                            } else {
-                                orb_price.style.marginLeft = `unset`;
-                            }
-    
-                            priceContainer2.appendChild(orb_price);
-                        }
 
                     } else if (product.prices) {
                         product.prices["0"]?.country_prices?.prices?.forEach(price => {
@@ -1255,22 +1239,6 @@ async function loadSite() {
                             `;
     
                             priceContainer2.appendChild(us_price);
-                        }
-    
-                        if (priceOrbCrossed != null) {
-                            let orb_price = document.createElement("div");
-        
-                            orb_price.innerHTML = `
-                                <div class="orb-icon"></div>
-                                <a>${priceOrbCrossed}</a>
-                            `;
-                            if (priceStandard != null) {
-                                orb_price.style.marginLeft = `auto`;
-                            } else {
-                                orb_price.style.marginLeft = `unset`;
-                            }
-    
-                            priceContainer2.appendChild(orb_price);
                         }
                     }
 
@@ -6548,7 +6516,7 @@ async function loadSite() {
                 `;
                 bannerSummaryAndLogo.appendChild(bannerLogo);
 
-                if (categoryData.banner_asset?.animated) {
+                if (categoryData.banner_asset?.animated && categoryData.banner_asset?.animated.includes("webm")) {
                     const videoBanner = document.createElement("video");
                     videoBanner.disablePictureInPicture = true;
                     videoBanner.autoplay = true;
@@ -6593,13 +6561,25 @@ async function loadSite() {
                     const productsWrapper = document.createElement("div");
                     productsWrapper.classList.add("products-wrapper");
 
-                    categoryData.ranked_sku_ids.slice(0, 4).forEach(async productsku => {
+                    (async () => {
                         const thisCategory = data.categories.find(category => category.sku_id === categoryData.category_sku_id);
-                        const productData = thisCategory.products.find(product => product.sku_id === productsku);
+                        if (!thisCategory) return;
 
-                        const item = await renderProduct(thisCategory, productData);
-                        productsWrapper.appendChild(item);
-                    });
+                        let renderedCount = 0;
+                        let index = 0;
+
+                        while (renderedCount < 4 && index < categoryData.ranked_sku_ids.length) {
+                            const productsku = categoryData.ranked_sku_ids[index++];
+                            const productData = thisCategory.products.find(product => product.sku_id === productsku);
+                        
+                            if (productData) {
+                                const item = await renderProduct(thisCategory, productData);
+                                productsWrapper.appendChild(item);
+                                renderedCount++;
+                            }
+                        }
+                    })();
+
 
                     category.appendChild(productsWrapper);
                 }
@@ -8300,8 +8280,81 @@ async function loadSite() {
         document.getElementById('dev-tools-icon').classList.remove('hidden');
     }
 
+    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'ads_experiment')?.treatment === 1) {
+
+        const res = await fetch(redneredAPI + endpoints.ADS);
+        const json = await res.json();
+
+        sideBannerAds()
+        function sideBannerAds() {
+            document.querySelector('.ads-section-1').classList.remove('hidden');
+            const rotator = document.querySelector(".ad-image-here-1");
+
+            let images = [];
+            let currentImage = null;
+
+            // Create image element
+            const img = document.createElement("img");
+            img.style.width = "100%";
+            img.style.cursor = "pointer";
+            rotator.appendChild(img);
+
+            // Click opens redirect in new tab
+            img.addEventListener("click", () => {
+                if (currentImage && currentImage.redirect) {
+                    window.open(currentImage.redirect, "_blank");
+                }
+            });
+
+            async function fetchImages() {
+                try {
+                
+                    // Expecting { side: [ {src, redirect}, ... ] }
+                    if (!json || !Array.isArray(json.side)) {
+                        console.error("Invalid API format. Expected { side: [] }");
+                        return;
+                    }
+                
+                    images = json.side;
+                
+                    if (images.length === 0) {
+                        console.error("No images found in API response.");
+                        return;
+                    }
+                
+                    // Show one immediately
+                    changeImage();
+                
+                    // Rotate randomly every few seconds
+                    setInterval(changeImage, 10000);
+                } catch (err) {
+                    console.error("Failed to fetch images:", err);
+                }
+            }
+
+            function changeImage() {
+                if (images.length === 0) return;
+            
+                // pick random image
+                const randomIndex = Math.floor(Math.random() * images.length);
+                currentImage = images[randomIndex];
+            
+                // fade out, change, fade in
+                img.style.opacity = "0";
+                setTimeout(() => {
+                    img.src = currentImage.src;
+                    img.style.opacity = "1";
+                }, 300);
+            }
+
+            fetchImages();
+        }
+    }
+
 }
 window.loadSite = loadSite;
+
+
 
 const removeonMobileObserver = new MutationObserver(() => {
     if (isMobileCache) {

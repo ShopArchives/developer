@@ -1,10 +1,11 @@
 
-const appVersion = "7.4.2";
+const appVersion = "7.4.3";
 const appType = "Dev";
 
 const endpoints = {
     MAIN: "https://api.yapper.shop/",
     VERSION: "v3",
+    ADS: "/ads-config",
     VERIFY_ORIGIN: "/heartbeat",
     SERVER_EXPERIMENTS: "/experiments",
     USER: "/users/@me",
@@ -424,6 +425,22 @@ const display_name_styles_colors = {
 };
 
 const experiments = [
+    {
+        title: `Ads`,
+        codename: `ads_experiment`,
+        release_config: {
+            year: `2025`,
+            month: `10`
+        },
+        treatments: [
+            {
+                title: `Not Eligible`
+            },
+            {
+                title: `Enabled`
+            }
+        ]
+    },
     {
         title: `XP Revamp`,
         codename: `xp_system_v2`,
