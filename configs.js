@@ -1,5 +1,5 @@
 
-const appVersion = "7.4.3";
+const appVersion = "7.4.5";
 const appType = "Dev";
 
 const endpoints = {
@@ -147,8 +147,9 @@ const discord_categories = {
     LUNAR_ECLIPSE: "1409898408076116140",
     BOX: "1409898408392748561",
     NAMEPLATE_BONANZA: "1416443525192614001",
-    ITS_SHOWTIME: "1420052355516338216",
-    WOODLAND_FRIENDS: "1420045363351654441"
+    TRICK_OR_TREAT: "1418326116485038320",
+    WOODLAND_FRIENDS: "1420045363351654441",
+    ITS_SHOWTIME: "1420052355516338216"
 };
 
 const category_client_overrides = [

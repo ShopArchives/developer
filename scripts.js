@@ -1756,7 +1756,7 @@ async function loadSite() {
 
                                 if (productId && discordProfileEffectsCache) {
                                     // Find the profile effect configuration
-                                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, product.items[0]);
+                                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, selectedVariant.items[0]);
 
                                     if (profileEffect) {
                                         // Set container to full width and auto height
@@ -1845,7 +1845,7 @@ async function loadSite() {
 
                                 if (productId && discordProfileEffectsCache) {
                                     // Find the profile effect configuration
-                                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, product.items[0]);
+                                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, selectedVariant.items[0]);
 
                                     if (profileEffect) {
                                         // Set container to full width and auto height
