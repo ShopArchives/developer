@@ -1771,6 +1771,7 @@ hr {
     padding: 15px;
     gap: 10px;
     height: 80px;
+    box-sizing: unset;
 }
 
 .quest-card .section2 .reward-icon {
