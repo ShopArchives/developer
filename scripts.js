@@ -12,6 +12,7 @@ let usersXPEventsCache;
 let openModalsCache = 0;
 let xpLevelStatsCache;
 let tradingConfigCache;
+let newsUpdatesCache;
 
 let discordProfileEffectsCache;
 let discordLeakedCategoriesCache;
@@ -315,6 +316,21 @@ async function verifyOrigin() {
 
             syncOverridesWithServer();
         }
+
+
+        const newsRawData = await fetch(redneredAPI + endpoints.NEWS_UPDATES, {
+            method: "GET"
+        });
+
+        if (!newsRawData.ok) {
+            triggerSafetyBlock();
+            return
+        }
+
+        const newsData = await newsRawData.json();
+
+        newsUpdatesCache = newsData;
+
 
         await loadSite();
 
@@ -4970,6 +4986,83 @@ async function loadSite() {
             window.setPackPage = setPackPage;
 
             setPackPage(currentPackPage);
+
+
+
+            document.body.appendChild(modal);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.classList.add('show');
+                });
+            });
+
+            document.body.appendChild(modal_back);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_back.classList.add('show');
+                });
+            });
+
+
+            modal.querySelector("[data-close-product-card-button]").addEventListener('click', () => {
+                closeModal();
+            });
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+        } else if (type === "newNewsModal") {
+
+            modal.innerHTML = `
+                <div class="new-news-modal-inner">
+                    <div class="modal-bg"><div class="modal-bg-color"></div></div>
+                    <div class="modal-top">
+                        <div class="logo">
+                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path fill="currentColor" fill-rule="evenodd" d="M5 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3H5ZM4 5.5C4 4.67 4.67 4 5.5 4h13c.83 0 1.5.67 1.5 1.5v6c0 .83-.67 1.5-1.5 1.5h-2.65c-.5 0-.85.5-.85 1a3 3 0 1 1-6 0c0-.5-.35-1-.85-1H5.5A1.5 1.5 0 0 1 4 11.5v-6Z" clip-rule="evenodd" class=""></path>
+                            </svg>
+                            <div class="right-top">
+                                <h1>News</h1>
+                                <h2>You will be notified about major Shop Archives news here.</h2>
+                            </div>
+                        </div>
+                        <div class="info-blocks">
+                        </div>
+                    </div>
+
+                    <div class="news-output">
+
+                    </div>
+
+                    <div class="error-output">
+                        <img src="https://cdn.yapper.shop/assets/207.png">
+                        <h2>All is quiet.</h2>
+                        <p>We have no news right now, come back later.</p>
+                    </div>
+
+                    <div data-modal-top-product-buttons>
+                        <div class="has-tooltip" data-tooltip="Close" data-close-product-card-button>
+                            <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // newsUpdatesCache.forEach(news => {
+            //     const card = document.createElement('div');
+            //     card.classList.add('card');
+            //     card.innerHTML = `
+            //         <h2>${news.title}</h2>
+            //         <div class="bottom">
+            //             <img src="${news.img}">
+            //             <p>${news.detail}</p>
+            //         </div>
+            //     `;
+            //     modal.querySelector('.news-output').appendChild(card)
+            // });
+            // if (newsUpdatesCache.length != 0) modal.querySelector('.error-output').remove();
 
 
 

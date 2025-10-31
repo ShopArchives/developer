@@ -1,11 +1,12 @@
 
-const appVersion = "7.4.7";
+const appVersion = "7.4.8";
 const appType = "Dev";
 
 const endpoints = {
     MAIN: "https://api.yapper.shop/",
     VERSION: "v3",
     ADS: "/ads-config",
+    NEWS_UPDATES: "/news-updates",
     VERIFY_ORIGIN: "/heartbeat",
     SERVER_EXPERIMENTS: "/experiments",
     USER: "/users/@me",
