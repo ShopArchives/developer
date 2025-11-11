@@ -1,5 +1,5 @@
 
-const appVersion = "7.4.8";
+const appVersion = "7.4.9";
 const appType = "Dev";
 
 const endpoints = {
@@ -599,7 +599,7 @@ const reviews_system_types = [
 ];
 
 const settings = {
-    "non_us_timezone": 0,
+    "us_time_format": 0,
     "profile_effect_tweaks_fix": 0,
     "dev": 0,
 

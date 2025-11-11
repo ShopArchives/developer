@@ -3004,17 +3004,14 @@ async function loadSite() {
 
                                     const dateContainer = reviewDiv.querySelector(".review-date-container");
 
-                                    if (settingsStore.non_us_timezone === 1) {
-                                        const formatted = `${day}/${month}/${year}`;
+                                    let formatted = `${day}/${month}/${year}`;
 
-                                        dateContainer.querySelector('.review-date').textContent = `${formatted}`;
-                                        dateContainer.querySelector('.inv').textContent = `${formatted}`;
-                                    } else {
-                                        const formatted = `${month}/${day}/${year}`;
-
-                                        dateContainer.querySelector('.review-date').textContent = `${formatted}`;
-                                        dateContainer.querySelector('.inv').textContent = `${formatted}`;
+                                    if (settingsStore.us_time_format === 1) {
+                                        formatted = `${month}/${day}/${year}`;
                                     }
+
+                                    dateContainer.querySelector('.review-date').textContent = `${formatted}`;
+                                    dateContainer.querySelector('.inv').textContent = `${formatted}`;
 
                                     if (currentUserData?.id === review.user.id || currentUserData?.types.admin_level >= 1) {
                                         let deleteReviewIcon = document.createElement("div");
@@ -4198,15 +4195,12 @@ async function loadSite() {
 
                     const dateContainer = modalInner.querySelector(".sa-join-date");
 
-                    if (settingsStore.non_us_timezone === 1) {
-                        const formatted = `${day}/${month}/${year}`;
+                    let formatted = `${month}/${day}/${year}`;
 
-                        dateContainer.textContent = `${formatted}`;
-                    } else {
-                        const formatted = `${month}/${day}/${year}`;
-
-                        dateContainer.textContent = `${formatted}`;
+                    if (settingsStore.us_time_format === 1) {
+                        formatted = `${month}/${day}/${year}`;
                     }
+                    dateContainer.textContent = `${formatted}`;
 
 
                     if (firstTimeOpeningModal) {
@@ -5256,10 +5250,10 @@ async function loadSite() {
                 const month = String(expDate.getMonth() + 1).padStart(2, '0');
                 const year = expDate.getFullYear();
 
-                let formatted = `${month}/${day}/${year}`
+                let formatted = `${day}/${month}/${year}`
 
-                if (settingsStore.non_us_timezone === 1) {
-                    formatted = `${day}/${month}/${year}`;
+                if (settingsStore.us_time_format === 1) {
+                    formatted = `${month}/${day}/${year}`;
                 }
 
 
@@ -7330,11 +7324,11 @@ async function loadSite() {
                 <div class="modalv3-content-card-1">
                     <div class="setting">
                         <div class="setting-info">
-                            <p class="setting-title">Day-Month-Year Date Format</p>
-                            <p class="setting-description">Changes date formats to DD/MM/YYYY instead of MM/DD/YY.</p>
+                            <p class="setting-title">US Date Format</p>
+                            <p class="setting-description">Changes date formats to MM/DD/YY.</p>
                         </div>
                         <div class="toggle-container">
-                            <div class="toggle" id="non_us_timezone_toggle">
+                            <div class="toggle" id="us_time_format_toggle">
                                 <div class="toggle-circle"></div>
                             </div>
                         </div>
@@ -7386,8 +7380,8 @@ async function loadSite() {
             
             updateToggleStates();
 
-            tabPageOutput.querySelector('#non_us_timezone_toggle').addEventListener("click", () => {
-                toggleSetting('non_us_timezone');
+            tabPageOutput.querySelector('#us_time_format_toggle').addEventListener("click", () => {
+                toggleSetting('us_time_format');
                 updateToggleStates();
             });
 
