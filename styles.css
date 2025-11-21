@@ -2601,7 +2601,7 @@ hr {
 .category-modal-quick-info-d-container {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 50px;
+    gap: 30px;
     margin-top: 50px;
     padding-left: 30px;
     padding-right: 30px;
@@ -2610,7 +2610,7 @@ hr {
 .category-modal-quick-info-container {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 50px;
+    gap: 30px;
     margin-top: 20px;
     overflow: visible;
 }

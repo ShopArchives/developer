@@ -6693,7 +6693,7 @@ async function loadSite() {
                 `;
                 bannerSummaryAndLogo.appendChild(bannerLogo);
 
-                if (categoryData.banner_asset?.animated && categoryData.banner_asset?.animated.includes("webm")) {
+                if (categoryData.banner_asset?.animated) {
                     const videoBanner = document.createElement("video");
                     videoBanner.disablePictureInPicture = true;
                     videoBanner.autoplay = true;
@@ -8221,13 +8221,31 @@ async function loadSite() {
 
                 <div class="modalv3-content-card-1">
                     <h2 class="modalv3-content-card-header">POST Data</h2>
-                    <p class="modalv3-content-card-summary">Manually POST api data to the database (Check the console to see if it worked or not, im not bothered making status text)</p>
+                    <p class="modalv3-content-card-summary">Manually POST api data to the database</p>
 
-                    <input type="text" class="modalv3-input" autocomplete="off" placeholder="SKU ID" id="api-item-push-input"></input>
                     <hr class="inv">
+
+                    <p class="modalv3-content-card-summary">SKU ID</p>
+                    <input type="text" class="modalv3-input" autocomplete="off" placeholder="1308169595055771749" id="api-item-push-input"></input>
+
+                    <hr class="inv">
+
+                    <p class="modalv3-content-card-summary">Expires At</p>
+                    <input type="text" class="modalv3-input" autocomplete="off" placeholder="2025-02-05T08:00:00+00:00" id="api-item-push-expires_at"></input>
+
+                    <hr class="inv">
+
+                    <p class="modalv3-content-card-summary">Prices</p>
                     <textarea class="modalv3-input" placeholder="Prices" id="api-item-push-textarea"></textarea>
+
                     <hr class="inv">
+
                     <button class="generic-button brand" id="api-item-push">POST Product Data</button>
+
+                    <hr class="inv">
+
+                    <p class="modalv3-content-card-summary">JSON Output</p>
+                    <textarea class="modalv3-input" placeholder="network response" id="api-item-push-textarea-out" readonly></textarea>
                 </div>
             `;
 
@@ -8277,19 +8295,25 @@ async function loadSite() {
 
             const input2 = tabPageOutput.querySelector('#api-item-push-input');
             const input3 = tabPageOutput.querySelector('#api-item-push-textarea');
+            const input_expires_at = tabPageOutput.querySelector('#api-item-push-expires_at');
+            const input4 = tabPageOutput.querySelector('#api-item-push-textarea-out');
             input3.value = JSON.stringify(placeholderPriceData, undefined, 4);
             tabPageOutput.querySelector('#api-item-push').addEventListener("click", async () => {
+                input4.value = `fetching...`;
                 if (input2.value.trim().length != 0) {
-                    await fetch(redneredAPI + '/collectibles-products/' + input2.value.trim(), {
+                    const res = await fetch(redneredAPI + '/collectibles-products/' + input2.value.trim(), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             "Authorization": localStorage.token
                         },
                         body: JSON.stringify({
-                            prices: input3.value
+                            prices: input3.value,
+                            expires_at: input_expires_at.value
                         })
                     });
+                    const json = await res.json();
+                    input4.value = JSON.stringify(json, undefined, 4);
                 }
             });
 
@@ -8519,77 +8543,6 @@ async function loadSite() {
 
     if (settingsStore.dev === 1) {
         document.getElementById('dev-tools-icon').classList.remove('hidden');
-    }
-
-    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'ads_experiment')?.treatment === 1) {
-
-        const res = await fetch(redneredAPI + endpoints.ADS);
-        const json = await res.json();
-
-        sideBannerAds()
-        function sideBannerAds() {
-            document.querySelector('.ads-section-1').classList.remove('hidden');
-            const rotator = document.querySelector(".ad-image-here-1");
-
-            let images = [];
-            let currentImage = null;
-
-            // Create image element
-            const img = document.createElement("img");
-            img.style.width = "100%";
-            img.style.cursor = "pointer";
-            rotator.appendChild(img);
-
-            // Click opens redirect in new tab
-            img.addEventListener("click", () => {
-                if (currentImage && currentImage.redirect) {
-                    window.open(currentImage.redirect, "_blank");
-                }
-            });
-
-            async function fetchImages() {
-                try {
-                
-                    // Expecting { side: [ {src, redirect}, ... ] }
-                    if (!json || !Array.isArray(json.side)) {
-                        console.error("Invalid API format. Expected { side: [] }");
-                        return;
-                    }
-                
-                    images = json.side;
-                
-                    if (images.length === 0) {
-                        console.error("No images found in API response.");
-                        return;
-                    }
-                
-                    // Show one immediately
-                    changeImage();
-                
-                    // Rotate randomly every few seconds
-                    setInterval(changeImage, 10000);
-                } catch (err) {
-                    console.error("Failed to fetch images:", err);
-                }
-            }
-
-            function changeImage() {
-                if (images.length === 0) return;
-            
-                // pick random image
-                const randomIndex = Math.floor(Math.random() * images.length);
-                currentImage = images[randomIndex];
-            
-                // fade out, change, fade in
-                img.style.opacity = "0";
-                setTimeout(() => {
-                    img.src = currentImage.src;
-                    img.style.opacity = "1";
-                }, 300);
-            }
-
-            fetchImages();
-        }
     }
 
 }
