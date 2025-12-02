@@ -6697,7 +6697,7 @@ async function loadSite() {
         output.innerHTML = ``;
         data.shop_blocks.forEach((categoryData) => {
             const category = document.createElement("div");
-            if (categoryData.type === category_types.HERO) {
+            if (categoryData.type === category_types.HERO || categoryData.type === category_types.REWARD_HERO) {
                 category.classList.add('category-container');
                 category.classList.add('category-browse-container');
                 category.setAttribute('data-sku-id', categoryData.sku_id);
@@ -6765,6 +6765,9 @@ async function loadSite() {
                 bannerButton.querySelector('svg').addEventListener("click", () => {
                     openModal('category-modal', 'fromCategoryBanner', data.categories[0], categoryData.banner_asset?.static);
                 });
+                if (categoryData.type === category_types.REWARD_HERO) {
+                    bannerButton.querySelector('.home-page-preview-button').remove();
+                }
                 bannerSummaryAndLogo.appendChild(bannerButton);
 
 

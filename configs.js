@@ -1,5 +1,5 @@
 
-const appVersion = "7.4.11";
+const appVersion = "7.4.12";
 const appType = "Dev";
 
 const endpoints = {
@@ -62,7 +62,8 @@ const category_types = {
     WIDE_BANNER: 3,
     SHELF: 4,
     COUNTDOWN_TIMER: 5,
-    IMMERSIVE_BANNER: 6
+    IMMERSIVE_BANNER: 6,
+    REWARD_HERO: 7
 };
 
 const quest_reward_types = {
