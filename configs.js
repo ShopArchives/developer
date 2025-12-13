@@ -1,5 +1,5 @@
 
-const appVersion = "7.4.12";
+const appVersion = "7.4.13";
 const appType = "Dev";
 
 const endpoints = {
@@ -603,11 +603,8 @@ const customCategoryAssets = {
     8: {
         sku_id: "1428539043993358497",
         catalog_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/237.png",
+            static: "https://cdn.yapper.shop/assets/240.png",
             credits: "1049207768785100880"
-        },
-        hero_banner_asset: {
-            static: "https://cdn.discordapp.com/app-assets/1096190356233670716/1336165352392097853.png?size=4096"
         }
     }
 }

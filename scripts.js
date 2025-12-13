@@ -2059,6 +2059,12 @@ async function loadSite() {
                             </svg>
                             <p>Assets</p>
                         </div>
+                        <div class="tab" id="category-modal-tab-6">
+                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z" class=""></path>
+                            </svg>
+                            <p>URL Assets</p>
+                        </div>
                         <div class="tab disabled" id="category-modal-tab-4">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path fill="currentColor" d="M8 3C7.44771 3 7 3.44772 7 4V5C7 5.55228 7.44772 6 8 6H16C16.5523 6 17 5.55228 17 5V4C17 3.44772 16.5523 3 16 3H15.1245C14.7288 3 14.3535 2.82424 14.1002 2.52025L13.3668 1.64018C13.0288 1.23454 12.528 1 12 1C11.472 1 10.9712 1.23454 10.6332 1.64018L9.8998 2.52025C9.64647 2.82424 9.27121 3 8.8755 3H8Z"></path><path fill-rule="evenodd" clip-rule="evenodd" fill="currentColor" d="M19 4.49996V4.99996C19 6.65681 17.6569 7.99996 16 7.99996H8C6.34315 7.99996 5 6.65681 5 4.99996V4.49996C5 4.22382 4.77446 3.99559 4.50209 4.04109C3.08221 4.27826 2 5.51273 2 6.99996V19C2 20.6568 3.34315 22 5 22H19C20.6569 22 22 20.6568 22 19V6.99996C22 5.51273 20.9178 4.27826 19.4979 4.04109C19.2255 3.99559 19 4.22382 19 4.49996ZM8 12C7.44772 12 7 12.4477 7 13C7 13.5522 7.44772 14 8 14H16C16.5523 14 17 13.5522 17 13C17 12.4477 16.5523 12 16 12H8ZM7 17C7 16.4477 7.44772 16 8 16H13C13.5523 16 14 16.4477 14 17C14 17.5522 13.5523 18 13 18H8C7.44772 18 7 17.5522 7 17Z"></path>
@@ -2137,6 +2143,7 @@ async function loadSite() {
                             <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${categoryData.sku_id}')">${categoryData.sku_id}</p>
                             <h1>${categoryData.name}</h1>
                             <p>${categoryData.summary ? categoryData.summary : ''}</p>
+                            <p class="updated-date">Last Updated: </p>
                             <div class="category-modal-quick-info-container">
                                 <div class="outer-block">
                                     <p class="quick-info-prices-title">Prices</p>
@@ -2184,6 +2191,48 @@ async function loadSite() {
                             el.classList.add("animated");
                         });
                     }
+
+                    const date = new Date(categoryData.updated_at);
+                    const now = new Date();
+
+                    const diffMs = now - date;
+                    const diffSeconds = Math.floor(diffMs / 1000);
+                    const diffMinutes = Math.floor(diffSeconds / 60);
+                    const diffHours = Math.floor(diffMinutes / 60);
+
+                    const dateContainer = modalInner.querySelector(".updated-date");
+
+                    let output;
+
+                    // Less than 1 minute
+                    if (diffSeconds < 60) {
+                        output = `${diffSeconds} second${diffSeconds !== 1 ? 's' : ''} ago`;
+                    
+                    // Less than 1 hour
+                    } else if (diffMinutes < 60) {
+                        output = `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+                    
+                    // Less than 24 hours
+                    } else if (diffHours < 24) {
+                        output = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+                    
+                    // 24 hours or more → show date
+                    } else {
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = date.getFullYear();
+                    
+                        let formatted = `${day}/${month}/${year}`;
+                    
+                        if (settingsStore.us_time_format === 1) {
+                            formatted = `${month}/${day}/${year}`;
+                        }
+                  
+                        output = formatted;
+                    }
+
+                    dateContainer.textContent = `Last Updated: ${output}`;
+
 
                     const pricesDetailBlock = modalInner.querySelector('#price-detail-block');
 
@@ -2616,7 +2665,90 @@ async function loadSite() {
                                     <path d="M5 1L5.81027 3.18973L8 4L5.81027 4.81027L5 7L4.18973 4.81027L2 4L4.18973 3.18973L5 1Z" fill="currentColor"/>
                                     <path d="M14 19L14.5402 20.4598L16 21L14.5402 21.5402L14 23L13.4598 21.5402L12 21L13.4598 20.4598L14 19Z" fill="currentColor"/>
                                 </svg>
-                                <p>This category has no assets.</p>
+                                <p>This category has no ID assets.</p>
+                            </div>
+                        `;
+                    }
+
+                    document.querySelectorAll('.asset_id').forEach((el) => {
+                        el.addEventListener("click", function () {
+                            el.classList.add('clicked');
+                            setTimeout(() => {
+                                el.classList.remove('clicked');
+                            }, 500);
+                        });
+                    });
+
+                } else if (tab === '6') {
+                    modalInner.innerHTML = `
+                        <div class="category-modal-assets-container">
+                        </div>
+                    `;
+
+                    const assetsContainer = modalInner.querySelector('.category-modal-assets-container');
+
+                    const allAssets = {
+                        "Hero Banner": categoryData.hero_banner_url,
+                        "Hero Banner Animated": categoryData.hero_banner_animated_url,
+                        "Hero Rive": categoryData.hero_rive_url,
+                        "Hero Logo": categoryData.hero_logo_url,
+                        "Catalog Banner": categoryData.catalog_banner_url,
+                        "Catalog Banner Animated": categoryData.catalog_banner_animated_url,
+                        "Featured Block": categoryData.featured_block_url,
+                        "Logo": categoryData.logo_url,
+                        "Product Detail Page Background": categoryData.pdp_bg_url,
+                        "Mobile Banner": categoryData.mobile_banner_url,
+                        "Mobile Background": categoryData.mobile_bg_url,
+                        "Mobile Hero": categoryData.mobile_hero_url,
+                    };
+
+                    let nullAssets = true;
+
+                    Object.entries(allAssets).forEach(([asset, value]) => {
+                        if (!value) return; // skip null or undefined
+
+                        nullAssets = false;
+
+                        let assetDiv = document.createElement("div");
+
+                        assetDiv.classList.add('asset-div')
+
+                        if (value.includes(".webm") || asset.includes("Animated")) {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <video disablepictureinpicture autoplay muted loop src="${value}"></video> 
+                            `;
+                        } else if (asset.includes("Rive")) {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <p class="asset_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${value}')">${value}</p>
+                                <p>Rive files cannot be displayed here</p>
+                            `;
+                        } else if (value.includes(".png") || value.includes(".jpg") || !asset.includes("Animated")) {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <img src="${value}"></img> 
+                            `;
+                        } else {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <p class="asset_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${value}')">${value}</p>
+                                <img src="https://cdn.discordapp.com/app-assets/1096190356233670716/${value}.png?size=4096"></img> 
+                            `;
+                        }
+
+                        assetsContainer.appendChild(assetDiv);
+                    });
+
+                    if (nullAssets) {
+                        assetsContainer.innerHTML = `
+                            <div class="no-assets-container">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M13.96 5.46002L18.54 10.04C18.633 10.1337 18.7436 10.2081 18.8655 10.2589C18.9873 10.3097 19.118 10.3358 19.25 10.3358C19.3821 10.3358 19.5128 10.3097 19.6346 10.2589C19.7565 10.2081 19.8671 10.1337 19.96 10.04L21.34 8.66002C21.7125 8.28529 21.9216 7.77839 21.9216 7.25002C21.9216 6.72164 21.7125 6.21474 21.34 5.84002L18.16 2.66002C17.7853 2.28751 17.2784 2.07843 16.75 2.07843C16.2217 2.07843 15.7148 2.28751 15.34 2.66002L13.96 4.04002C13.8663 4.13298 13.7919 4.24358 13.7412 4.36544C13.6904 4.4873 13.6642 4.618 13.6642 4.75002C13.6642 4.88203 13.6904 5.01273 13.7412 5.13459C13.7919 5.25645 13.8663 5.36705 13.96 5.46002ZM2.11005 20.16L2.84005 15.94C2.94422 15.3306 3.2341 14.7683 3.67005 14.33L11.54 6.46002C11.633 6.36629 11.7436 6.29189 11.8655 6.24112C11.9873 6.19036 12.118 6.16422 12.25 6.16422C12.3821 6.16422 12.5128 6.19036 12.6346 6.24112C12.7565 6.29189 12.8671 6.36629 12.96 6.46002L17.54 11.04C17.6338 11.133 17.7082 11.2436 17.7589 11.3654C17.8097 11.4873 17.8358 11.618 17.8358 11.75C17.8358 11.882 17.8097 12.0127 17.7589 12.1346C17.7082 12.2565 17.6338 12.3671 17.54 12.46L9.67005 20.33C9.2344 20.7641 8.67585 21.0539 8.07005 21.16L3.84005 21.89C3.60388 21.9301 3.36155 21.9131 3.13331 21.8403C2.90508 21.7676 2.69759 21.6412 2.52821 21.4719C2.35882 21.3025 2.23247 21.095 2.15972 20.8667C2.08697 20.6385 2.06993 20.3962 2.11005 20.16Z" fill="currentColor"/>
+                                    <path d="M5 1L5.81027 3.18973L8 4L5.81027 4.81027L5 7L4.18973 4.81027L2 4L4.18973 3.18973L5 1Z" fill="currentColor"/>
+                                    <path d="M14 19L14.5402 20.4598L16 21L14.5402 21.5402L14 23L13.4598 21.5402L12 21L13.4598 20.4598L14 19Z" fill="currentColor"/>
+                                </svg>
+                                <p>This category has no URL assets.</p>
                             </div>
                         `;
                     }
@@ -3466,6 +3598,10 @@ async function loadSite() {
             modal.querySelector('#category-modal-tab-3').addEventListener("click", function () {
                 // Assets
                 changeModalTab('3');
+            });
+            modal.querySelector('#category-modal-tab-6').addEventListener("click", function () {
+                // Assets 2
+                changeModalTab('6');
             });
             
 

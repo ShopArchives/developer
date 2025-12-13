@@ -2598,6 +2598,12 @@ hr {
 }
 
 
+.updated-date {
+    position: absolute;
+    right: 20px;
+    color: var(--text-secondary);
+}
+
 .category-modal-quick-info-d-container {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
