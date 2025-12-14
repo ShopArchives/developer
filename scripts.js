@@ -982,12 +982,14 @@ async function loadSite() {
         modal_loading.style.zIndex = 301 + openModalsCache;
 
 
-        if (type === "fromCollectibleCard") {
+        if (type === "fromCollectibleCard" || type === "collectibleCardFromReview") {
             const category = data1;
             const product = data2;
 
-            modal.setAttribute('data-clear-param', 'itemSkuId');
-            modal.setAttribute('data-clear-cache', 'currentOpenModalId');
+            if (type === "fromCollectibleCard") {
+                modal.setAttribute('data-clear-param', 'itemSkuId');
+                modal.setAttribute('data-clear-cache', 'currentOpenModalId');
+            }
 
             let logoAsset;
             if (category.full_src && category.logo) {
@@ -2884,20 +2886,6 @@ async function loadSite() {
                                         <p>You cannot review this category.</p>
                                     </div>
                                 `;
-                            } else if (hasReviewAlready) {
-                                reviewInputContainer.innerHTML = `
-                                    <div id="star-rating" class="stars">
-                                        <svg class="has-tooltip" data-tooltip="1 Star" data-value="1" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
-                                        <svg class="has-tooltip" data-tooltip="2 Stars" data-value="2" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
-                                        <svg class="has-tooltip" data-tooltip="3 Stars" data-value="3" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
-                                        <svg class="has-tooltip" data-tooltip="4 Stars" data-value="4" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
-                                        <svg class="has-tooltip" data-tooltip="5 Stars" data-value="5" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
-                                    </div>
-
-                                    <input autocomplete="off" id="write-review-post-input" placeholder="Edit review for ${categoryData.name}...">
-                                    <p class="write-review-text-limit">100</p>
-                                    <svg class="review-send-icon has-tooltip" data-tooltip="Submit Review" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M6.6 10.02 14 11.4a.6.6 0 0 1 0 1.18L6.6 14l-2.94 5.87a1.48 1.48 0 0 0 1.99 1.98l17.03-8.52a1.48 1.48 0 0 0 0-2.64L5.65 2.16a1.48 1.48 0 0 0-1.99 1.98l2.94 5.88Z" class=""></path></svg>
-                                `;
                             } else {
                                 reviewInputContainer.innerHTML = `
                                     <div id="star-rating" class="stars">
@@ -2908,19 +2896,44 @@ async function loadSite() {
                                         <svg class="has-tooltip" data-tooltip="5 Stars" data-value="5" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
                                     </div>
 
+                                    <svg class="review-specific-item-button has-tooltip" data-tooltip="Choose Item to review" width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="12" cy="24" r="6" fill="currentColor"></circle>
+                                        <circle cx="12" cy="72" r="6" fill="currentColor"></circle>
+                                        <circle cx="12" cy="48" r="6" fill="currentColor"></circle>
+                                        <rect x="28" y="20" width="60" height="8" rx="4" fill="currentColor"></rect>
+                                        <path d="M72.124 44.0029C64.5284 44.0668 57.6497 47.1046 52.6113 52H32C29.7909 52 28 50.2091 28 48C28 45.7909 29.7909 44 32 44H72C72.0415 44 72.0828 44.0017 72.124 44.0029Z" fill="currentColor"></path>
+                                        <path d="M44.2852 68C44.0983 69.3065 44 70.6418 44 72C44 73.3582 44.0983 74.6935 44.2852 76H32C29.7909 76 28 74.2091 28 72C28 69.7909 29.7909 68 32 68H44.2852Z" fill="currentColor"></path>
+                                        <circle cx="72" cy="72" r="16" stroke="currentColor" stroke-width="8"></circle>
+                                        <rect x="81" y="85.9497" width="7" height="16" rx="3.5" transform="rotate(-45 81 85.9497)" fill="currentColor"></rect>
+                                    </svg>
+
+                                    <p class="specific-item-name hidden">Reviewing Item</p>
+                                    <input class="hidden" autocomplete="off" id="specific-item-sku" placeholder="specific-item-sku">
+
                                     <input autocomplete="off" id="write-review-post-input" placeholder="Write a review for ${categoryData.name}...">
                                     <p class="write-review-text-limit">100</p>
                                     <svg class="review-send-icon has-tooltip" data-tooltip="Submit Review" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M6.6 10.02 14 11.4a.6.6 0 0 1 0 1.18L6.6 14l-2.94 5.87a1.48 1.48 0 0 0 1.99 1.98l17.03-8.52a1.48 1.48 0 0 0 0-2.64L5.65 2.16a1.48 1.48 0 0 0-1.99 1.98l2.94 5.88Z" class=""></path></svg>
                                 `;
+                                if (hasReviewAlready) {
+                                    reviewInputContainer.querySelector('#write-review-post-input').placeholder = `Edit review for ${categoryData.name}...`
+                                }
                             }
-
-                                                                
                         
                             const reviewInput = modalInner.querySelector('#write-review-post-input');
+                            const specificItemSku = modalInner.querySelector('#specific-item-sku');
+                            const specificItemChoose = modalInner.querySelector('.review-specific-item-button');
                             const reviewSendIcon = modalInner.querySelector('.review-send-icon');
                             const errorOutput = modalInner.querySelector('.write-review-disclaimer-error');
 
+                            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'review_specific_item')?.treatment === 1) {
+                            } else {
+                                specificItemChoose.classList.add('hidden')
+                            }
 
+
+                            specificItemChoose.addEventListener("click", async () => {
+                                openModal('choose-item-to-review-modal', 'categoryPickItemToReview', categoryData)
+                            });
 
                             const input = reviewInput;
                             const counter = modalInner.querySelector('.write-review-text-limit');
@@ -3013,7 +3026,7 @@ async function loadSite() {
                                 } else if (domainRegex.test(reviewInput.value)) {
                                     errorOutput.textContent = 'Reviews cannot contain Links or Domains';
                                 } else {
-                                    const status = await postReview(categoryData.sku_id, selectedRating, reviewInput.value);
+                                    const status = await postReview(categoryData.sku_id, selectedRating, reviewInput.value, specificItemSku.value);
 
                                     if (status.error && status.message) {
                                         errorOutput.textContent = `${status.error}, ${status.message}`;
@@ -3081,7 +3094,7 @@ async function loadSite() {
                                     revealReview();
                                 }
 
-                                function revealReview() {
+                                async function revealReview() {
                                     if (review.types.system != 0) {
                                         const type = reviews_system_types.find(type => type.id === review.types.system).codename;
                                         reviewDiv.style.backgroundColor = `var(--bg-feedback-${type})`;
@@ -3129,6 +3142,7 @@ async function loadSite() {
 
                                         </div>
                                         <p class="review-text-content"></p>
+                                        <div class="review-specific-item-container"></div>
                                     `;
 
                                     reviewDiv.querySelector('.review-user-display-name').classList.add('clickable');
@@ -3398,8 +3412,59 @@ async function loadSite() {
                                             reviewDiv.querySelector('.star-rating').appendChild(starRate);
                                         }
                                     }
-                                    
-                                    reviewDiv.querySelector('.review-text-content').textContent = review.text;
+
+                                    async function fetchReviewProductData(sku) {
+                                        const res = await fetch(redneredAPI + '/collectibles-products/' + sku);
+                                        if (!res.ok) return;
+                                        const data = await res.json();
+
+                                        if (data.message) {
+                                            console.error(data);
+                                        } else {
+                                            return data;
+                                        }
+                                    }
+
+                                    reviewDiv.querySelector('.review-text-content').textContent = `${review.text}`;
+                                    const rsic = reviewDiv.querySelector('.review-specific-item-container')
+                                    if (review.item_sku_id) {
+                                        rsic.innerHTML = `
+                                            <p class="sub">Reviewing item:</p>
+                                            <p class="name">Loading...</p>
+                                            <p class="sub">Click to Open</p>
+                                        `;
+                                        const item = await fetchReviewProductData(review.item_sku_id);
+                                        rsic.innerHTML = `
+                                            <p class="sub">Reviewing item:</p>
+                                            <p class="name">${item.name}</p>
+                                            <img src="">
+                                            <p class="sub">Click to Open</p>
+                                        `;
+                                        const objImg = rsic.querySelector('img');
+                                        if (item.type === item_types.AVATAR_DECORATION) {
+                                            Object.assign(objImg.style, {
+                                                width: '50px',
+                                                height: '50px'
+                                            });
+                                            objImg.src = item.items[0].assets.static_image_url;
+                                        }
+                                        else if (item.type === item_types.NAMEPLATE) {
+                                            Object.assign(objImg.style, {
+                                                height: '50px'
+                                            });
+                                            objImg.src = item.items[0].assets.static_image_url;
+                                        }
+                                        else {
+                                            objImg.remove();
+                                        }
+                                        rsic.addEventListener("click", async () => {
+                                            openModal('modalv2', 'collectibleCardFromReview', categoryData, item);
+                                        });
+                                        rsic.classList.add('clickable');
+                                    } else {
+                                        rsic.remove();
+                                    }
+
 
                                     const displayName = reviewDiv.querySelector('.review-user-display-name');
                                     displayName.textContent = review.user.global_name ? review.user.global_name : review.user.username;
@@ -5202,6 +5267,117 @@ async function loadSite() {
             // });
             // if (newsUpdatesCache.length != 0) modal.querySelector('.error-output').remove();
 
+
+
+            document.body.appendChild(modal);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.classList.add('show');
+                });
+            });
+
+            document.body.appendChild(modal_back);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal_back.classList.add('show');
+                });
+            });
+
+
+            modal.querySelector("[data-close-product-card-button]").addEventListener('click', () => {
+                closeModal();
+            });
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+        } else if (type === "categoryPickItemToReview") {
+
+            modal.innerHTML = `
+                <div class="choose-item-to-review-modal-inner">
+                    <div class="modal-bg"><div class="modal-bg-color"></div></div>
+                    <div class="modal-top">
+                        <div class="logo">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill="currentColor" d="M8 3C7.44771 3 7 3.44772 7 4V5C7 5.55228 7.44772 6 8 6H16C16.5523 6 17 5.55228 17 5V4C17 3.44772 16.5523 3 16 3H15.1245C14.7288 3 14.3535 2.82424 14.1002 2.52025L13.3668 1.64018C13.0288 1.23454 12.528 1 12 1C11.472 1 10.9712 1.23454 10.6332 1.64018L9.8998 2.52025C9.64647 2.82424 9.27121 3 8.8755 3H8Z"></path><path fill-rule="evenodd" clip-rule="evenodd" fill="currentColor" d="M19 4.49996V4.99996C19 6.65681 17.6569 7.99996 16 7.99996H8C6.34315 7.99996 5 6.65681 5 4.99996V4.49996C5 4.22382 4.77446 3.99559 4.50209 4.04109C3.08221 4.27826 2 5.51273 2 6.99996V19C2 20.6568 3.34315 22 5 22H19C20.6569 22 22 20.6568 22 19V6.99996C22 5.51273 20.9178 4.27826 19.4979 4.04109C19.2255 3.99559 19 4.22382 19 4.49996ZM8 12C7.44772 12 7 12.4477 7 13C7 13.5522 7.44772 14 8 14H16C16.5523 14 17 13.5522 17 13C17 12.4477 16.5523 12 16 12H8ZM7 17C7 16.4477 7.44772 16 8 16H13C13.5523 16 14 16.4477 14 17C14 17.5522 13.5523 18 13 18H8C7.44772 18 7 17.5522 7 17Z"></path>
+                            </svg>
+                            <div class="right-top">
+                                <h1>Products</h1>
+                                <h2>Choose an item to review.</h2>
+                            </div>
+                        </div>
+                        <div class="info-blocks">
+                        </div>
+                    </div>
+
+                    <div class="items-output">
+                        <div class="card">
+                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+                            <p>None</p>
+                        </div>
+                    </div>
+
+                    <div data-modal-top-product-buttons>
+                        <div class="has-tooltip" data-tooltip="Close" data-close-product-card-button>
+                            <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            category = data1;
+
+            modal.querySelector('.items-output').querySelector('.card').addEventListener('click', () => {
+                document.querySelector('#specific-item-sku').value = '';
+                closeModal();
+                document.querySelector('.specific-item-name').textContent = '';
+                document.querySelector('.specific-item-name').classList.add('hidden');
+            });
+
+            category.products.forEach(item => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.innerHTML = `
+                    <img class="img1">
+                    <img class="img2">
+                    <p>${item.name}</p>
+                `;
+                const objImg = card.querySelector('.img1')
+                const objImg2 = card.querySelector('.img2')
+                if (item.type === item_types.AVATAR_DECORATION) {
+                    objImg.classList.add('deco');
+                    objImg.src = item.items[0].assets.static_image_url;
+                    objImg2.remove();
+                }
+                else if (item.type === item_types.PROFILE_EFFECT) {
+                    objImg.classList.add('effect');
+                    objImg.src = item.items[0].thumbnailPreviewSrc;
+                    objImg2.remove();
+                }
+                else if (item.type === item_types.NAMEPLATE) {
+                    objImg.classList.add('nameplate1');
+                    objImg.src = item.items[0].assets.static_image_url;
+
+                    objImg2.classList.add('nameplate2');
+                    objImg2.src = item.items[0].assets.static_image_url;
+
+                    const paletteName = item.items[0].palette;
+                    const bgcolor = nameplate_palettes[paletteName].darkBackground;
+                    objImg.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
+                    objImg2.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
+                } else {
+                    card.classList.add('hidden')
+                }
+                card.addEventListener('click', () => {
+                    document.querySelector('#specific-item-sku').value = item.sku_id;
+                    closeModal();
+                    document.querySelector('.specific-item-name').textContent = `Reviewing "${item.name}"`;
+                    document.querySelector('.specific-item-name').classList.remove('hidden');
+                });
+                modal.querySelector('.items-output').appendChild(card)
+            });
 
 
             document.body.appendChild(modal);
@@ -8862,7 +9038,7 @@ function dev() {
 }
 
 
-async function postReview(categoryId, rating, text) {
+async function postReview(categoryId, rating, text, item_sku_id) {
 
     const response = await fetch(redneredAPI + endpoints.CATEGORY_MODAL_INFO + categoryId + endpoints.CATEGORY_MODAL_REVIEW, {
         method: 'POST',
@@ -8872,7 +9048,8 @@ async function postReview(categoryId, rating, text) {
         },
         body: JSON.stringify({
             rating,
-            text
+            text,
+            item_sku_id
         })
     });
 

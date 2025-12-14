@@ -1,5 +1,5 @@
 
-const appVersion = "7.4.13";
+const appVersion = "7.4.14";
 const appType = "Dev";
 
 const endpoints = {
@@ -404,6 +404,22 @@ const display_name_styles_colors = {
 };
 
 const experiments = [
+    {
+        title: `Review Specific Item`,
+        codename: `review_specific_item`,
+        release_config: {
+            year: `2025`,
+            month: `12`
+        },
+        treatments: [
+            {
+                title: `Not Eligible`
+            },
+            {
+                title: `Enabled`
+            }
+        ]
+    },
     {
         title: `XP Revamp`,
         codename: `xp_system_v2`,
