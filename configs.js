@@ -1,5 +1,5 @@
 
-const appVersion = "7.4.14";
+const appVersion = "7.4.15";
 const appType = "Dev";
 
 const endpoints = {
@@ -405,6 +405,22 @@ const display_name_styles_colors = {
 
 const experiments = [
     {
+        title: `Daily dose of Collectibles`,
+        codename: `daily_dose_of_collectibles`,
+        release_config: {
+            year: `2026`,
+            month: `01`
+        },
+        treatments: [
+            {
+                title: `Not Eligible`
+            },
+            {
+                title: `Enabled`
+            }
+        ]
+    },
+    {
         title: `Review Specific Item`,
         codename: `review_specific_item`,
         release_config: {
@@ -442,22 +458,6 @@ const experiments = [
         release_config: {
             year: `2025`,
             month: `09`
-        },
-        treatments: [
-            {
-                title: `Not Eligible`
-            },
-            {
-                title: `Enabled`
-            }
-        ]
-    },
-    {
-        title: `User Item Favorites`,
-        codename: `user_item_favorites`,
-        release_config: {
-            year: `2025`,
-            month: `08`
         },
         treatments: [
             {
@@ -660,7 +660,7 @@ const settings = {
     "staff_show_test_categories_on_misc_page": 0,
     "staff_auth_remove_none_promt": 0,
 
-    "dismissible_favorites_tab_new": 1
+    "dismissible_daily_tab_new": 0
 };
 
 const leaks_dummy_data = {
@@ -793,6 +793,27 @@ const favorites_category = {
     "banner": "https://cdn.yapper.shop/assets/213.png",
     "unpublished_at": null,
     "logo": "https://cdn.yapper.shop/assets/210.png",
+    "hero_ranking": null,
+    "mobile_bg": null,
+    "pdp_bg": "https://cdn.yapper.shop/assets/209.png",
+    "success_modal_bg": null,
+    "mobile_banner": null,
+    "featured_block": null,
+    "hero_banner": null,
+    "wide_banner": null,
+    "hero_logo": null,
+    "products": []
+};
+
+const daily_dose_of_collectibles = {
+    "full_src": true,
+    "sku_id": "6",
+    "name": "Daily dose of Collectibles",
+    "summary": " ",
+    "store_listing_id": null,
+    "banner": null,
+    "unpublished_at": null,
+    "logo": null,
     "hero_ranking": null,
     "mobile_bg": null,
     "pdp_bg": "https://cdn.yapper.shop/assets/209.png",

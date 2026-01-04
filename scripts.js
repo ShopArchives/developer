@@ -5,6 +5,7 @@ let currentPageCache;
 let currentOpenModalId;
 let isMobileCache;
 let scrollToCache;
+let originData;
 let devtoolsOpenCache;
 let currentUserData;
 let usersXPBalance;
@@ -226,6 +227,8 @@ async function verifyOrigin() {
         triggerSafetyBlock();
     } else {
         const data = await rawData.json();
+
+        originData = data;
 
         // if (data.message != "The official domain for Shop Archives is yapper.shop, any other domain is most likely a scam or copy." || window.location.hostname != 'yapper.shop' && window.location.hostname != 'dev.yapper.shop' && window.location.hostname != 'beta.yapper.shop') {
         //     triggerSafetyBlock();
@@ -870,22 +873,55 @@ async function loadSite() {
                 </div>
                 <div class="pagination" id="pagination"></div>
             `
+        },
+        {
+            id: 8,
+            title: "Item of the Day",
+            url: "daily",
+            body: `
+                <div class="pagination" id="pagination"></div>
+                <div class="categories-container" id="categories-container">
+                    <div class="category-container">
+                        <div class="products-wrapper">
+                            <div class="shop-category-card-loading">
+                                </div>
+                                <div class="shop-category-card-loading">
+                                </div>
+                                <div class="shop-category-card-loading">
+                                </div>
+                                <div class="shop-category-card-loading">
+                                </div>
+                                <div class="shop-category-card-loading">
+                                </div>
+                                <div class="shop-category-card-loading">
+                                </div>
+                                <div class="shop-category-card-loading">
+                                </div>
+                                <div class="shop-category-card-loading">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pagination" id="pagination"></div>
+            `
         }
     ];
 
 
-    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'user_item_favorites')?.treatment === 1) {
-        document.getElementById('shop-tab-7').classList.remove('hidden');
-        let favorites;
-        try {
-            favorites = JSON.parse(localStorage.getItem("favoritesStore"));
-            if (!Array.isArray(favorites)) {
-                throw new Error("Not an array");
-            }
-        } catch {
-            favorites = [];
-            localStorage.setItem("favoritesStore", JSON.stringify(favorites));
+    let favorites;
+    try {
+        favorites = JSON.parse(localStorage.getItem("favoritesStore"));
+        if (!Array.isArray(favorites)) {
+            throw new Error("Not an array");
         }
+    } catch {
+        favorites = [];
+        localStorage.setItem("favoritesStore", JSON.stringify(favorites));
+    }
+
+    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'daily_dose_of_collectibles')?.treatment === 1) {
+        document.getElementById('shop-tab-8').classList.remove('hidden');
     }
 
     if (currentUserData && currentUserData.ban_config.ban_type === 0) {
@@ -6896,6 +6932,8 @@ async function loadSite() {
                             </div>
                         </div>
                     `;
+                } else if (categoryData.sku_id === "6") {
+                    bannerContainer.remove();
                 } else {
                     bannerContainer.addEventListener("click", function () {
                         openModal('category-modal', 'fromCategoryBanner', categoryData, modalBanner);
@@ -7212,8 +7250,8 @@ async function loadSite() {
     }
     window.setDiscordLeakedCategoriesCache = setDiscordLeakedCategoriesCache;
 
-    if (settingsStore.dismissible_favorites_tab_new === 1) {
-        document.getElementById('shop-tab-7').classList.add('hide-new-tag');
+    if (settingsStore.dismissible_daily_tab_new === 1) {
+        document.getElementById('shop-tab-8').classList.add('hide-new-tag');
     }
 
     async function loadPage(key, firstLoad, reFetch) {
@@ -7419,10 +7457,6 @@ async function loadSite() {
             }
         } else if (currentPageCache === "favorites") {
             const output = document.getElementById('categories-container');
-            if (settingsStore.dismissible_favorites_tab_new === 0) {
-                changeSetting('dismissible_favorites_tab_new', 1);
-            }
-            document.getElementById('shop-tab-7').classList.add('hide-new-tag')
 
             let items = JSON.parse(localStorage.getItem("favoritesStore"));
             const data = [{ ...favorites_category, products: items }];
@@ -7438,6 +7472,38 @@ async function loadSite() {
                 `;
                 searchInput.classList.add('hidden');
             }
+        } else if (currentPageCache === "daily") {
+            const output = document.getElementById('categories-container');
+            if (settingsStore.dismissible_daily_tab_new === 0) {
+                changeSetting('dismissible_daily_tab_new', 1);
+            }
+            document.getElementById('shop-tab-8').classList.add('hide-new-tag')
+
+            try {
+                if (originData.daily_collectible) {
+                    let items = originData.daily_collectible;
+                    items = [items];
+                    const data = [{ ...daily_dose_of_collectibles, products: items }];
+                    renderShopData(data, output);
+                } else {
+                    output.innerHTML = `
+                        <div class="shop-loading-error-container">
+                            <img src="https://cdn.yapper.shop/assets/207.png">
+                            <h2>Oopsie, something went wrong.</h2>
+                            <p>We weren't able to load this page. Check back later.</p>
+                        </div>
+                    `;
+                }
+            } catch {
+                output.innerHTML = `
+                    <div class="shop-loading-error-container">
+                        <img src="https://cdn.yapper.shop/assets/207.png">
+                        <h2>Oopsie, something went wrong.</h2>
+                        <p>We weren't able to load this page. Check back later.</p>
+                    </div>
+                `;
+            }
+            searchInput.classList.add('hidden');
         } else {
             loadPage('0')
         }
