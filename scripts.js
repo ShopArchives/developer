@@ -3833,6 +3833,10 @@ async function loadSite() {
                     <p>Appearance</p>
                 </div>
 
+                <div class="side-tabs-button" id="modal-v3-tab-advanced" onclick="setModalv3InnerContent('advanced')">
+                    <p>Advanced</p>
+                </div>
+
                 <div id="xp-rewards-tabs-modalv3-container"></div>
 
                 <div id="staff-options-modalv3-container"></div>
@@ -5038,7 +5042,13 @@ async function loadSite() {
 
         } else if (type === "tradingCardPackBrowse") {
 
-            let currentPackPage = tradingConfigCache.packs[0];
+            const now = new Date();
+
+            let currentPackPage =
+                tradingConfigCache.packs.find(pack => {
+                    if (!pack.expires_at) return true;
+                    return new Date(pack.expires_at) > now;
+                }) || null;
 
             modal.innerHTML = `
                 <div class="trading-card-browse-modal-inner">
@@ -5223,8 +5233,6 @@ async function loadSite() {
                 });
             }
             window.setPackPage = setPackPage;
-
-            setPackPage(currentPackPage);
 
 
 
@@ -7331,13 +7339,20 @@ async function loadSite() {
             searchInput.classList.remove('hidden');   
             const output = document.getElementById('categories-container');
             if (!discordCollectiblesCategoriesCache || discordCollectiblesCategoriesCache && reFetch) {
-                let url = redneredAPI + endpoints.DISCORD_COLLECTIBLES_CATEGORIES;
 
-                if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'database_categories_handling')?.treatment === 1) {
-                    url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_CATALOG;
+                let url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_CATALOG;
+                apiUrl = new URL(url);
+
+                if (settingsStore.staff_api_type_change === 1) {
+                    apiUrl.searchParams.append("static_api", "true");
                 }
 
-                const res = await fetch(url);
+                const res = await fetch(apiUrl, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": localStorage.token
+                    }
+                });
 
                 if (!res.ok) {
                     renderShopLoadingError(res.status, output);
@@ -7361,13 +7376,20 @@ async function loadSite() {
             searchInput.classList.remove('hidden');   
             const output = document.getElementById('categories-container');
             if (!discordOrbsCategoriesCache || discordOrbsCategoriesCache && reFetch) {
-                let url = redneredAPI + endpoints.DISCORD_ORBS_CATEGORIES;
+                
+                let url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_ORBS;
+                apiUrl = new URL(url);
 
-                if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'database_categories_handling')?.treatment === 1) {
-                    url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_ORBS;
+                if (settingsStore.staff_api_type_change === 1) {
+                    apiUrl.searchParams.append("static_api", "true");
                 }
 
-                const res = await fetch(url);
+                const res = await fetch(apiUrl, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": localStorage.token
+                    }
+                });
 
                 if (!res.ok) {
                     renderShopLoadingError(res.status, output);
@@ -7388,47 +7410,56 @@ async function loadSite() {
                 renderShopData(discordOrbsCategoriesCache, output);
             }
         } else if (currentPageCache === "miscellaneous") {
-            searchInput.classList.remove('hidden');
-            const output = document.getElementById('categories-container');
-            if (!discordMiscellaneousCategoriesCache || discordMiscellaneousCategoriesCache && reFetch) {
-
-                let url = redneredAPI + endpoints.DISCORD_MISCELLANEOUS_CATEGORIES;
-
-                if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'database_categories_handling')?.treatment === 1) {
-                    url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_MISCELLANEOUS;
-                }
-
-                apiUrl = new URL(url);
-                if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'published_items_category')?.treatment === 1) {
-                    apiUrl.searchParams.append("include_published_items_category", "true");
-                }
-                if (settingsStore.staff_show_test_categories_on_misc_page === 1) {
-                    apiUrl.searchParams.append("include_unpublished", "true");
-                }
-                const res = await fetch(apiUrl, {
-                    method: "GET",
-                    headers: {
-                        "Authorization": localStorage.token
-                    }
-                });
-
-                if (!res.ok) {
-                    renderShopLoadingError(res.status, output);
-                    noticeBlock({
-                        type: 1,
-                        message: `Failed to fetch '${apiUrl}': ${res.status}, ${res.statusText}`,
-                        autoRemove: true,
-                        removeTime: 5000
-                    });
-                } else {
-                    const data = await res.json();
-
-                    discordMiscellaneousCategoriesCache = data;
-
-                    renderShopData(data, output);
-                }
+            if (settingsStore.staff_api_type_change === 1) {
+                const output = document.getElementById('categories-container');
+                output.innerHTML = `
+                    <div class="shop-loading-error-container">
+                        <img src="https://cdn.yapper.shop/assets/207.png">
+                        <h2>This page as beed disabled.</h2>
+                        <p>Please turn off Static API Mode to view this page.</p>
+                    </div>
+                `;
+                searchInput.classList.add('hidden');
             } else {
-                renderShopData(discordMiscellaneousCategoriesCache, output);
+                searchInput.classList.remove('hidden');
+                const output = document.getElementById('categories-container');
+                if (!discordMiscellaneousCategoriesCache || discordMiscellaneousCategoriesCache && reFetch) {
+
+                    let url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_MISCELLANEOUS;
+                    apiUrl = new URL(url);
+
+                    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'published_items_category')?.treatment === 1) {
+                        apiUrl.searchParams.append("include_published_items_category", "true");
+                    }
+                    if (settingsStore.staff_show_test_categories_on_misc_page === 1) {
+                        apiUrl.searchParams.append("include_unpublished", "true");
+                    }
+
+                    const res = await fetch(apiUrl, {
+                        method: "GET",
+                        headers: {
+                            "Authorization": localStorage.token
+                        }
+                    });
+
+                    if (!res.ok) {
+                        renderShopLoadingError(res.status, output);
+                        noticeBlock({
+                            type: 1,
+                            message: `Failed to fetch '${apiUrl}': ${res.status}, ${res.statusText}`,
+                            autoRemove: true,
+                            removeTime: 5000
+                        });
+                    } else {
+                        const data = await res.json();
+
+                        discordMiscellaneousCategoriesCache = data;
+
+                        renderShopData(data, output);
+                    }
+                } else {
+                    renderShopData(discordMiscellaneousCategoriesCache, output);
+                }
             }
         } else if (currentPageCache === "quests") {
             searchInput.classList.add('hidden');   
@@ -7509,6 +7540,13 @@ async function loadSite() {
         }
     }
     window.loadPage = loadPage;
+
+    async function clearStaticableCache() {
+        discordCollectiblesCategoriesCache = null;
+        discordOrbsCategoriesCache = null;
+        discordMiscellaneousCategoriesCache = null;
+        discordQuestsCache = null;
+    }
 
     if (params.get("page")) {
         await loadPage(params.get("page"), true);
@@ -7804,6 +7842,60 @@ async function loadSite() {
                 } else {
                     document.body.classList.remove('profile-effect-bug-fix-thumbnails');
                 }
+            });
+
+            // Function to toggle a setting (0 or 1)
+            function toggleSetting(key) {
+                if (key in settingsStore) {
+                    const newValue = settingsStore[key] === 0 ? 1 : 0;
+                    changeSetting(key, newValue);
+                }
+            }
+
+            // Update toggle visual states
+            function updateToggleStates() {
+                for (let key in settingsStore) {
+                    const toggle = document.getElementById(key + '_toggle');
+                    if (toggle) {
+                        if (settingsStore[key] === 1) {
+                            toggle.classList.add('active');
+                        } else {
+                            toggle.classList.remove('active');
+                        }
+                    }
+                }
+            }
+
+        } else if (tab === "advanced") {
+            tabPageOutput.innerHTML = `
+                <h2>Advanced</h2>
+                
+                <hr>
+
+                <div class="modalv3-content-card-1">
+                    <div class="setting">
+                        <div class="setting-info">
+                            <p class="setting-title">Static API Mode</p>
+                            <p class="setting-description">Fetches from a static api, avoiding long loading times (Removes Leaks and Miscellaneous collectibles).</p>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="staff_api_type_change_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            
+            updateToggleStates();
+
+            tabPageOutput.querySelector('#staff_api_type_change_toggle').addEventListener("click", () => {
+                toggleSetting('staff_api_type_change');
+                updateToggleStates();
+                console.log(currentPageCache)
+                clearStaticableCache();
+                loadPage(currentPageCache, true, true);
             });
 
             // Function to toggle a setting (0 or 1)

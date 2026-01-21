@@ -1,5 +1,5 @@
 
-const appVersion = "7.4.15";
+const appVersion = "7.4.16";
 const appType = "Dev";
 
 const endpoints = {
@@ -28,9 +28,6 @@ const endpoints = {
 
     DISCORD_LEAKED_CATEGORIES: "/discord-leaked-categories",
     DISCORD_COLLECTIBLES_HOME: "/discord-collectibles-home",
-    DISCORD_COLLECTIBLES_CATEGORIES: "/discord-collectibles-categories",
-    DISCORD_ORBS_CATEGORIES: "/discord-orbs-categories",
-    DISCORD_MISCELLANEOUS_CATEGORIES: "/discord-miscellaneous-categories",
     DISCORD_QUESTS: "/discord-quests",
 
     CATEGORY_MODAL_INFO: "/category/",
@@ -453,22 +450,6 @@ const experiments = [
         ]
     },
     {
-        title: `Database Categories Handling`,
-        codename: `database_categories_handling`,
-        release_config: {
-            year: `2025`,
-            month: `09`
-        },
-        treatments: [
-            {
-                title: `Not Eligible`
-            },
-            {
-                title: `Enabled`
-            }
-        ]
-    },
-    {
         title: `Display Name Style Render`,
         codename: `display_name_style_render`,
         release_config: {
@@ -659,6 +640,7 @@ const settings = {
     "staff_allow_category_only_event_claiming_in_events_tab": 0,
     "staff_show_test_categories_on_misc_page": 0,
     "staff_auth_remove_none_promt": 0,
+    "staff_api_type_change": 1,
 
     "dismissible_daily_tab_new": 0
 };
