@@ -6734,17 +6734,17 @@ async function loadSite() {
                 const overridenCatalogBannerAsset = bannersOutput.catalogBannerAsset;
     
                 const bannerContainer = document.createElement('div');
-                if (categoryData.catalog_banner_asset || overridenCatalogBannerAsset !== customCategoryAssets[1]) {
+                if (categoryData.catalog_banner_url || overridenCatalogBannerAsset !== customCategoryAssets[1]) {
                     bannerContainer.classList.add('catalog-banner-container');
 
-                    if (categoryData.catalog_banner_asset?.static && !categoryData.catalog_banner_asset?.animated) {
+                    if (categoryData.catalog_banner_url && !categoryData.catalog_banner_animated_url) {
                         bannerContainer.innerHTML = `
-                            <img src="${categoryData.catalog_banner_asset.static}">
+                            <img src="${categoryData.catalog_banner_url}">
                         `;
-                    } else if (categoryData.catalog_banner_asset?.animated) {
+                    } else if (categoryData.catalog_banner_animated_url) {
                         bannerContainer.innerHTML = `
-                            <video disablepictureinpicture muted loop autoplay src="${categoryData.catalog_banner_asset.animated}"></video>
-                            <img src="${categoryData.catalog_banner_asset.static}">
+                            <video disablepictureinpicture muted loop autoplay src="${categoryData.catalog_banner_animated_url}"></video>
+                            <img src="${categoryData.catalog_banner_url}">
                         `;
                     } else if (overridenCatalogBannerAsset) {
                         bannerContainer.innerHTML = `
@@ -7416,7 +7416,7 @@ async function loadSite() {
                     <div class="shop-loading-error-container">
                         <img src="https://cdn.yapper.shop/assets/207.png">
                         <h2>This page as beed disabled.</h2>
-                        <p>Please turn off Static API Mode to view this page.</p>
+                        <p>Please turn off Static API Mode in Advanced settings to view this page.</p>
                     </div>
                 `;
                 searchInput.classList.add('hidden');
