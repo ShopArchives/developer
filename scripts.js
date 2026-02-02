@@ -5887,6 +5887,9 @@ async function loadSite() {
         else if (categoryAssetEntry?.hero_banner_asset?.static) {
             categoryHeroBanner = categoryAssetEntry?.hero_banner_asset?.static;
         }
+        else if (categoryData.hero_banner_url) {
+            categoryHeroBanner = categoryData.hero_banner_url;
+        }
         else if (categoryData.hero_banner_asset?.static) {
             categoryHeroBanner = categoryData.hero_banner_asset?.static;
         }
@@ -7423,23 +7426,23 @@ async function loadSite() {
                 const bannerLogo = document.createElement("div");
                 bannerLogo.classList.add('shop-category-logo-holder')
                 bannerLogo.innerHTML = `
-                    <img class="shop-category-banner-logo" loading="lazy" src="${categoryData.logo_url}">
+                    <img class="shop-category-banner-logo" loading="lazy" src="${categoryData.hero_logo_url}">
                 `;
                 bannerSummaryAndLogo.appendChild(bannerLogo);
 
-                if (categoryData.banner_asset?.animated) {
+                if (categoryData.hero_banner_animated_url) {
                     const videoBanner = document.createElement("video");
                     videoBanner.disablePictureInPicture = true;
                     videoBanner.autoplay = true;
                     videoBanner.muted = true;
                     videoBanner.loop = true;
                     videoBanner.playsInline = true;
-                    videoBanner.src = categoryData.banner_asset.animated;
+                    videoBanner.src = categoryData.hero_banner_animated_url;
                     videoBanner.classList.add('banner-video');
                     bannerContainer.appendChild(videoBanner);
-                } else if (categoryData.banner_asset?.static) {
+                } else if (categoryData.hero_banner_url) {
                     const imageBanner = document.createElement("img");
-                    imageBanner.src = categoryData.banner_asset.static;
+                    imageBanner.src = categoryData.hero_banner_url;
                     imageBanner.classList.add('banner-video');
                     bannerContainer.appendChild(imageBanner);
                 }
@@ -7683,7 +7686,7 @@ async function loadSite() {
                 let url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_CATALOG;
                 apiUrl = new URL(url);
 
-                if (settingsStore.staff_api_type_change === 1) {
+                if (settingsStore.api_type_change_catalog === 1) {
                     apiUrl.searchParams.append("static_api", "true");
                 }
 
@@ -7720,7 +7723,7 @@ async function loadSite() {
                 let url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_ORBS;
                 apiUrl = new URL(url);
 
-                if (settingsStore.staff_api_type_change === 1) {
+                if (settingsStore.api_type_change_orbs === 1) {
                     apiUrl.searchParams.append("static_api", "true");
                 }
 
@@ -7750,7 +7753,7 @@ async function loadSite() {
                 renderShopData(discordOrbsCategoriesCache, output);
             }
         } else if (currentPageCache === "miscellaneous") {
-            if (settingsStore.staff_api_type_change === 1) {
+            if (settingsStore.api_type_change_misc === 1) {
                 const output = document.getElementById('categories-container');
                 output.innerHTML = `
                     <div class="shop-loading-error-container">
@@ -8213,13 +8216,37 @@ async function loadSite() {
                 <hr>
 
                 <div class="modalv3-content-card-1">
+                    <h2 class="modalv3-content-card-header">Static API Mode</h2>
+                    <p class="modalv3-content-card-summary">Fetches from a static api, avoiding long loading times (Removes Leaks and Miscellaneous collectibles).</p>
+
                     <div class="setting">
                         <div class="setting-info">
-                            <p class="setting-title">Static API Mode</p>
-                            <p class="setting-description">Fetches from a static api, avoiding long loading times (Removes Leaks and Miscellaneous collectibles).</p>
+                            <p class="setting-title">Catalog Tab</p>
                         </div>
                         <div class="toggle-container">
-                            <div class="toggle" id="staff_api_type_change_toggle">
+                            <div class="toggle" id="api_type_change_catalog_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting">
+                        <div class="setting-info">
+                            <p class="setting-title">Orbs Tab</p>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="api_type_change_orbs_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting">
+                        <div class="setting-info">
+                            <p class="setting-title">Miscellaneous Tab</p>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="api_type_change_misc_toggle">
                                 <div class="toggle-circle"></div>
                             </div>
                         </div>
@@ -8230,8 +8257,24 @@ async function loadSite() {
             
             updateToggleStates();
 
-            tabPageOutput.querySelector('#staff_api_type_change_toggle').addEventListener("click", () => {
-                toggleSetting('staff_api_type_change');
+            tabPageOutput.querySelector('#api_type_change_catalog_toggle').addEventListener("click", () => {
+                toggleSetting('api_type_change_catalog');
+                updateToggleStates();
+                console.log(currentPageCache)
+                clearStaticableCache();
+                loadPage(currentPageCache, true, true);
+            });
+
+            tabPageOutput.querySelector('#api_type_change_orbs_toggle').addEventListener("click", () => {
+                toggleSetting('api_type_change_orbs');
+                updateToggleStates();
+                console.log(currentPageCache)
+                clearStaticableCache();
+                loadPage(currentPageCache, true, true);
+            });
+
+            tabPageOutput.querySelector('#api_type_change_misc_toggle').addEventListener("click", () => {
+                toggleSetting('api_type_change_misc');
                 updateToggleStates();
                 console.log(currentPageCache)
                 clearStaticableCache();
