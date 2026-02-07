@@ -1030,6 +1030,9 @@ async function loadSite() {
             if (category.full_src && category.logo) {
                 logoAsset = category.logo;
             }
+            else if (category.logo_url) {
+                logoAsset = category.logo_url;
+            }
             else if (category.logo) {
                 logoAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${category.logo}.png?size=4096`;
             }
@@ -1037,6 +1040,9 @@ async function loadSite() {
             let pdpAsset;
             if (category.full_src && category.pdp_bg) {
                 pdpAsset = category.pdp_bg;
+            }
+            else if (category.pdp_bg_url) {
+                pdpAsset = category.pdp_bg_url;
             }
             else if (category.pdp_bg) {
                 pdpAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${category.pdp_bg}.png?size=4096`;
@@ -7508,7 +7514,7 @@ async function loadSite() {
                 categoryData.subblocks.forEach(block => {
                     let featuredBlock = document.createElement("div");
 
-                    featuredBlock.style.backgroundImage = `url(${block.banner_url})`;
+                    featuredBlock.style.backgroundImage = `url(${block.asset_url})`;
 
                     featuredBlock.innerHTML = `
                         <button class="take-me-there-home-block-button" onclick="scrollToCache = '${block.category_store_listing_id}'; addParams({scrollTo: '${block.category_store_listing_id}'}); loadPage('2');">Take Me There</button>
@@ -10091,8 +10097,8 @@ class ProfileEffectsPlayer {
         const effectElement = document.createElement('img');
         effectElement.src = effect.src + '?' + Date.now() + '_' + Math.random();
         effectElement.style.position = 'absolute';
-        effectElement.style.left = `${effect.position.x}px`;
-        effectElement.style.top = `${effect.position.y}px`;
+        effectElement.style.left = `${effect.position?.x ? effect.position.x : '0'}px`;
+        effectElement.style.top = `${effect.position?.y ? effect.position.y : '0'}px`;
         effectElement.style.width = `100%`;
         effectElement.style.pointerEvents = 'none';
         effectElement.dataset.effectId = effectId;
