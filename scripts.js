@@ -1,3 +1,5 @@
+createNotice('Shop Archives is currently being updated for the dev build, expect bugs and downtime. In the meantime, please use the stable build at \'https://yapper.shop/\'', 2);
+
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
 
 // Cache
@@ -13,7 +15,6 @@ let usersXPEventsCache;
 let openModalsCache = 0;
 let xpLevelStatsCache;
 let tradingConfigCache;
-let newsUpdatesCache;
 
 let discordProfileEffectsCache;
 let discordLeakedCategoriesCache;
@@ -41,10 +42,14 @@ if (isMobile || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
 }
 
 function loadOverrides() {
+    const raw = localStorage.getItem(overridesKey);
     try {
-        return JSON.parse(localStorage.getItem(overridesKey)) || [];
-    } catch {
-        return [];
+        const parsed = JSON.parse(raw);
+        // If it's an array, it's the old format -> Reset to empty object
+        if (Array.isArray(parsed) || !parsed) return {};
+        return parsed;
+    } catch (e) {
+        return {};
     }
 }
 
@@ -53,10 +58,14 @@ function saveOverrides(overrides) {
 }
 
 function loadServerExperiments() {
+    const raw = localStorage.getItem(serverKey);
     try {
-        return JSON.parse(localStorage.getItem(serverKey)) || [];
-    } catch {
-        return [];
+        const parsed = JSON.parse(raw);
+        // If it's the old array format -> Reset to empty object
+        if (Array.isArray(parsed) || !parsed) return {};
+        return parsed;
+    } catch (e) {
+        return {};
     }
 }
 
@@ -66,34 +75,41 @@ function syncOverridesWithServer() {
     let overrides = loadOverrides();
     let changed = false;
 
-    experiments.forEach(exp => {
-        const serverMatch = serverExperiments.find(s => s.codename === exp.codename);
-        if (!serverMatch) return;
-
-        const existingIndex = overrides.findIndex(o => o.codename === exp.codename);
-        const override = overrides[existingIndex];
-
-        if (!override) {
-            // Add new override from server
-            overrides.push({
-                codename: exp.codename,
-                release_config: exp.release_config,
-                treatment: serverMatch.rollout,
-                auto: true
-            });
+    for (const codename of Object.keys(serverExperiments)) {
+        // If the experiment is totally missing from overrides, initialize it to -1 (Auto)
+        if (overrides[codename] === undefined) {
+            overrides[codename] = -1;
             changed = true;
-        } else if (override.auto === true) {
-            // Update treatment if server rollout changed
-            if (override.treatment !== serverMatch.rollout) {
-                overrides[existingIndex].treatment = serverMatch.rollout;
-                changed = true;
-            }
         }
-    });
+    }
 
     if (changed) saveOverrides(overrides);
 }
 
+
+function experimentIs(codename, treatment) {
+    const overrides = loadOverrides(); 
+    const serverData = loadServerExperiments();
+
+    const localValue = overrides[codename];
+
+    // Hierarchy: Use manual override if not -1, otherwise fallback to server
+    const activeTreatment = (localValue === -1 || localValue === undefined) 
+        ? serverData[codename] 
+        : localValue;
+
+    // Check if the active treatment matches a single value or exists in an array
+    if (Array.isArray(treatment)) {
+        return treatment.includes(activeTreatment);
+    }
+
+    return activeTreatment === treatment;
+}
+
+const formatOrbPrice = new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    compactDisplay: 'short',
+});
 
 
 // Settings Code
@@ -161,7 +177,23 @@ function updateToggleStates() {
 }
 
 
+var showLoadingDots = function() {
+    var d = document.getElementById("loadingDots");
+    if (!d) return;
+    setInterval(function(){
+        d.textContent.length >= 3 ? d.textContent = '' : d.textContent += '.';
+    }, 200);
+};
+document.addEventListener('DOMContentLoaded', (event) => {
+    showLoadingDots();
+});
 
+if (localStorage.sa_theme) {
+    document.body.classList.add('theme-' + localStorage.sa_theme);
+} else if (!localStorage.sa_theme) {
+    localStorage.sa_theme = "dark";
+    document.body.classList.add('theme-dark');
+}
 
 
 const params = new URLSearchParams(window.location.search);
@@ -219,132 +251,107 @@ if (params.get("scrollTo")) {
 
 
 async function verifyOrigin() {
-
-    const rawData = await fetch(redneredAPI + endpoints.VERIFY_ORIGIN);
-
-    if (!rawData.ok) {
-        triggerSafetyBlock();
-    } else {
-        const data = await rawData.json();
-
-        originData = data;
-
-        // if (data.message != "The official domain for Shop Archives is yapper.shop, any other domain is most likely a scam or copy." || window.location.hostname != 'yapper.shop' && window.location.hostname != 'dev.yapper.shop' && window.location.hostname != 'beta.yapper.shop') {
-        //     triggerSafetyBlock();
-        //     return
-        // }
-
-        const brickWall = document.getElementById('brick-wall');
-
-        // Fetch User data
-
-        const loginToken = params.get("login");
-
-        if (loginToken) {
-            const userLogin = await fetch(redneredAPI + endpoints.USER_LOGIN, {
-                method: 'POST',
-                headers: {
-                    "Authorization": loginToken,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!userLogin.ok) {
-                return
-            }
-
-            const data = await userLogin.json();
-
-            localStorage.token = data.token
-        }
-
-        if (localStorage.token) {
-            const userRawData = await fetch(redneredAPI + endpoints.USER, {
-                method: "GET",
-                headers: {
-                    "Authorization": localStorage.token
-                }
-            });
-
-            if (!userRawData.ok) {
-                triggerSessionExpiredBlock();
-                return
-            }
-
-            const userData = await userRawData.json();
-
-            localStorage.setItem('currentUser', JSON.stringify(userData));
-
-            currentUserData = JSON.parse(localStorage.getItem('currentUser'));
-        }
-
-        if (currentUserData && currentUserData.types.admin_level >= 1) {
-            changeSetting('dev', 1);
-        }
-
-        // Fetch & Sync Server experiments
-
-        if (localStorage.token) {
-            const expRawData = await fetch(redneredAPI + endpoints.SERVER_EXPERIMENTS, {
-                method: "GET",
-                headers: {
-                    "Authorization": localStorage.token
-                }
-            });
-
-            if (!expRawData.ok) {
-                triggerSafetyBlock();
-                return
-            }
-
-            const expData = await expRawData.json();
-
-            localStorage.setItem('serverExperiments', JSON.stringify(expData));
-
-            syncOverridesWithServer();
-        } else {
-            const expRawData = await fetch(redneredAPI + endpoints.SERVER_EXPERIMENTS, {
-                method: "GET"
-            });
-
-            if (!expRawData.ok) {
-                triggerSafetyBlock();
-                return
-            }
-
-            const expData = await expRawData.json();
-
-            localStorage.setItem('serverExperiments', JSON.stringify(expData));
-
-            syncOverridesWithServer();
-        }
-
-
-        const newsRawData = await fetch(redneredAPI + endpoints.NEWS_UPDATES, {
-            method: "GET"
-        });
-
-        if (!newsRawData.ok) {
+    try {
+        const rawData = await fetch(APIV4 + endpnts.HEARTBEAT);
+        if (!rawData.ok) {
             triggerSafetyBlock();
-            return
-        }
+        } else {
+            const data = await rawData.json();
+            originData = data;
 
-        const newsData = await newsRawData.json();
+            const brickWall = document.getElementById('brick-wall');
 
-        newsUpdatesCache = newsData;
+            // Fetch User data
+            const loginToken = params.get("login");
+            if (loginToken) {
+                const userLogin = await fetch(APIV4 + endpnts.LOGIN, {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": loginToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!userLogin.ok) {
+                    return
+                }
+                const data = await userLogin.json();
+                localStorage.token = data.token
+            }
+
+            if (localStorage.token) {
+                const userRawData = await fetch(APIV4 + endpnts.USER, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": localStorage.token
+                    }
+                });
+
+                if (!userRawData.ok) {
+                    triggerSessionExpiredBlock();
+                    return
+                }
+
+                const userData = await userRawData.json();
+
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+
+                currentUserData = JSON.parse(localStorage.getItem('currentUser'));
+            }
+            if (currentUserData && currentUserData.admin_level >= 1) {
+                changeSetting('dev', 1);
+            }
+
+            // Fetch & Sync Server experiments
+            if (localStorage.token) {
+                const expRawData = await fetch(APIV4 + endpnts.EXPERIMENTS, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": localStorage.token
+                    }
+                });
+
+                if (!expRawData.ok) {
+                    triggerSafetyBlock();
+                    return
+                }
+
+                const expData = await expRawData.json();
+
+                localStorage.setItem('serverExperiments', JSON.stringify(expData));
+
+                syncOverridesWithServer();
+            } else {
+                const expRawData = await fetch(APIV4 + endpnts.EXPERIMENTS, {
+                    method: "GET"
+                });
+
+                if (!expRawData.ok) {
+                    triggerSafetyBlock();
+                    return
+                }
+
+                const expData = await expRawData.json();
+
+                localStorage.setItem('serverExperiments', JSON.stringify(expData));
+
+                syncOverridesWithServer();
+            }
 
 
-        await loadSite();
+            await loadSite();
 
-        setTimeout(() => {
-            brickWall.classList.add('hide');
             setTimeout(() => {
-                brickWall.remove();
+                brickWall.classList.add('hide');
+                setTimeout(() => {
+                    brickWall.remove();
+                }, 200);
             }, 200);
-        }, 200);
+        }
+    } catch(err) {
+        console.error(err);
+        triggerSafetyBlock(err.message);
     }
 }
-
 verifyOrigin();
 
 async function fetchAndUpdateXpEvents() {
@@ -406,7 +413,7 @@ async function fetchAndUpdateXpLevels() {
 
 async function fetchAndUpdateUserInfo() {
     try {
-        const userRawData = await fetch(redneredAPI + endpoints.USER, {
+        const userRawData = await fetch(APIV4 + endpnts.USER, {
             method: "GET",
             headers: {
                 "Authorization": localStorage.token
@@ -427,7 +434,7 @@ async function fetchAndUpdateUserInfo() {
 async function fetchAndSyncUserInfo() {
     try {
         let success = true;
-        const userRawData = await fetch(redneredAPI + endpoints.USER, {
+        const userRawData = await fetch(APIV4 + endpnts.USER, {
             method: "POST",
             headers: {
                 "Authorization": localStorage.token
@@ -547,18 +554,19 @@ function secondsToMinutes(seconds) {
 }
 
 function renderQuestRequirement(quest) {
-    const anyTarget = Object.values(quest.task_config.tasks).find(task => task?.target)?.target;
+    let tasks = quest.task_config?.tasks ?? quest.task_config_v2.tasks;
+    const anyTarget = Object.values(tasks).find(task => task?.target)?.target;
 
     let section1 = `Play ${quest.messages.game_title} for ${secondsToMinutes(anyTarget)} minutes `
-    if (quest.task_config.tasks["WATCH_VIDEO"] || quest.task_config.tasks["WATCH_VIDEO_ON_MOBILE"]) {
+    if (tasks["WATCH_VIDEO"] || tasks["WATCH_VIDEO_ON_MOBILE"]) {
         section1 = `Watch the video `;
     }
-    else if (quest.task_config.tasks["STREAM_ON_DESKTOP"]) {
+    else if (tasks["STREAM_ON_DESKTOP"]) {
         section1 = `Stream ${quest.messages.game_title} to a friend for ${secondsToMinutes(anyTarget)} minutes `;
     }
 
     let section2 = ``;
-    if (quest.task_config.tasks["PLAY_ON_DESKTOP"] && !quest.task_config.tasks["PLAY_ON_PLAYSTATION"] && !quest.task_config.tasks["PLAY_ON_XBOX"]) {
+    if (tasks["PLAY_ON_DESKTOP"] && !tasks["PLAY_ON_PLAYSTATION"] && !tasks["PLAY_ON_XBOX"]) {
         section2 = `with your Discord client open `
     }
 
@@ -636,15 +644,8 @@ function favorite(type, data) {
     }
 }
 
+
 async function loadSite() {
-
-    if (localStorage.sa_theme) {
-        document.body.classList.add('theme-' + localStorage.sa_theme);
-    } else if (!localStorage.sa_theme) {
-        localStorage.sa_theme = "dark";
-        document.body.classList.add('theme-dark');
-    }
-
     if (settingsStore.profile_effect_tweaks_fix === 1) {
         document.body.classList.add('profile-effect-bug-fix-thumbnails');
     }
@@ -671,6 +672,7 @@ async function loadSite() {
                         </div>
                     </div>
                 </div>
+                <div class="disc-laimer">${discLaimer}</div>
             `
         },
         {
@@ -704,11 +706,12 @@ async function loadSite() {
                     </div>
                 </div>
                 <div class="pagination" id="pagination"></div>
+                <div class="disc-laimer">${discLaimer}</div>
             `
         },
         {
             id: 2,
-            title: "Shop All",
+            title: "Catalog",
             url: "catalog",
             body: `
                 <div class="pagination" id="pagination"></div>
@@ -737,6 +740,7 @@ async function loadSite() {
                     </div>
                 </div>
                 <div class="pagination" id="pagination"></div>
+                <div class="disc-laimer">${discLaimer}</div>
             `
         },
         {
@@ -770,6 +774,7 @@ async function loadSite() {
                     </div>
                 </div>
                 <div class="pagination" id="pagination"></div>
+                <div class="disc-laimer">${discLaimer}</div>
             `
         },
         {
@@ -810,6 +815,7 @@ async function loadSite() {
                     </div>
                 </div>
                 <div class="pagination" id="pagination"></div>
+                <div class="disc-laimer">${discLaimer}</div>
             `
         },
         {
@@ -839,6 +845,7 @@ async function loadSite() {
                     </div>
                 </div>
                 <div class="pagination" id="pagination"></div>
+                <div class="disc-laimer">${discLaimer}</div>
             `
         },
         {
@@ -871,6 +878,7 @@ async function loadSite() {
                     </div>
                 </div>
                 <div class="pagination" id="pagination"></div>
+                <div class="disc-laimer">${discLaimer}</div>
             `
         },
         {
@@ -903,6 +911,7 @@ async function loadSite() {
                     </div>
                 </div>
                 <div class="pagination" id="pagination"></div>
+                <div class="disc-laimer">${discLaimer}</div>
             `
         }
     ];
@@ -919,11 +928,18 @@ async function loadSite() {
         localStorage.setItem("favoritesStore", JSON.stringify(favorites));
     }
 
-    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'daily_dose_of_collectibles')?.treatment === 1) {
+    if (experimentIs('daily_dose_of_collectibles', 1)) {
         document.getElementById('shop-tab-8').classList.remove('hidden');
     }
 
-    if (currentUserData && currentUserData.ban_config.ban_type === 0) {
+    if (experimentIs('client_side_currency_changer', 1)) {
+        document.getElementById('inbox-news-icon').parentElement.classList.remove('hidden');
+        const settingCurrency = Number(settingsStore.currency);
+        const currencyKey = Object.keys(currency_types).find(key => Number(key) === settingCurrency);
+        document.getElementById('current-currency').textContent = converted_currencies[currencyKey].currency;
+    }
+
+    if (currentUserData && currentUserData.xp_information && currentUserData.banned === 0) {
         let xpBalance = document.createElement("div");
 
         const xpNeeded = currentUserData.xp_information.xp_to_level - currentUserData.xp_information.xp_into_level;
@@ -950,9 +966,9 @@ async function loadSite() {
         await fetchAndUpdateXpLevels();
     }
 
-    if (currentUserData && JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system_v2')?.treatment === 1) {
-        await fetchAndUpdateTradingCache();
-    }
+    // if (currentUserData && experimentIs('xp_system_v2', 1)) {
+    //     await fetchAndUpdateTradingCache();
+    // }
 
     if (currentUserData) {
         const user = currentUserData;
@@ -1021,38 +1037,23 @@ async function loadSite() {
             const category = data1;
             const product = data2;
 
+            const ia = category.assets.id;
+            const ua = category.assets.url;
+
             if (type === "fromCollectibleCard") {
                 modal.setAttribute('data-clear-param', 'itemSkuId');
                 modal.setAttribute('data-clear-cache', 'currentOpenModalId');
             }
 
             let logoAsset;
-            if (category.full_src && category.logo) {
-                logoAsset = category.logo;
-            }
-            else if (category.logo_url) {
-                logoAsset = category.logo_url;
-            }
-            else if (category.logo) {
-                logoAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${category.logo}.png?size=4096`;
-            }
+            if (ua.logo) logoAsset = ua.logo;
+            else if (ia.logo) logoAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${ia.logo}.png?size=4096`;
 
             let pdpAsset;
-            if (category.full_src && category.pdp_bg) {
-                pdpAsset = category.pdp_bg;
-            }
-            else if (category.pdp_bg_url) {
-                pdpAsset = category.pdp_bg_url;
-            }
-            else if (category.pdp_bg) {
-                pdpAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${category.pdp_bg}.png?size=4096`;
-            }
-            else if (category.full_src && category.banner) {
-                pdpAsset = category.banner;
-            }
-            else if (category.banner) {
-                pdpAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${category.banner}.png?size=4096`;
-            }
+            if (product.pdp_bg_url) pdpAsset = product.pdp_bg_url;
+            else if (ua.pdp_bg) pdpAsset = ua.pdp_bg;
+            else if (ia.pdp_bg) pdpAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${ia.pdp_bg}.png?size=4096`;
+            else if (ia.banner) pdpAsset = `https://cdn.discordapp.com/app-assets/1096190356233670716/${ia.banner}.png?size=4096`;
 
             modal.innerHTML = `
                 <div class="modalv2-inner">
@@ -1070,12 +1071,25 @@ async function loadSite() {
                             </svg>
                             <p>Overview</p>
                         </div>
+                        <div class="tab hidden" id="modalv2-tab-4">
+                            <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14.2639 15.9375L12.5958 14.2834C11.7909 13.4851 11.3884 13.086 10.9266 12.9401C10.5204 12.8118 10.0838 12.8165 9.68048 12.9536C9.22188 13.1095 8.82814 13.5172 8.04068 14.3326L4.04409 18.2801M14.2639 15.9375L14.6053 15.599C15.4112 14.7998 15.8141 14.4002 16.2765 14.2543C16.6831 14.126 17.12 14.1311 17.5236 14.2687C17.9824 14.4251 18.3761 14.8339 19.1634 15.6514L20 16.4934M14.2639 15.9375L18.275 19.9565M18.275 19.9565C17.9176 20 17.4543 20 16.8 20H7.2C6.07989 20 5.51984 20 5.09202 19.782C4.71569 19.5903 4.40973 19.2843 4.21799 18.908C4.12796 18.7313 4.07512 18.5321 4.04409 18.2801M18.275 19.9565C18.5293 19.9256 18.7301 19.8727 18.908 19.782C19.2843 19.5903 19.5903 19.2843 19.782 18.908C20 18.4802 20 17.9201 20 16.8V16.4934M4.04409 18.2801C4 17.9221 4 17.4575 4 16.8V7.2C4 6.0799 4 5.51984 4.21799 5.09202C4.40973 4.71569 4.71569 4.40973 5.09202 4.21799C5.51984 4 6.07989 4 7.2 4H16.8C17.9201 4 18.4802 4 18.908 4.21799C19.2843 4.40973 19.5903 4.71569 19.782 5.09202C20 5.51984 20 6.0799 20 7.2V16.4934M17 8.99989C17 10.1045 16.1046 10.9999 15 10.9999C13.8954 10.9999 13 10.1045 13 8.99989C13 7.89532 13.8954 6.99989 15 6.99989C16.1046 6.99989 17 7.89532 17 8.99989Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p>Assets</p>
+                        </div>
                         <div class="tab" id="modalv2-tab-2">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M15.7376 3.18925C15.4883 2.93731 15.0814 2.93686 14.8316 3.18824L14.0087 4.01625C13.7618 4.26471 13.7614 4.66581 14.0078 4.91476L20.3804 11.3527C20.6265 11.6013 20.6265 12.0017 20.3804 12.2503L14.0078 18.6882C13.7614 18.9373 13.7618 19.3383 14.0087 19.5867L14.8316 20.4148C15.0814 20.6662 15.4883 20.6658 15.7376 20.4138L23.815 12.2503C24.061 12.0016 24.061 11.6014 23.815 11.3528L15.7376 3.18925Z" fill="currentColor"/>
                                 <path d="M9.99171 4.91476C10.2381 4.66581 10.2377 4.26471 9.99081 4.01625L9.16787 3.18824C8.91804 2.93686 8.51118 2.93731 8.2619 3.18925L0.184466 11.3528C-0.0614893 11.6014 -0.061488 12.0016 0.184466 12.2503L8.2619 20.4138C8.51118 20.6658 8.91803 20.6662 9.16787 20.4148L9.99081 19.5867C10.2377 19.3383 10.2381 18.9373 9.99171 18.6882L3.61906 12.2503C3.37298 12.0017 3.37298 11.6013 3.61906 11.3527L9.99171 4.91476Z" fill="currentColor"/>
                             </svg>
                             <p>Raw</p>
+                        </div>
+                        <div class="tab hidden" id="modalv2-tab-3">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1.99976 20.59V19.4C2.00352 19.1363 2.11135 18.8847 2.29976 18.7L4.69976 16.28C4.7932 16.1873 4.90402 16.114 5.02586 16.0642C5.14769 16.0145 5.27816 15.9893 5.40976 15.99H5.99976L14.9998 6.99002L14.1498 6.14002C14.0504 6.04381 13.9721 5.92804 13.9198 5.80002L12.4298 2.07002C12.3934 1.97916 12.3845 1.87962 12.4042 1.78374C12.4238 1.68787 12.4712 1.59987 12.5404 1.53066C12.6096 1.46146 12.6976 1.41408 12.7935 1.39442C12.8894 1.37475 12.9889 1.38365 13.0798 1.42002L16.8098 2.92002C16.9369 2.9694 17.0526 3.04427 17.1498 3.14002L17.7898 3.78002C17.8827 3.68629 17.9933 3.6119 18.1152 3.56113C18.237 3.51036 18.3678 3.48422 18.4998 3.48422C18.6318 3.48422 18.7625 3.51036 18.8843 3.56113C19.0062 3.6119 19.1168 3.68629 19.2098 3.78002L20.2098 4.78002C20.3035 4.87299 20.3779 4.98359 20.4287 5.10545C20.4794 5.22731 20.5056 5.35801 20.5056 5.49002C20.5056 5.62203 20.4794 5.75274 20.4287 5.8746C20.3779 5.99646 20.3035 6.10706 20.2098 6.20002L21.7898 7.78002C21.8835 7.87299 21.9579 7.98359 22.0087 8.10545C22.0594 8.2273 22.0856 8.35801 22.0856 8.49002C22.0856 8.62203 22.0594 8.75274 22.0087 8.8746C21.9579 8.99646 21.8835 9.10706 21.7898 9.20002L20.2098 10.78C20.1168 10.8738 20.0062 10.9481 19.8843 10.9989C19.7625 11.0497 19.6318 11.0758 19.4998 11.0758C19.3678 11.0758 19.237 11.0497 19.1152 10.9989C18.9933 10.9481 18.8827 10.8738 18.7898 10.78L16.9998 9.00002L7.99976 18V18.59C7.99601 18.8538 7.88818 19.1054 7.69976 19.29L5.29976 21.71C5.20632 21.8027 5.09551 21.876 4.97367 21.9258C4.85183 21.9756 4.72137 22.0008 4.58976 22H3.39976C3.13599 21.9963 2.88439 21.8884 2.69976 21.7L2.27976 21.3C2.18708 21.2066 2.11376 21.0958 2.06399 20.9739C2.01423 20.8521 1.989 20.7216 1.98976 20.59H1.99976Z" fill="currentColor"></path>
+                                <path d="M8.23022 10.23C8.43022 10.43 8.74022 10.43 8.93022 10.23L10.2302 8.92999C10.3218 8.83652 10.3732 8.71086 10.3732 8.57999C10.3732 8.44911 10.3218 8.32345 10.2302 8.22998L6.50022 4.49999L6.80022 4.19999C6.98345 4.01306 7.08608 3.76174 7.08608 3.49999C7.08608 3.23823 6.98345 2.98691 6.80022 2.79999L6.30022 2.29999C6.10022 2.09999 5.85022 1.99999 5.60022 2.07999C5.17022 2.21999 4.43022 2.56999 3.50022 3.49999C2.86608 4.07663 2.37918 4.79669 2.08022 5.59999C2.00022 5.84999 2.11022 6.09999 2.29022 6.29999L2.79022 6.79999C2.88319 6.89371 2.99379 6.96811 3.11565 7.01888C3.23751 7.06965 3.36821 7.09578 3.50022 7.09578C3.63224 7.09578 3.76294 7.06965 3.8848 7.01888C4.00666 6.96811 4.11726 6.89371 4.21022 6.79999L4.50022 6.49999L8.23022 10.23ZM13.7702 15.06C13.6786 15.1534 13.6273 15.2791 13.6273 15.41C13.6273 15.5409 13.6786 15.6665 13.7702 15.76L15.5002 17.5L16.9402 19.9C16.9823 19.9692 17.0327 20.033 17.0902 20.09L18.8202 21.82C18.9202 21.92 19.0802 21.92 19.1802 21.82L21.8202 19.18C21.9202 19.08 21.9202 18.92 21.8202 18.82L20.1002 17.1C20.0401 17.0418 19.9729 16.9914 19.9002 16.95L17.5002 15.5L15.7702 13.77C15.6768 13.6784 15.5511 13.6271 15.4202 13.6271C15.2893 13.6271 15.1637 13.6784 15.0702 13.77L13.7702 15.07V15.06Z" fill="currentColor"></path>
+                            </svg>
+                            <p>Admin</p>
                         </div>
                     </div>
                     
@@ -1086,48 +1100,94 @@ async function loadSite() {
                         <div class="has-tooltip" data-tooltip="Close" data-close-product-card-button>
                             <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
                         </div>
-                        <div class="has-tooltip" data-tooltip="Copy Discord Link">
-                            <svg class="modalv2_top_icon" onclick="copyValue('https://canary.discord.com/shop#itemSkuId=${product.sku_id}');" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M16.32 14.72a1 1 0 0 1 0-1.41l2.51-2.51a3.98 3.98 0 0 0-5.62-5.63l-2.52 2.51a1 1 0 0 1-1.41-1.41l2.52-2.52a5.98 5.98 0 0 1 8.45 8.46l-2.52 2.51a1 1 0 0 1-1.41 0ZM7.68 9.29a1 1 0 0 1 0 1.41l-2.52 2.51a3.98 3.98 0 1 0 5.63 5.63l2.51-2.52a1 1 0 0 1 1.42 1.42l-2.52 2.51a5.98 5.98 0 0 1-8.45-8.45l2.51-2.51a1 1 0 0 1 1.42 0Z" class=""></path><path fill="currentColor" d="M14.7 10.7a1 1 0 0 0-1.4-1.4l-4 4a1 1 0 1 0 1.4 1.4l4-4Z" class=""></path></svg>
-                        </div>
-                        <div class="has-tooltip" data-tooltip="Share">
-                            <svg class="modalv2_top_icon" onclick="copyValue('${baseYapperURL}?page=${currentPageCache}&itemSkuId=${product.sku_id}');" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M21.7 7.3a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4L18.58 9H13a7 7 0 0 0-7 7v4a1 1 0 1 1-2 0v-4a9 9 0 0 1 9-9h5.59l-3.3-3.3a1 1 0 0 1 1.42-1.4l5 5Z" class=""></path></svg>
-                        </div>
                     </div>
                 </div>
             `;
             const modalbuttons = modal.querySelector('[data-modal-top-product-buttons]');
 
-            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'user_item_favorites')?.treatment === 1) {
+            if (currentPageCache !== "favorites") {
                 const btn = document.createElement('div');
                 btn.classList.add('has-tooltip');
+                btn.setAttribute('data-tooltip', 'Copy Link');
                 btn.innerHTML = `
-                    <svg class="modalv2_top_icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L14.6942 8.2918H23.4127L16.3593 13.4164L19.0534 21.7082L12 16.5836L4.94658 21.7082L7.64074 13.4164L0.587322 8.2918H9.30583L12 0Z" fill="currentColor"/></svg>
+                    <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M16.32 14.72a1 1 0 0 1 0-1.41l2.51-2.51a3.98 3.98 0 0 0-5.62-5.63l-2.52 2.51a1 1 0 0 1-1.41-1.41l2.52-2.52a5.98 5.98 0 0 1 8.45 8.46l-2.52 2.51a1 1 0 0 1-1.41 0ZM7.68 9.29a1 1 0 0 1 0 1.41l-2.52 2.51a3.98 3.98 0 1 0 5.63 5.63l2.51-2.52a1 1 0 0 1 1.42 1.42l-2.52 2.51a5.98 5.98 0 0 1-8.45-8.45l2.51-2.51a1 1 0 0 1 1.42 0Z" class=""></path><path fill="currentColor" d="M14.7 10.7a1 1 0 0 0-1.4-1.4l-4 4a1 1 0 1 0 1.4 1.4l4-4Z" class=""></path></svg>
                 `;
-                if (JSON.parse(localStorage.getItem("favoritesStore"))[JSON.parse(localStorage.getItem("favoritesStore")).findIndex(i => i.sku_id === product.sku_id)]) {
-                    btn.classList.add('fav');
-                    btn.setAttribute('data-tooltip', 'Unfavorite');
-                } else {
-                    btn.setAttribute('data-tooltip', 'Favorite');
-                }
-                btn.addEventListener("click", () => {
-                    if (!btn.classList.contains('fav')) {
-                        copyNotice(3);
-                        btn.setAttribute('data-tooltip', 'Unfavorite');
-                        updateTooltipText('Unfavorite');
-                        favorite("add", product);
-                        btn.classList.add('fav');
-                    } else {
-                        copyNotice(4);
-                        btn.setAttribute('data-tooltip', 'Favorite');
-                        updateTooltipText('Favorite');
-                        favorite("remove", product.sku_id);
-                        btn.classList.remove('fav');
+                createclickablePopupButton(btn, [
+                    {
+                        "name": "Copy Discord Link",
+                        "function": `copyValue('https://canary.discord.com/shop#itemSkuId=${product.sku_id}')`,
+                        "icon": `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M16.32 14.72a1 1 0 0 1 0-1.41l2.51-2.51a3.98 3.98 0 0 0-5.62-5.63l-2.52 2.51a1 1 0 0 1-1.41-1.41l2.52-2.52a5.98 5.98 0 0 1 8.45 8.46l-2.52 2.51a1 1 0 0 1-1.41 0ZM7.68 9.29a1 1 0 0 1 0 1.41l-2.52 2.51a3.98 3.98 0 1 0 5.63 5.63l2.51-2.52a1 1 0 0 1 1.42 1.42l-2.52 2.51a5.98 5.98 0 0 1-8.45-8.45l2.51-2.51a1 1 0 0 1 1.42 0Z" class=""></path><path fill="currentColor" d="M14.7 10.7a1 1 0 0 0-1.4-1.4l-4 4a1 1 0 1 0 1.4 1.4l4-4Z" class=""></path></svg>`
+                    },
+                    {
+                        "name": "Copy yapper.shop Link",
+                        "function": `copyValue('${baseYapperURL}?page=${currentPageCache}&itemSkuId=${product.sku_id}')`,
+                        "icon": `<svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M21.7 7.3a1 1 0 0 1 0 1.4l-5 5a1 1 0 0 1-1.4-1.4L18.58 9H13a7 7 0 0 0-7 7v4a1 1 0 1 1-2 0v-4a9 9 0 0 1 9-9h5.59l-3.3-3.3a1 1 0 0 1 1.42-1.4l5 5Z" class=""></path></svg>`
                     }
-                });
+                ]);
                 modalbuttons.appendChild(btn);
             }
 
-            function changeModalTab(tab) {
+            const yes = true;
+            if (yes) {
+                const btn = document.createElement('div');
+                btn.classList.add('has-tooltip');
+                btn.setAttribute('data-tooltip', 'Download');
+                btn.innerHTML = `
+                    <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a1 1 0 0 1 1 1v10.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V3a1 1 0 0 1 1-1ZM3 20a1 1 0 1 0 0 2h18a1 1 0 1 0 0-2H3Z" class=""></path></svg>
+                `;
+                const productString = JSON.stringify(product);
+                if (experimentIs('product_assets_tab', 1)) {
+                    createclickablePopupButton(btn, [
+                        {
+                            "name": "Download JSON",
+                            "function": `downloadLocalJson(${productString}, filename = "${product.sku_id}.json")`,
+                            "icon": `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 17L8 15L10 13M14 13L16 15L14 17M13 3H8.2C7.0799 3 6.51984 3 6.09202 3.21799C5.71569 3.40973 5.40973 3.71569 5.21799 4.09202C5 4.51984 5 5.0799 5 6.2V17.8C5 18.9201 5 19.4802 5.21799 19.908C5.40973 20.2843 5.71569 20.5903 6.09202 20.782C6.51984 21 7.0799 21 8.2 21H15.8C16.9201 21 17.4802 21 17.908 20.782C18.2843 20.5903 18.5903 20.2843 18.782 19.908C19 19.4802 19 18.9201 19 17.8V9M13 3L19 9M13 3V8C13 8.55228 13.4477 9 14 9H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+                        },
+                        {
+                            "name": "Download Assets ZIP",
+                            "function": `downloadImagesAsZip(['https://cdn.discordapp.com/media/v1/collectibles-shop/1483885622770008075/animated','https://cdn.yapper.shop/assets/241.png'])`,
+                            "icon": `<svg aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path fill="currentColor" fill-rule="evenodd" d="M2 5a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V5Zm13.35 8.13 3.5 4.67c.37.5.02 1.2-.6 1.2H5.81a.75.75 0 0 1-.59-1.22l1.86-2.32a1.5 1.5 0 0 1 2.34 0l.5.64 2.23-2.97a2 2 0 0 1 3.2 0ZM10.2 5.98c.23-.91-.88-1.55-1.55-.9a.93.93 0 0 1-1.3 0c-.67-.65-1.78-.01-1.55.9a.93.93 0 0 1-.65 1.12c-.9.26-.9 1.54 0 1.8.48.14.77.63.65 1.12-.23.91.88 1.55 1.55.9a.93.93 0 0 1 1.3 0c.67.65 1.78.01 1.55-.9a.93.93 0 0 1 .65-1.12c.9-.26.9-1.54 0-1.8a.93.93 0 0 1-.65-1.12Z" clip-rule="evenodd" class=""></path></svg>`
+                        }
+                    ]);
+                } else {
+                    createclickablePopupButton(btn, [
+                        {
+                            "name": "Download JSON",
+                            "function": `downloadLocalJson(${productString}, filename = "${product.sku_id}.json")`,
+                            "icon": `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 17L8 15L10 13M14 13L16 15L14 17M13 3H8.2C7.0799 3 6.51984 3 6.09202 3.21799C5.71569 3.40973 5.40973 3.71569 5.21799 4.09202C5 4.51984 5 5.0799 5 6.2V17.8C5 18.9201 5 19.4802 5.21799 19.908C5.40973 20.2843 5.71569 20.5903 6.09202 20.782C6.51984 21 7.0799 21 8.2 21H15.8C16.9201 21 17.4802 21 17.908 20.782C18.2843 20.5903 18.5903 20.2843 18.782 19.908C19 19.4802 19 18.9201 19 17.8V9M13 3L19 9M13 3V8C13 8.55228 13.4477 9 14 9H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+                        }
+                    ]);
+                }
+                modalbuttons.appendChild(btn);
+            }
+
+            const btn = document.createElement('div');
+            btn.classList.add('has-tooltip');
+            btn.innerHTML = `
+                <svg class="modalv2_top_icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L14.6942 8.2918H23.4127L16.3593 13.4164L19.0534 21.7082L12 16.5836L4.94658 21.7082L7.64074 13.4164L0.587322 8.2918H9.30583L12 0Z" fill="currentColor"/></svg>
+            `;
+            if (JSON.parse(localStorage.getItem("favoritesStore"))[JSON.parse(localStorage.getItem("favoritesStore")).findIndex(i => i.sku_id === product.sku_id)]) {
+                btn.classList.add('fav');
+                btn.setAttribute('data-tooltip', 'Unfavorite');
+            } else {
+                btn.setAttribute('data-tooltip', 'Favorite');
+            }
+            btn.addEventListener("click", () => {
+                if (!btn.classList.contains('fav')) {
+                    copyNotice(3);
+                    btn.setAttribute('data-tooltip', 'Unfavorite');
+                    favorite("add", product);
+                    btn.classList.add('fav');
+                } else {
+                    copyNotice(4);
+                    btn.setAttribute('data-tooltip', 'Favorite');
+                    favorite("remove", product.sku_id);
+                    btn.classList.remove('fav');
+                }
+            });
+            modalbuttons.appendChild(btn);
+
+            async function changeModalTab(tab) {
                 modal.querySelectorAll('.selected').forEach((el) => {
                     el.classList.remove("selected");
                 });
@@ -1141,16 +1201,34 @@ async function loadSite() {
                         <div class="modalv2-left">
                             <div class="modalv2-preview-container"></div>
                             <div class="modalv2-bottom-container">
-                                <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${product.sku_id}')">${product.sku_id}</p>
-                                <h3 class="modal-item-name">${product.name}</h3>
+                                <div class="modal-item-type"></div>
+                                <h2 class="modal-item-name">${product.name.replace(' Bundle', '')}</h2>
                                 <p class="modal-summary">${product.summary}</p>
-                                <div class="modalv2-price-container"></div>
-                                <div class="modalv2-price-container-crossed"></div>
+                                <div class="modal-bundled_products"></div>
                                 <div class="modalv2-var-container">
                                     <div class="shop-card-var-container" data-shop-card-var-container></div>
                                     <a class="shop-card-var-title" data-shop-card-var-title></a>
                                 </div>
-                                <button onclick="redirectToLink('https://discord.com/shop#itemSkuId=${product.sku_id}')" title="Open this item in the Discord Shop">Open In Shop</button>
+                                <hr class="inv">
+                                <div class="id-container sku-id-container">
+                                    <p>SKU:</p>
+                                    <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${product.sku_id}')">${product.sku_id}</p>
+                                </div>
+                                <div class="id-container">
+                                    <p>ID:</p>
+                                    <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${product.product_id}')">${product.product_id}</p>
+                                </div>
+                                <hr class="inv">
+                                <p class="updated-date">Last Updated: </p>
+                                <hr>
+                                <div class="modalv2-prices-container">
+                                    <div class="modalv2-price-container"></div>
+                                    <div class="modalv2-orb-price-container"></div>
+                                </div>
+                                <div class="prices-error hidden">
+                                    <a>Some prices in your set currency failed to load.</a>
+                                </div>
+                                <button onclick="redirectToLink('https://discord.com/shop#itemSkuId=${product.sku_id}')" title="Open this item in the Discord Shop">Open In Discord</button>
                             </div>
                         </div>
                         <div class="modalv2-right">
@@ -1158,22 +1236,77 @@ async function loadSite() {
                             <img class="modalv2-right-logo-img"></img>
 
                             <div class="modal2-profile-preview">
-                                <div class="modal-preview-profile" style="height: 210px;">
-                                    <div class="options-preview-profile-banner-color"></div>
-                                    <div class="options-preview-profile-banner"></div>
-                                    <div class="profile-avatar-preview-bg"></div>
-                                    <div class="profile-avatar-preview"></div>
-                                    <p class="options-preview-profile-displayname">Shop Archives</p>
-                                    <p class="options-preview-profile-username">yapper.shop</p>
-                                    <img class="profile-avatar-deco-preview">
-                                    <div class="options-preview-profile-status-bg"></div>
-                                    <div class="options-preview-profile-status-color"></div>
-                                    <div class="profile-profile-effects-preview"></div>
+                                <div class="frame-back"></div>
+                                <div class="frame-front"></div>
+                                <div class="modal-preview-profile2">
+                                    <div class="profile-effect-div"></div>
+                                    <div class="top">
+                                        <div class="banner" style="background-color: var(--color-brand)">
+                                            <img class="banner-img" src="https://cdn.yapper.shop/assets/31.png">
+                                        </div>
+                                    </div>
+                                    <div class="middle">
+                                        <div class="avatar">
+                                            <img class="avatar-img" src="https://cdn.yapper.shop/assets/182.png">
+                                            <img class="deco-img" src="https://cdn.yapper.shop/assets/31.png">
+                                        </div>
+                                    </div>
+                                    <div class="bottom">
+                                        <h2 class="displayname">Shop Archives</h2>
+                                        <p class="username">yapper.shop</p>
+                                        <p class="summary"></p>
+                                    </div>
+                                </div>
+                                <div class="modal-preview-profile-and-nameplate hidden">
+                                    <video disablepictureinpicture muted loop class="nameplate-null-user nameplate-video-preview" style="position: absolute; height: 100%; width: auto; right: 0;"></video>
+                                    <div class="nameplate-user-avatar avatar1"></div>
+                                    <p class="nameplate-user-name name1">Nameplate</p>
                                 </div>
                             </div>
 
                         </div>
                     `;
+
+                    const date = new Date(product.updated_at ?? null);
+                    const now = new Date();
+
+                    const diffMs = now - date;
+                    const diffSeconds = Math.floor(diffMs / 1000);
+                    const diffMinutes = Math.floor(diffSeconds / 60);
+                    const diffHours = Math.floor(diffMinutes / 60);
+
+                    const dateContainer = modalInner.querySelector(".updated-date");
+
+                    let output;
+
+                    // Less than 1 minute
+                    if (diffSeconds < 60) {
+                        output = `${diffSeconds} second${diffSeconds !== 1 ? 's' : ''} ago`;
+                    
+                    // Less than 1 hour
+                    } else if (diffMinutes < 60) {
+                        output = `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+                    
+                    // Less than 24 hours
+                    } else if (diffHours < 24) {
+                        output = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+                    
+                    // 24 hours or more → show date
+                    } else {
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = date.getFullYear();
+                    
+                        let formatted = `${day}/${month}/${year}`;
+                    
+                        if (settingsStore.us_time_format === 1) {
+                            formatted = `${month}/${day}/${year}`;
+                        }
+                  
+                        output = formatted;
+                    }
+
+                    dateContainer.textContent = `Last Updated: ${output}`;
 
                     const modalBGImage = modalInner.querySelector('.modalv2-right-bg-img');
                     if (pdpAsset) modalBGImage.src = pdpAsset;
@@ -1183,329 +1316,312 @@ async function loadSite() {
                     if (logoAsset) modalLogoImage.src = logoAsset;
                     else modalLogoImage.remove();
 
+                    const modalProfile = modalInner.querySelector('.modal-preview-profile2');
+                    const modalNameplateProfile = modalInner.querySelector('.modal-preview-profile-and-nameplate');
+
                     if (currentUserData) {
-                        if (currentUserData.banner_color) modalInner.querySelector('.options-preview-profile-banner-color').style.backgroundColor = currentUserData.banner_color;
-                        if (currentUserData.avatar) modalInner.querySelector('.profile-avatar-preview').style.backgroundImage = `url(https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128)`;
-                        if (currentUserData.banner) modalInner.querySelector('.options-preview-profile-banner').style.backgroundImage = `url(https://cdn.discordapp.com/banners/${currentUserData.id}/${currentUserData.banner}.webp?size=480)`;
+                        if (currentUserData.banner_color) modalProfile.querySelector('.banner').style.backgroundColor = currentUserData.banner_color;
+                        if (currentUserData.avatar) modalProfile.querySelector('.avatar').querySelector('.avatar-img').src = `https://cdn.discordapp.com/avatars/${currentUserData.id}/${currentUserData.avatar}.webp?size=128`;
+                        if (currentUserData.banner) modalProfile.querySelector('.banner').querySelector('.banner-img').src = `https://cdn.discordapp.com/banners/${currentUserData.id}/${currentUserData.banner}.webp?size=480`;
                         if (currentUserData.global_name) {
-                            modalInner.querySelector('.options-preview-profile-displayname').textContent = currentUserData.global_name;
+                            modalProfile.querySelector('.displayname').textContent = currentUserData.global_name;
                         } else {
-                            modalInner.querySelector('.options-preview-profile-displayname').textContent = currentUserData.username;
+                            modalProfile.querySelector('.displayname').textContent = currentUserData.username;
                         }
-                        modalInner.querySelector('.options-preview-profile-username').textContent = currentUserData.username;
+                        modalProfile.querySelector('.username').textContent = currentUserData.username;
+                    }
+
+                    const randomFactNum = Math.floor(Math.random() * randomFacts.length);
+
+                    const randomFact = modalProfile.querySelector('.summary');
+                    if (randomFact) {
+                        randomFact.innerText = randomFacts[randomFactNum];
                     }
 
                     const priceContainer = modalInner.querySelector(".modalv2-price-container");
-                    const priceContainer2 = modalInner.querySelector(".modalv2-price-container-crossed");
+                    const priceContainerOrb = modalInner.querySelector(".modalv2-orb-price-container");
 
+                    let orbsExclusive = false;
+                    let extension = null;
                     let priceStandard = null;
                     let priceOrb = null;
                     let priceStandardCrossed = null;
-                    let priceOrbCrossed = null;
 
                     if (currentUserData?.premium_type === 2 && product.prices) {
+                        // 1. Extract USD Base Prices
                         product.prices["4"]?.country_prices?.prices?.forEach(price => {
-                            if (price.currency === "usd") {
-                                priceStandard = price.amount;
-                            }
-                            if (price.currency === "discord_orb") {
-                                priceOrb = price.amount;
-                            }
+                            if (price.currency === "usd") priceStandard = price.amount;
+                            if (price.currency === "discord_orb") priceOrb = price.amount;
                         });
-
+                    
                         product.prices["0"]?.country_prices?.prices?.forEach(price => {
-                            if (price.currency === "usd") {
-                                priceStandardCrossed = price.amount;
-                            }
-                            if (price.currency === "discord_orb") {
-                                priceOrbCrossed = price.amount;
-                            }
+                            if (price.currency === "usd") priceStandardCrossed = price.amount;
                         });
 
-                        if (priceStandard != null) {
-                            let us_price = document.createElement("div");
-        
-                            us_price.innerHTML = `
-                                <div class="nitro-icon"></div>
-                                <a>US$${(priceStandard / 100).toFixed(2)}</a>
-                            `;
-    
-                            priceContainer.appendChild(us_price);
+                        const standardPriceCheck = product.prices["0"]?.country_prices?.prices?.find(p => p.currency === "usd");
+                        const nitroPriceCheck = product.prices["4"]?.country_prices?.prices?.find(p => p.currency === "usd");
+
+                        if (!standardPriceCheck && !nitroPriceCheck) {
+                            orbsExclusive = true;
                         }
-    
-                        if (priceOrb != null) {
-                            let orb_price = document.createElement("div");
-        
-                            orb_price.innerHTML = `
-                                <div class="orb-icon"></div>
-                                <a>${priceOrb}</a>
-                            `;
-                            if (priceStandard != null) {
-                                orb_price.style.marginLeft = `auto`;
-                            } else {
-                                orb_price.style.marginLeft = `unset`;
+                    
+                        // 2. Convert to Local Currency if settings exist
+                        const settingCurrency = Number(settingsStore.currency);
+                        const currencyKey = Object.keys(currency_types).find(key => Number(key) === settingCurrency);
+
+                        if (currencyKey) {
+                            const details = converted_currencies[currencyKey];
+                            extension = details?.extension ?? "??$";
+
+                            if (settingCurrency !== 0) {
+                                // Normalize keys (prevents number vs string issues)
+                                const keyStandard = String(priceStandard);
+                                const keyCrossed = String(priceStandardCrossed);
+                            
+                                const standardVal = details?.amounts?.[keyStandard];
+                                const crossedVal = details?.amounts?.[keyCrossed];
+                            
+                                // Handle independently (fixes your issue)
+                                priceStandard =
+                                    standardVal === undefined ? "???" : standardVal;
+                            
+                                priceStandardCrossed =
+                                    crossedVal === undefined ? "???" : crossedVal;
                             }
-    
-                            priceContainer.appendChild(orb_price);
+                        
+                            // Format safely
+                            if (details?.display_type === "fixed") {
+                                if (typeof priceStandard === "number") {
+                                    priceStandard = (priceStandard / 100).toFixed(2);
+                                }
+                            
+                                if (typeof priceStandardCrossed === "number") {
+                                    priceStandardCrossed = (priceStandardCrossed / 100).toFixed(2);
+                                }
+                            } 
+                            else if (details?.display_type === "locale") {
+                                if (typeof priceStandard === "number") {
+                                    priceStandard = priceStandard.toLocaleString("en-US");
+                                }
+                            
+                                if (typeof priceStandardCrossed === "number") {
+                                    priceStandardCrossed = priceStandardCrossed.toLocaleString("en-US");
+                                }
+                            }
                         }
-
-
-                        if (priceStandardCrossed != null) {
-                            let us_price = document.createElement("div");
-        
-                            us_price.innerHTML = `
-                                <a>US$${(priceStandardCrossed / 100).toFixed(2)}</a>
+                    
+                        // 3. Render Standard Price
+                        // Explicitly check for null/undefined so 0 works
+                        if (priceStandard !== null && priceStandard !== undefined) {
+                            let price = document.createElement("div");
+                            price.innerHTML = `
+                                <svg width="78" height="78" viewBox="0 0 78 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M52.7473 39C52.7473 43.1925 49.6598 46.3125 45.5323 46.3125C44.5742 46.3262 43.6233 46.1454 42.7372 45.7811C41.851 45.4168 41.0479 44.8765 40.3765 44.1929C39.7051 43.5094 39.1793 42.6967 38.831 41.8042C38.4826 40.9116 38.3189 39.9576 38.3498 39C38.3498 34.8075 41.4373 31.6875 45.5648 31.6875C49.6923 31.6875 52.7798 34.8075 52.7798 39H52.7473ZM74.7498 39C74.7498 55.2825 61.7498 68.25 45.5323 68.25C38.952 68.2896 32.5537 66.0919 27.3866 62.0173C22.2195 57.9427 18.5905 52.2331 17.0948 45.825H10.8548L7.92976 32.175H17.2248C18.0698 29.055 19.4348 26.0325 21.1573 23.4H6.14226L3.24976 9.75H44.6548C62.1723 9.75 74.7498 22.7175 74.7498 39ZM60.9048 39C60.9048 30.3225 54.0798 23.4 45.5323 23.4C43.4955 23.4041 41.4797 23.8121 39.6016 24.6004C37.7236 25.3887 36.0204 26.5415 34.5908 27.9923C33.1612 29.4431 32.0335 31.1629 31.2729 33.0524C30.5123 34.9418 30.134 36.9634 30.1598 39C30.1598 47.6775 36.9848 54.6 45.5323 54.6C47.569 54.5959 49.5848 54.1879 51.4629 53.3996C53.341 52.6114 55.0441 51.4585 56.4737 50.0077C57.9033 48.5569 59.031 46.8371 59.7916 44.9476C60.5522 43.0582 60.9305 41.0366 60.9048 39Z" fill="currentColor"/>
+                                </svg>
+                                <a>${extension}${priceStandard}</a>
                             `;
-    
-                            priceContainer2.appendChild(us_price);
+                            priceContainer.appendChild(price);
+                        }
+                    
+                        // 4. Render Orb Price
+                        if (priceOrb !== null) {
+                            let price = document.createElement("div");
+                            price.classList.add("orb-price");
+                            price.innerHTML = `
+                                <svg width="78" height="78" viewBox="0 0 78 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <g clip-path="url(#clip0_402_76)">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M40.2666 7.24549C39.4788 6.91817 38.5938 6.91817 37.8058 7.24549L17.533 15.6691C16.7452 15.9964 16.1194 16.6242 15.7931 17.4144L7.39573 37.7508C7.06942 38.541 7.06942 39.4288 7.39573 40.219L15.7931 60.5554C16.1194 61.3456 16.7452 61.9734 17.533 62.3008L37.8058 70.7244C38.5938 71.0516 39.4788 71.0516 40.2666 70.7244L60.5396 62.3008C61.3273 61.9734 61.9532 61.3456 62.2796 60.5554L70.6767 40.219C71.0031 39.4288 71.0031 38.541 70.6767 37.7508L62.2796 17.4144C61.9532 16.6242 61.3273 15.9964 60.5396 15.6691L40.2666 7.24549ZM37.9701 15.8347C38.5581 15.2447 39.5117 15.2447 40.0997 15.8346L62.066 37.8684C62.6542 38.4584 62.6542 39.4148 62.066 40.0048L40.0997 62.0386C39.5117 62.6286 38.5581 62.6286 37.9701 62.0386L16.006 40.0048C15.4179 39.4148 15.4179 38.4584 16.006 37.8684L37.9701 15.8347Z" fill="currentColor"/>
+                                        <path d="M39.9865 27.1512C40.5578 29.7174 41.8419 32.069 43.6904 33.9334C45.5388 35.798 47.8759 37.0992 50.4309 37.6864C50.6809 37.7444 50.9038 37.8856 51.0635 38.087C51.2232 38.2884 51.3102 38.5382 51.3102 38.7954C51.3102 39.0528 51.2232 39.3026 51.0635 39.504C50.9038 39.7054 50.6809 39.8466 50.4309 39.9044C47.8789 40.4776 45.5418 41.7668 43.6926 43.622C41.8431 45.477 40.558 47.8214 39.9865 50.3814C39.9289 50.6322 39.7882 50.856 39.5874 51.0162C39.3866 51.1764 39.1376 51.2636 38.881 51.2636C38.6244 51.2636 38.3756 51.1764 38.1748 51.0162C37.974 50.856 37.8333 50.6322 37.7755 50.3814C37.1923 47.822 35.8995 45.4804 34.0463 43.6266C32.1931 41.7728 29.855 40.4824 27.302 39.9044C27.0522 39.8466 26.8291 39.7054 26.6694 39.504C26.5097 39.3026 26.4227 39.0528 26.4227 38.7954C26.4227 38.5382 26.5097 38.2884 26.6694 38.087C26.8291 37.8856 27.0522 37.7444 27.302 37.6864C29.8558 37.1 32.1929 35.803 34.0455 33.9448C35.8979 32.0866 37.1907 29.742 37.7755 27.1804C37.8299 26.9287 37.9677 26.7031 38.1662 26.5401C38.365 26.3772 38.6128 26.2867 38.8694 26.2833C39.126 26.2799 39.3762 26.3639 39.579 26.5215C39.782 26.6791 39.9257 26.9011 39.9865 27.1512Z" fill="currentColor"/>
+                                    </g>
+                                    <defs>
+                                        <clipPath id="clip0_402_76">
+                                            <rect width="64" height="64" fill="white" transform="translate(7 7)"/>
+                                        </clipPath>
+                                    </defs>
+                                </svg>
+                                <a>${priceOrb.toLocaleString('en-US')}</a>
+                            `;
+                            priceContainerOrb.appendChild(price);
+                        }
+                    
+                        // 5. Render Crossed Price
+                        if (priceStandardCrossed !== null && priceStandardCrossed !== undefined) {
+                            let price = document.createElement("div");
+                            price.classList.add("crossed-price");
+                            price.innerHTML = `
+                                <a>${extension}${priceStandardCrossed}</a>
+                            `;
+                            priceContainer.appendChild(price);
+                        }
+                    
+                        // 6. Cleanup Logic
+                        // We check for null/undefined explicitly. If price is 0, we DON'T remove the container.
+                        if (orbsExclusive) {
+                            priceContainer.remove();
                         }
 
+                        if (priceOrb === null) {
+                            priceContainerOrb.remove();
+                        }
                     } else if (product.prices) {
+                        // 1. Extract USD Base Prices
                         product.prices["0"]?.country_prices?.prices?.forEach(price => {
-                            if (price.currency === "usd") {
-                                priceStandard = price.amount;
-                            }
-                            if (price.currency === "discord_orb") {
-                                priceOrb = price.amount;
-                            }
+                            if (price.currency === "usd") priceStandard = price.amount;
+                            if (price.currency === "discord_orb") priceOrb = price.amount;
                         });
-
+                    
                         product.prices["4"]?.country_prices?.prices?.forEach(price => {
-                            if (price.currency === "usd") {
-                                priceStandardCrossed = price.amount;
-                            }
-                            if (price.currency === "discord_orb") {
-                                priceOrbCrossed = price.amount;
-                            }
+                            if (price.currency === "usd") priceStandardCrossed = price.amount;
                         });
 
-                        if (priceStandard != null) {
-                            let us_price = document.createElement("div");
-        
-                            us_price.innerHTML = `
-                                <a>US$${(priceStandard / 100).toFixed(2)}</a>
-                            `;
-    
-                            priceContainer.appendChild(us_price);
+                        const standardPriceCheck = product.prices["0"]?.country_prices?.prices?.find(p => p.currency === "usd");
+                        const nitroPriceCheck = product.prices["4"]?.country_prices?.prices?.find(p => p.currency === "usd");
+
+                        if (!standardPriceCheck && !nitroPriceCheck) {
+                            orbsExclusive = true;
                         }
-    
-                        if (priceOrb != null) {
-                            let orb_price = document.createElement("div");
-        
-                            orb_price.innerHTML = `
-                                <div class="orb-icon"></div>
-                                <a>${priceOrb}</a>
-                            `;
-                            if (priceStandard != null) {
-                                orb_price.style.marginLeft = `auto`;
-                            } else {
-                                orb_price.style.marginLeft = `unset`;
+                    
+                        // 2. Convert to Local Currency if settings exist
+                        const settingCurrency = Number(settingsStore.currency);
+                        const currencyKey = Object.keys(currency_types).find(key => Number(key) === settingCurrency);
+
+                        if (currencyKey) {
+                            const details = converted_currencies[currencyKey];
+                            extension = details?.extension ?? "??$";
+
+                            if (settingCurrency !== 0) {
+                                // Normalize keys (prevents number vs string issues)
+                                const keyStandard = String(priceStandard);
+                                const keyCrossed = String(priceStandardCrossed);
+                            
+                                const standardVal = details?.amounts?.[keyStandard];
+                                const crossedVal = details?.amounts?.[keyCrossed];
+                            
+                                // Handle independently (fixes your issue)
+                                priceStandard =
+                                    standardVal === undefined ? "???" : standardVal;
+                            
+                                priceStandardCrossed =
+                                    crossedVal === undefined ? "???" : crossedVal;
                             }
-    
-                            priceContainer.appendChild(orb_price);
+                        
+                            // Format safely
+                            if (details?.display_type === "fixed") {
+                                if (typeof priceStandard === "number") {
+                                    priceStandard = (priceStandard / 100).toFixed(2);
+                                }
+                            
+                                if (typeof priceStandardCrossed === "number") {
+                                    priceStandardCrossed = (priceStandardCrossed / 100).toFixed(2);
+                                }
+                            } 
+                            else if (details?.display_type === "locale") {
+                                if (typeof priceStandard === "number") {
+                                    priceStandard = priceStandard.toLocaleString("en-US");
+                                }
+                            
+                                if (typeof priceStandardCrossed === "number") {
+                                    priceStandardCrossed = priceStandardCrossed.toLocaleString("en-US");
+                                }
+                            }
+                        }
+                    
+                        // 3. Render Standard Price
+                        // Explicitly check for null/undefined so 0 works
+                        if (priceStandard !== null && priceStandard !== undefined) {
+                            let price = document.createElement("div");
+                            price.innerHTML = `
+                                <a>${extension}${priceStandard}</a>
+                            `;
+                            priceContainer.appendChild(price);
+                        }
+                    
+                        // 4. Render Orb Price
+                        if (priceOrb !== null) {
+                            let price = document.createElement("div");
+                            price.classList.add("orb-price");
+                            price.innerHTML = `
+                                <svg width="78" height="78" viewBox="0 0 78 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <g clip-path="url(#clip0_402_76)">
+                                        <path fill-rule="evenodd" clip-rule="evenodd" d="M40.2666 7.24549C39.4788 6.91817 38.5938 6.91817 37.8058 7.24549L17.533 15.6691C16.7452 15.9964 16.1194 16.6242 15.7931 17.4144L7.39573 37.7508C7.06942 38.541 7.06942 39.4288 7.39573 40.219L15.7931 60.5554C16.1194 61.3456 16.7452 61.9734 17.533 62.3008L37.8058 70.7244C38.5938 71.0516 39.4788 71.0516 40.2666 70.7244L60.5396 62.3008C61.3273 61.9734 61.9532 61.3456 62.2796 60.5554L70.6767 40.219C71.0031 39.4288 71.0031 38.541 70.6767 37.7508L62.2796 17.4144C61.9532 16.6242 61.3273 15.9964 60.5396 15.6691L40.2666 7.24549ZM37.9701 15.8347C38.5581 15.2447 39.5117 15.2447 40.0997 15.8346L62.066 37.8684C62.6542 38.4584 62.6542 39.4148 62.066 40.0048L40.0997 62.0386C39.5117 62.6286 38.5581 62.6286 37.9701 62.0386L16.006 40.0048C15.4179 39.4148 15.4179 38.4584 16.006 37.8684L37.9701 15.8347Z" fill="currentColor"/>
+                                        <path d="M39.9865 27.1512C40.5578 29.7174 41.8419 32.069 43.6904 33.9334C45.5388 35.798 47.8759 37.0992 50.4309 37.6864C50.6809 37.7444 50.9038 37.8856 51.0635 38.087C51.2232 38.2884 51.3102 38.5382 51.3102 38.7954C51.3102 39.0528 51.2232 39.3026 51.0635 39.504C50.9038 39.7054 50.6809 39.8466 50.4309 39.9044C47.8789 40.4776 45.5418 41.7668 43.6926 43.622C41.8431 45.477 40.558 47.8214 39.9865 50.3814C39.9289 50.6322 39.7882 50.856 39.5874 51.0162C39.3866 51.1764 39.1376 51.2636 38.881 51.2636C38.6244 51.2636 38.3756 51.1764 38.1748 51.0162C37.974 50.856 37.8333 50.6322 37.7755 50.3814C37.1923 47.822 35.8995 45.4804 34.0463 43.6266C32.1931 41.7728 29.855 40.4824 27.302 39.9044C27.0522 39.8466 26.8291 39.7054 26.6694 39.504C26.5097 39.3026 26.4227 39.0528 26.4227 38.7954C26.4227 38.5382 26.5097 38.2884 26.6694 38.087C26.8291 37.8856 27.0522 37.7444 27.302 37.6864C29.8558 37.1 32.1929 35.803 34.0455 33.9448C35.8979 32.0866 37.1907 29.742 37.7755 27.1804C37.8299 26.9287 37.9677 26.7031 38.1662 26.5401C38.365 26.3772 38.6128 26.2867 38.8694 26.2833C39.126 26.2799 39.3762 26.3639 39.579 26.5215C39.782 26.6791 39.9257 26.9011 39.9865 27.1512Z" fill="currentColor"/>
+                                    </g>
+                                    <defs>
+                                        <clipPath id="clip0_402_76">
+                                            <rect width="64" height="64" fill="white" transform="translate(7 7)"/>
+                                        </clipPath>
+                                    </defs>
+                                </svg>
+                                <a>${priceOrb.toLocaleString('en-US')}</a>
+                            `;
+                            priceContainerOrb.appendChild(price);
+                        }
+                    
+                        // 5. Render Crossed Price
+                        if (priceStandardCrossed !== null && priceStandardCrossed !== undefined) {
+                            let price = document.createElement("div");
+                            price.classList.add("crossed-price");
+                            price.innerHTML = `
+                                <svg width="78" height="78" viewBox="0 0 78 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M52.7473 39C52.7473 43.1925 49.6598 46.3125 45.5323 46.3125C44.5742 46.3262 43.6233 46.1454 42.7372 45.7811C41.851 45.4168 41.0479 44.8765 40.3765 44.1929C39.7051 43.5094 39.1793 42.6967 38.831 41.8042C38.4826 40.9116 38.3189 39.9576 38.3498 39C38.3498 34.8075 41.4373 31.6875 45.5648 31.6875C49.6923 31.6875 52.7798 34.8075 52.7798 39H52.7473ZM74.7498 39C74.7498 55.2825 61.7498 68.25 45.5323 68.25C38.952 68.2896 32.5537 66.0919 27.3866 62.0173C22.2195 57.9427 18.5905 52.2331 17.0948 45.825H10.8548L7.92976 32.175H17.2248C18.0698 29.055 19.4348 26.0325 21.1573 23.4H6.14226L3.24976 9.75H44.6548C62.1723 9.75 74.7498 22.7175 74.7498 39ZM60.9048 39C60.9048 30.3225 54.0798 23.4 45.5323 23.4C43.4955 23.4041 41.4797 23.8121 39.6016 24.6004C37.7236 25.3887 36.0204 26.5415 34.5908 27.9923C33.1612 29.4431 32.0335 31.1629 31.2729 33.0524C30.5123 34.9418 30.134 36.9634 30.1598 39C30.1598 47.6775 36.9848 54.6 45.5323 54.6C47.569 54.5959 49.5848 54.1879 51.4629 53.3996C53.341 52.6114 55.0441 51.4585 56.4737 50.0077C57.9033 48.5569 59.031 46.8371 59.7916 44.9476C60.5522 43.0582 60.9305 41.0366 60.9048 39Z" fill="currentColor"/>
+                                </svg>
+                                <a>${extension}${priceStandardCrossed}</a>
+                            `;
+                            priceContainer.appendChild(price);
+                        }
+                    
+                        // 6. Cleanup Logic
+                        // We check for null/undefined explicitly. If price is 0, we DON'T remove the container.
+                        if (orbsExclusive) {
+                            priceContainer.remove();
                         }
 
-
-                        if (priceStandardCrossed != null) {
-                            let us_price = document.createElement("div");
-        
-                            us_price.innerHTML = `
-                                <div class="nitro-icon"></div>
-                                <a>US$${(priceStandardCrossed / 100).toFixed(2)}</a>
-                            `;
-    
-                            priceContainer2.appendChild(us_price);
+                        if (priceOrb === null) {
+                            priceContainerOrb.remove();
                         }
                     }
 
-                    const sku_id = modalInner.querySelector('.sku_id');
+                    if (priceStandard === "???" || priceStandardCrossed === "???") {
+                        if (!orbsExclusive) modalInner.querySelector('.prices-error').classList.remove('hidden');
+                    }
 
-                    sku_id.addEventListener("click", function () {
-                        sku_id.classList.add('clicked');
-                        setTimeout(() => {
-                            sku_id.classList.remove('clicked');
-                        }, 500);
-                    });
-
-                    const modalPreviewContainer = modalInner.querySelector('.modalv2-preview-container');
                     const modalSummary = modalInner.querySelector('.modal-summary');
+                    const modalbundled_products = modalInner.querySelector('.modal-bundled_products');
                     const nothingHover = document.querySelector('.something-nobody-is-gonna-hover');
+                    const previewProfile = modalInner.querySelector('.modal-preview-profile2');
+                    const SKUIDContainer = modalInner.querySelector('.sku-id-container');
 
+                    let itemTypeForName = product.type;
                     if (product.type === item_types.AVATAR_DECORATION) {
-
-                        modalInner.querySelector('.profile-avatar-deco-preview').src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=true`
-
-                        modalPreviewContainer.innerHTML = `
-                            <div class="type-0-preview-container">
-                                <div class="type-0-preview-background"></div>
-                                <img class="type-0-preview" loading="lazy" src="https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=false">
-                            </div>
-                        `;
-
-                        const decoPreview = modalPreviewContainer.querySelector('.type-0-preview');
-
-                        decoPreview.addEventListener("mouseenter", () => {
-                            decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=true`;
-                        });
-                        decoPreview.addEventListener("mouseleave", () => {
-                            decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=false`;
-                        });
+                        modalProfile.querySelector('.deco-img').src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=true`;
                     } else if (product.type === item_types.PROFILE_EFFECT) {
 
-                        modalInner.querySelector('.profile-avatar-deco-preview').remove();
-
-                        modalInner.querySelector('.modal-preview-profile').style.height = '400px';
-
-                        modalInner.querySelector('.profile-profile-effects-preview').innerHTML = `
+                        previewProfile.style.height = `400px`;
+                        modalProfile.querySelector('.profile-effect-div').innerHTML = `
                             <div class="modal-profile-profile-effect-preview"></div>
                         `;
 
                         const profileProfileEffectPreview = modalInner.querySelector('.modal-profile-profile-effect-preview');
 
-                        // Get the product ID from the first item
-                        const productId = product.items && product.items[0] ? product.items[0].id : null;
+                        const profileEffect = product.items[0];
 
-                        if (productId && discordProfileEffectsCache) {
-                            // Find the profile effect configuration
-                            const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, product.items[0]);
+                        if (profileEffect) {
+                            profileProfileEffectPreview.style.width = '100%';
+                            profileProfileEffectPreview.style.height = '100%';
+                            profileProfileEffectPreview.style.aspectRatio = '0.1';
 
-                            if (profileEffect) {
-                                // Set container to full width and auto height
-                                profileProfileEffectPreview.style.width = '100%';
-                                profileProfileEffectPreview.style.height = '100%';
-                                profileProfileEffectPreview.style.aspectRatio = '0.1';
+                            const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, nothingHover, {
+                                startImmediately: true
+                            });
 
-                                // Create and initialize the profile effects card with card-level hover
-                                const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, nothingHover, {
-                                    startImmediately: true
-                                });
-
-                                // Store reference for cleanup if needed
-                                nothingHover._profileEffectsCard = effectsCard;
-                            } else {
-                                // Fallback if profile effect not found
-                                profileProfileEffectPreview.innerHTML = ``;
-                            }
+                            nothingHover._profileEffectsCard = effectsCard;
                         } else {
-                            // Fallback if no product ID or cache
                             profileProfileEffectPreview.innerHTML = ``;
                         }
-
-
-
-
-
-
-                        let effectBG = document.createElement("div");
-
-                        effectBG.classList.add('type-1-effect-background')
-    
-                        effectBG.innerHTML = `
-                            <svg width="383" height="764" viewBox="0 0 383 764" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <g clip-path="url(#clip0_30_2)">
-                            <rect width="383" height="142" fill="#424549"/>
-                            <rect y="142" width="383" height="625" fill="#282B30"/>
-                            <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" fill="#424549"/>
-                            <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" stroke="#282B30" stroke-width="7"/>
-                            <path d="M90.5028 121.958C86.8115 120.235 82.9189 119.019 78.9189 118.335C78.3686 119.333 77.8719 120.358 77.429 121.411C73.1739 120.755 68.8383 120.755 64.5699 121.411C64.1269 120.358 63.6303 119.333 63.0799 118.335C59.0799 119.033 55.1739 120.249 51.4826 121.971C44.1537 133.015 42.1671 143.786 43.1604 154.407C47.4557 157.632 52.2611 160.093 57.3618 161.665C58.5162 160.093 59.5363 158.411 60.4088 156.662C58.7443 156.033 57.147 155.254 55.6168 154.338C56.0195 154.038 56.4088 153.737 56.798 153.436C65.7914 157.742 76.2075 157.742 85.2008 153.436C85.5901 153.75 85.9793 154.065 86.382 154.338C84.8518 155.254 83.2411 156.033 81.5766 156.676C82.4491 158.425 83.4693 160.093 84.6236 161.665C89.7377 160.093 94.5431 157.646 98.8384 154.407C100.006 142.091 96.8519 131.43 90.4894 121.958H90.5028ZM61.684 147.873C58.9189 147.873 56.6235 145.317 56.6235 142.173C56.6235 139.03 58.8249 136.446 61.6705 136.446C64.5162 136.446 66.7846 139.03 66.7309 142.173C66.6773 145.317 64.5028 147.873 61.684 147.873ZM80.3417 147.873C77.5632 147.873 75.2947 145.317 75.2947 142.173C75.2947 139.03 77.4961 136.446 80.3417 136.446C83.1874 136.446 85.4424 139.03 85.3887 142.173C85.335 145.317 83.1605 147.873 80.3417 147.873Z" fill="#929292"/>
-                            <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" fill="#289960"/>
-                            <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" stroke="#282B30" stroke-width="5"/>
-                            <rect x="12" y="208" width="359" height="540" rx="9" fill="#1E2124"/>
-                            <rect x="27" y="222" width="168" height="25" rx="10" fill="#424549"/>
-                            <rect x="27" y="405" width="106" height="25" rx="10" fill="#424549"/>
-                            <rect x="120" y="482" width="107" height="29" rx="10" fill="#424549"/>
-                            <rect x="27" y="476" width="74" height="74" rx="10" fill="#424549"/>
-                            <rect x="27" y="565" width="329" height="36" rx="4" fill="#282B30"/>
-                            <rect x="27" y="336" width="316" height="25" rx="10" fill="#424549"/>
-                            <rect x="27" y="252" width="83" height="15" rx="7.5" fill="#424549"/>
-                            <rect x="27" y="384" width="186" height="15" rx="7.5" fill="#424549"/>
-                            <rect x="27" y="453" width="118" height="15" rx="7.5" fill="#424549"/>
-                            <rect x="120" y="517" width="69" height="18" rx="9" fill="#424549"/>
-                            <rect x="37" y="647" width="18" height="18" rx="9" fill="#424549"/>
-                            <rect x="69" y="648" width="106" height="16" rx="8" fill="#424549"/>
-                            <path d="M333.564 652.993C333.259 652.726 333.243 652.257 333.53 651.97C333.793 651.707 334.217 651.695 334.494 651.945L338.174 655.257C338.615 655.654 338.615 656.346 338.174 656.743L334.494 660.055C334.217 660.305 333.793 660.293 333.53 660.03C333.243 659.743 333.259 659.274 333.564 659.007L336.14 656.753C336.595 656.354 336.595 655.646 336.14 655.247L333.564 652.993Z" fill="#424549"/>
-                            <path d="M333.564 710.493C333.259 710.226 333.243 709.757 333.53 709.47C333.793 709.207 334.217 709.195 334.494 709.445L338.174 712.757C338.615 713.154 338.615 713.846 338.174 714.243L334.494 717.555C334.217 717.805 333.793 717.793 333.53 717.53C333.243 717.243 333.259 716.774 333.564 716.507L336.14 714.253C336.595 713.854 336.595 713.146 336.14 712.747L333.564 710.493Z" fill="#424549"/>
-                            <rect x="69" y="706" width="106" height="16" rx="8" fill="#424549"/>
-                            <rect x="37" y="705" width="18" height="18" rx="9" fill="#424549"/>
-                            <rect x="27" y="315" width="71" height="15" rx="7.5" fill="#424549"/>
-                            <rect x="27" y="290" width="329" height="1" rx="0.5" fill="#424549"/>
-                            </g>
-                            <defs>
-                            <clipPath id="clip0_30_2">
-                            <rect width="383" height="764" rx="21" fill="white"/>
-                            </clipPath>
-                            </defs>
-                            </svg>
-                        `;
-                        
-
-                        let effectContainer = document.createElement("div");
-
-                        effectContainer.classList.add('type-1-effect-preview')
-    
-                        effectContainer.innerHTML = `
-                            <div class="modal-profile-effect-preview"></div>
-                        `;
-
-                        effectContainer.appendChild(effectBG);
-
-                        modalPreviewContainer.appendChild(effectContainer);
-
-
-                        const effectPreview = effectContainer.querySelector('.modal-profile-effect-preview');
-
-                        if (productId && discordProfileEffectsCache) {
-                            // Find the profile effect configuration
-                            const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, product.items[0]);
-
-                            if (profileEffect) {
-                                // Set container to full width and auto height
-                                effectPreview.style.width = '100%';
-                                effectPreview.style.height = '100%';
-                                effectPreview.style.aspectRatio = '0.1';
-
-                                // Create and initialize the profile effects card with card-level hover
-                                const effectsCard = new ProfileEffectsCard(effectPreview, profileEffect, effectContainer);
-
-                                // Store reference for cleanup if needed
-                                effectContainer._profileEffectsCard = effectsCard;
-                            } else {
-                                // Fallback if profile effect not found
-                                effectPreview.innerHTML = ``;
-                            }
-                        } else {
-                            // Fallback if no product ID or cache
-                            effectPreview.innerHTML = ``;
-                        }
                     } else if (product.type === item_types.NAMEPLATE) {
-                        let nameplate_user = document.createElement("div");
-                
-                        nameplate_user.classList.add('nameplate-null-user');
-                        nameplate_user.classList.add('nameplate-preview');
-                        nameplate_user.innerHTML = `
-                            <video disablepictureinpicture muted loop class="nameplate-null-user nameplate-video-preview" style="position: absolute; height: 100%; width: auto; right: 0;"></video>
-                            <div class="nameplate-user-avatar avatar1"></div>
-                            <p class="nameplate-user-name name1">Nameplate</p>
-                        `;
-
                         const item = product.items[0];
                         const paletteName = item.palette;
                         const bgcolor = nameplate_palettes[paletteName].darkBackground;
-
-                        const videoElement = nameplate_user.querySelector(".nameplate-video-preview");
-
-                        videoElement.src = `https://cdn.discordapp.com/assets/collectibles/${item.asset}asset.webm`;
-
-                        nameplate_user.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
-
-                        nameplate_user.addEventListener("mouseenter", () => {
-                            videoElement.play();
-                        });
-                        nameplate_user.addEventListener("mouseleave", () => {
-                            videoElement.pause();
-                        });
-
-                        modalPreviewContainer.appendChild(nameplate_user);
 
                         modalInner.querySelector('.modal2-profile-preview').innerHTML = `
                             <div class="modal-nameplate-profile-preview">
@@ -1542,220 +1658,114 @@ async function loadSite() {
                         `;
 
                         if (currentUserData) {
-                            nameplate_user.querySelector('.name1').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
                             modalInner.querySelector('.name2').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
                             let userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.webp?size=128';
                             if (currentUserData.avatar.includes('a_')) {
                                 userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.gif?size=128';
                             }
 
-                            nameplate_user.querySelector('.avatar1').style.backgroundImage = `url(${userAvatar})`;
-
                             modalInner.querySelector('.avatar2').style.backgroundImage = `url(${userAvatar})`;
                         }
 
+                    } else if (product.type === item_types.PROFILE_FRAME) {
+
+                        const frameContainerDiv = modalInner.querySelector('.modal2-profile-preview').querySelector('.frame-front');
+                        const frameContainerDivback = modalInner.querySelector('.modal2-profile-preview').querySelector('.frame-back');
+                        const layers = product.items[0].layers;
+                        layers.forEach(layer => {
+                            const src = `https://cdn.discordapp.com/media/v1/collectibles-shop/${product.sku_id}/${layer.id}/static`;
+                            let img = document.createElement("img");
+                            img.src = src;
+                            img.classList.add(`a-${layer.anchor}`);
+                            img.classList.add(`t-${layer.type}`);
+                            if (layer.order === "front") frameContainerDiv.appendChild(img);
+                            if (layer.order === "back") frameContainerDivback.appendChild(img);
+                        });
+                        
                     } else if (product.type === item_types.BUNDLE) {
 
-                        modalInner.querySelector('.modal-preview-profile').style.height = '400px';
+                        const typeLabels = {
+                            [item_types.AVATAR_DECORATION]: 'Decoration',
+                            [item_types.PROFILE_EFFECT]: 'Profile Effect',
+                            [item_types.NAMEPLATE]: 'Nameplate',
+                            [item_types.PROFILE_FRAME]: 'Profile Frame'
+                        };
+                        
+                        const items = product.bundled_products
+                            .filter(item => typeLabels[item.type])
+                            // Map directly to the HTML structure for each item
+                            .map(item => `<div class="bundled_products"><h3>${item.name}</h3><p>${typeLabels[item.type]}</p></div>`);
+                        
+                        // Join all items without extra punctuation, then prepend the header
+                        const listString = items.length > 0 
+                            ? `<h3>Bundle Includes:</h3>${items.join('')}` 
+                            : '';
+                        
+                        // Use innerHTML so the browser renders the tags
+                        modalbundled_products.innerHTML = listString;
 
-                        modalSummary.textContent = `Bundle includes: ${product.bundled_products.find(item => item.type === item_types.AVATAR_DECORATION).name} Decoration & ${product.bundled_products.find(item => item.type === item_types.PROFILE_EFFECT).name} Profile Effect`;
-
-                        modalPreviewContainer.classList.add('type-1000-modal-preview-container')
+                        modalSummary.textContent = '';
 
                         if (product.items.find(item => item.type === item_types.AVATAR_DECORATION)) {
-
-                            modalInner.querySelector('.profile-avatar-deco-preview').src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=true`
-
-                            modalPreviewContainer.innerHTML = `
-                                <div class="type-0-preview-container">
-                                    <div class="type-0-preview-background"></div>
-                                    <img class="type-0-preview" loading="lazy" src="https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=false">
-                                </div>
-                            `;
-
-                            const decoPreview = modalPreviewContainer.querySelector('.type-0-preview');
-
-                            modalPreviewContainer.addEventListener("mouseenter", () => {
-                                decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=true`;
-                            });
-                            modalPreviewContainer.addEventListener("mouseleave", () => {
-                                decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=false`;
-                            });
+                            modalProfile.querySelector('.deco-img').src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=true`
                         }
                         if (product.items.find(item => item.type === item_types.PROFILE_EFFECT)) {
 
 
-                            modalInner.querySelector('.profile-profile-effects-preview').innerHTML = `
+                            modalProfile.querySelector('.profile-effect-div').innerHTML = `
                                 <div class="modal-profile-profile-effect-preview"></div>
                             `;
 
                             const profileProfileEffectPreview = modalInner.querySelector('.modal-profile-profile-effect-preview');
 
-                            // Get the product ID from the first item
-                            const productId = product.items && product.items.find(item => item.type === item_types.PROFILE_EFFECT) ? product.items.find(item => item.type === item_types.PROFILE_EFFECT).id : null;
                             const productItem = product.items && product.items.find(item => item.type === item_types.PROFILE_EFFECT) ? product.items.find(item => item.type === item_types.PROFILE_EFFECT) : null;
 
-                            if (productId && discordProfileEffectsCache) {
-                                // Find the profile effect configuration
-                                const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, productItem);
+                            const profileEffect = productItem;
 
-                                if (profileEffect) {
-                                    // Set container to full width and auto height
-                                    profileProfileEffectPreview.style.width = '100%';
-                                    profileProfileEffectPreview.style.height = '100%';
-                                    profileProfileEffectPreview.style.aspectRatio = '0.1';
+                            if (profileEffect) {
+                                profileProfileEffectPreview.style.width = '100%';
+                                profileProfileEffectPreview.style.height = '100%';
+                                profileProfileEffectPreview.style.aspectRatio = '0.1';
 
-                                    // Create and initialize the profile effects card with card-level hover
-                                    const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, nothingHover, {
-                                        startImmediately: true
-                                    });
+                                const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, nothingHover, {
+                                    startImmediately: true
+                                });
 
-                                    // Store reference for cleanup if needed
-                                    nothingHover._profileEffectsCard = effectsCard;
-                                } else {
-                                    // Fallback if profile effect not found
-                                    profileProfileEffectPreview.innerHTML = ``;
-                                }
+                                nothingHover._profileEffectsCard = effectsCard;
                             } else {
-                                // Fallback if no product ID or cache
                                 profileProfileEffectPreview.innerHTML = ``;
-                            }
-
-                            let effectBG = document.createElement("div");
-
-                            effectBG.classList.add('type-1-effect-background')
-    
-                            effectBG.innerHTML = `
-                                <svg width="383" height="764" viewBox="0 0 383 764" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <g clip-path="url(#clip0_30_2)">
-                                <rect width="383" height="142" fill="#424549"/>
-                                <rect y="142" width="383" height="625" fill="#282B30"/>
-                                <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" fill="#424549"/>
-                                <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" stroke="#282B30" stroke-width="7"/>
-                                <path d="M90.5028 121.958C86.8115 120.235 82.9189 119.019 78.9189 118.335C78.3686 119.333 77.8719 120.358 77.429 121.411C73.1739 120.755 68.8383 120.755 64.5699 121.411C64.1269 120.358 63.6303 119.333 63.0799 118.335C59.0799 119.033 55.1739 120.249 51.4826 121.971C44.1537 133.015 42.1671 143.786 43.1604 154.407C47.4557 157.632 52.2611 160.093 57.3618 161.665C58.5162 160.093 59.5363 158.411 60.4088 156.662C58.7443 156.033 57.147 155.254 55.6168 154.338C56.0195 154.038 56.4088 153.737 56.798 153.436C65.7914 157.742 76.2075 157.742 85.2008 153.436C85.5901 153.75 85.9793 154.065 86.382 154.338C84.8518 155.254 83.2411 156.033 81.5766 156.676C82.4491 158.425 83.4693 160.093 84.6236 161.665C89.7377 160.093 94.5431 157.646 98.8384 154.407C100.006 142.091 96.8519 131.43 90.4894 121.958H90.5028ZM61.684 147.873C58.9189 147.873 56.6235 145.317 56.6235 142.173C56.6235 139.03 58.8249 136.446 61.6705 136.446C64.5162 136.446 66.7846 139.03 66.7309 142.173C66.6773 145.317 64.5028 147.873 61.684 147.873ZM80.3417 147.873C77.5632 147.873 75.2947 145.317 75.2947 142.173C75.2947 139.03 77.4961 136.446 80.3417 136.446C83.1874 136.446 85.4424 139.03 85.3887 142.173C85.335 145.317 83.1605 147.873 80.3417 147.873Z" fill="#929292"/>
-                                <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" fill="#289960"/>
-                                <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" stroke="#282B30" stroke-width="5"/>
-                                <rect x="12" y="208" width="359" height="540" rx="9" fill="#1E2124"/>
-                                <rect x="27" y="222" width="168" height="25" rx="10" fill="#424549"/>
-                                <rect x="27" y="405" width="106" height="25" rx="10" fill="#424549"/>
-                                <rect x="120" y="482" width="107" height="29" rx="10" fill="#424549"/>
-                                <rect x="27" y="476" width="74" height="74" rx="10" fill="#424549"/>
-                                <rect x="27" y="565" width="329" height="36" rx="4" fill="#282B30"/>
-                                <rect x="27" y="336" width="316" height="25" rx="10" fill="#424549"/>
-                                <rect x="27" y="252" width="83" height="15" rx="7.5" fill="#424549"/>
-                                <rect x="27" y="384" width="186" height="15" rx="7.5" fill="#424549"/>
-                                <rect x="27" y="453" width="118" height="15" rx="7.5" fill="#424549"/>
-                                <rect x="120" y="517" width="69" height="18" rx="9" fill="#424549"/>
-                                <rect x="37" y="647" width="18" height="18" rx="9" fill="#424549"/>
-                                <rect x="69" y="648" width="106" height="16" rx="8" fill="#424549"/>
-                                <path d="M333.564 652.993C333.259 652.726 333.243 652.257 333.53 651.97C333.793 651.707 334.217 651.695 334.494 651.945L338.174 655.257C338.615 655.654 338.615 656.346 338.174 656.743L334.494 660.055C334.217 660.305 333.793 660.293 333.53 660.03C333.243 659.743 333.259 659.274 333.564 659.007L336.14 656.753C336.595 656.354 336.595 655.646 336.14 655.247L333.564 652.993Z" fill="#424549"/>
-                                <path d="M333.564 710.493C333.259 710.226 333.243 709.757 333.53 709.47C333.793 709.207 334.217 709.195 334.494 709.445L338.174 712.757C338.615 713.154 338.615 713.846 338.174 714.243L334.494 717.555C334.217 717.805 333.793 717.793 333.53 717.53C333.243 717.243 333.259 716.774 333.564 716.507L336.14 714.253C336.595 713.854 336.595 713.146 336.14 712.747L333.564 710.493Z" fill="#424549"/>
-                                <rect x="69" y="706" width="106" height="16" rx="8" fill="#424549"/>
-                                <rect x="37" y="705" width="18" height="18" rx="9" fill="#424549"/>
-                                <rect x="27" y="315" width="71" height="15" rx="7.5" fill="#424549"/>
-                                <rect x="27" y="290" width="329" height="1" rx="0.5" fill="#424549"/>
-                                </g>
-                                <defs>
-                                <clipPath id="clip0_30_2">
-                                <rect width="383" height="764" rx="21" fill="white"/>
-                                </clipPath>
-                                </defs>
-                                </svg>
-                            `;
-                            
-
-                            let effectContainer = document.createElement("div");
-
-                            effectContainer.classList.add('type-1-effect-preview')
-    
-                            effectContainer.innerHTML = `
-                                <div class="modal-profile-effect-preview"></div>
-                            `;
-
-                            effectContainer.appendChild(effectBG);
-
-                            modalPreviewContainer.appendChild(effectContainer);
-
-
-                            const effectPreview = effectContainer.querySelector('.modal-profile-effect-preview');
-
-
-                            if (productId && discordProfileEffectsCache) {
-                                // Find the profile effect configuration
-                                const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, productItem);
-
-                                if (profileEffect) {
-                                    // Set container to full width and auto height
-                                    effectPreview.style.width = '100%';
-                                    effectPreview.style.height = '100%';
-                                    effectPreview.style.aspectRatio = '0.1';
-
-                                    // Create and initialize the profile effects card with card-level hover
-                                    const effectsCard = new ProfileEffectsCard(effectPreview, profileEffect, modalPreviewContainer);
-
-                                    // Store reference for cleanup if needed
-                                    nothingHover._profileEffectsCard = effectsCard;
-                                } else {
-                                    // Fallback if profile effect not found
-                                    effectPreview.innerHTML = ``;
-                                }
-                            } else {
-                                // Fallback if no product ID or cache
-                                effectPreview.innerHTML = ``;
                             }
                         }
                         if (product.items.find(item => item.type === item_types.NAMEPLATE)) {
-                            modalSummary.textContent = `Bundle includes: ${product.bundled_products.find(item => item.type === item_types.AVATAR_DECORATION).name} Decoration, ${product.bundled_products.find(item => item.type === item_types.PROFILE_EFFECT).name} Profile Effect & ${product.bundled_products.find(item => item.type === item_types.NAMEPLATE).name} Nameplate`;
 
-                            let nameplate_user = document.createElement("div");
-                
-                            nameplate_user.classList.add('nameplate-null-user');
-                            nameplate_user.classList.add('nameplate-preview');
-                            nameplate_user.innerHTML = `
-                                <video disablepictureinpicture muted loop class="nameplate-null-user nameplate-video-preview" style="position: absolute; height: 100%; width: auto; right: 0;"></video>
-                                <div class="nameplate-user-avatar avatar1"></div>
-                                <p class="nameplate-user-name name1">Nameplate</p>
-                            `;
+                            modalNameplateProfile.classList.remove("hidden");
 
                             const item = product.items.find(item => item.type === item_types.NAMEPLATE);
                             const paletteName = item.palette;
                             const bgcolor = nameplate_palettes[paletteName].darkBackground;
 
-                            const videoElement = nameplate_user.querySelector(".nameplate-video-preview");
-
-                            videoElement.src = `https://cdn.discordapp.com/assets/collectibles/${item.asset}asset.webm`;
-
-                            nameplate_user.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
-
-                            nameplate_user.addEventListener("mouseenter", () => {
-                                videoElement.play();
-                            });
-                            nameplate_user.addEventListener("mouseleave", () => {
-                                videoElement.pause();
-                            });
-
-                            modalPreviewContainer.appendChild(nameplate_user);
-
+                            const videoElement2 = modalNameplateProfile.querySelector("video");
+                            videoElement2.src = `https://cdn.discordapp.com/assets/collectibles/${item.asset}asset.webm`;
+                            modalNameplateProfile.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
+                            videoElement2.play();
                             if (currentUserData) {
-                                nameplate_user.querySelector('.name1').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
+                                modalNameplateProfile.querySelector('.name1').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
                                 let userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.webp?size=128';
                                 if (currentUserData.avatar.includes('a_')) {
                                     userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.gif?size=128';
                                 }
 
-                                nameplate_user.querySelector('.avatar1').style.backgroundImage = `url(${userAvatar})`;
+                                modalNameplateProfile.querySelector('.avatar1').style.backgroundImage = `url(${userAvatar})`;
                             }
                         }
                     } else if (product.type === item_types.VARIANTS_GROUP) {
-
-                        modalPreviewContainer.classList.add('type-2000-preview-container')
 
                         const variantContainer = modalInner.querySelector("[data-shop-card-var-container]");
                         variantContainer.innerHTML = "";
                         let currentSelectedVariant = null;
 
                         product.variants.forEach((variant, index) => {
-
+                            itemTypeForName = variant.type;
                             let variantColorBlock = document.createElement("div");
 
                             variantColorBlock.classList.add("shop-card-var");
@@ -1783,195 +1793,45 @@ async function loadSite() {
                         });
 
                         function applyVariant(selectedVariant) {
+                            SKUIDContainer.innerHTML = `
+                                <p>SKU:</p>
+                                <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${selectedVariant.sku_id}')">${selectedVariant.sku_id}</p>
+                            `;
                             modalInner.querySelector("[data-shop-card-var-title]").textContent = `(${selectedVariant.variant_label})`;
 
                             modalInner.querySelector(".modal-item-name").textContent = selectedVariant.base_variant_name;
 
                             if (selectedVariant.type === item_types.AVATAR_DECORATION) {
-
-                                modalInner.querySelector('.profile-avatar-deco-preview').src = `https://cdn.discordapp.com/avatar-decoration-presets/${selectedVariant.items[0].asset}.png?size=4096&passthrough=true`
-
-                                modalPreviewContainer.innerHTML = "";
-                                let decorationBundleContainer = document.createElement("div");
-    
-                                decorationBundleContainer.classList.add('type-0-preview-container')
-                            
-                                decorationBundleContainer.innerHTML = `
-                                    <div class="type-0-preview-background"></div>
-                                    <img class="type-0-preview" loading="lazy" src="https://cdn.discordapp.com/avatar-decoration-presets/${selectedVariant.items[0].asset}.png?size=4096&passthrough=false"></img>
-                                `;
-
-                                modalPreviewContainer.appendChild(decorationBundleContainer);
-
-                                // Add the avatar decoration based on the selected variant
-                                selectedVariant.items?.forEach(item => {
-                                    const decorationPreview = decorationBundleContainer.querySelector('.type-0-preview')
-                                    decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${item.asset}.png?size=4096&passthrough=false`;
-
-                                    decorationBundleContainer.addEventListener("mouseenter", () => {
-                                        decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${item.asset}.png?size=4096&passthrough=true`;
-                                    });
-                                    decorationBundleContainer.addEventListener("mouseleave", () => {
-                                        decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${item.asset}.png?size=4096&passthrough=false`;
-                                    });
-                                });
+                                modalInner.querySelector('.deco-img').src = `https://cdn.discordapp.com/avatar-decoration-presets/${selectedVariant.items[0].asset}.png?size=4096&passthrough=true`
                             } else if (selectedVariant.type === item_types.PROFILE_EFFECT) {
-                                
-                                if (modalInner.querySelector('.profile-avatar-deco-preview')) modalInner.querySelector('.profile-avatar-deco-preview').remove();
 
-                                modalInner.querySelector('.modal-preview-profile').style.height = '400px';
-
-                                modalInner.querySelector('.profile-profile-effects-preview').innerHTML = `
+                                previewProfile.style.height = `400px`;
+                                modalInner.querySelector('.profile-effect-div').innerHTML = `
                                     <div class="modal-profile-profile-effect-preview"></div>
                                 `;
 
                                 const profileProfileEffectPreview = modalInner.querySelector('.modal-profile-profile-effect-preview');
 
-                                // Get the product ID from the first item
-                                const productId = selectedVariant.items && selectedVariant.items[0] ? selectedVariant.items[0].id : null;
 
-                                if (productId && discordProfileEffectsCache) {
-                                    // Find the profile effect configuration
-                                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, selectedVariant.items[0]);
+                                const profileEffect = selectedVariant.items[0];
 
-                                    if (profileEffect) {
-                                        // Set container to full width and auto height
-                                        profileProfileEffectPreview.style.width = '100%';
-                                        profileProfileEffectPreview.style.height = '100%';
-                                        profileProfileEffectPreview.style.aspectRatio = '0.1';
+                                if (profileEffect) {
+                                    profileProfileEffectPreview.style.width = '100%';
+                                    profileProfileEffectPreview.style.height = '100%';
+                                    profileProfileEffectPreview.style.aspectRatio = '0.1';
 
-                                        // Create and initialize the profile effects card with card-level hover
-                                        const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, nothingHover, {
-                                            startImmediately: true
-                                        });
+                                    const effectsCard = new ProfileEffectsCard(profileProfileEffectPreview, profileEffect, nothingHover, {
+                                        startImmediately: true
+                                    });
 
-                                        // Store reference for cleanup if needed
-                                        nothingHover._profileEffectsCard = effectsCard;
-                                    } else {
-                                        // Fallback if profile effect not found
-                                        profileProfileEffectPreview.innerHTML = ``;
-                                    }
+                                    nothingHover._profileEffectsCard = effectsCard;
                                 } else {
-                                    // Fallback if no product ID or cache
                                     profileProfileEffectPreview.innerHTML = ``;
                                 }
-
-
-
-                                modalPreviewContainer.innerHTML = "";
-
-                                let effectBG = document.createElement("div");
-
-                                effectBG.classList.add('type-1-effect-background')
-    
-                                effectBG.innerHTML = `
-                                    <svg width="383" height="764" viewBox="0 0 383 764" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <g clip-path="url(#clip0_30_2)">
-                                    <rect width="383" height="142" fill="#424549"/>
-                                    <rect y="142" width="383" height="625" fill="#282B30"/>
-                                    <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" fill="#424549"/>
-                                    <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" stroke="#282B30" stroke-width="7"/>
-                                    <path d="M90.5028 121.958C86.8115 120.235 82.9189 119.019 78.9189 118.335C78.3686 119.333 77.8719 120.358 77.429 121.411C73.1739 120.755 68.8383 120.755 64.5699 121.411C64.1269 120.358 63.6303 119.333 63.0799 118.335C59.0799 119.033 55.1739 120.249 51.4826 121.971C44.1537 133.015 42.1671 143.786 43.1604 154.407C47.4557 157.632 52.2611 160.093 57.3618 161.665C58.5162 160.093 59.5363 158.411 60.4088 156.662C58.7443 156.033 57.147 155.254 55.6168 154.338C56.0195 154.038 56.4088 153.737 56.798 153.436C65.7914 157.742 76.2075 157.742 85.2008 153.436C85.5901 153.75 85.9793 154.065 86.382 154.338C84.8518 155.254 83.2411 156.033 81.5766 156.676C82.4491 158.425 83.4693 160.093 84.6236 161.665C89.7377 160.093 94.5431 157.646 98.8384 154.407C100.006 142.091 96.8519 131.43 90.4894 121.958H90.5028ZM61.684 147.873C58.9189 147.873 56.6235 145.317 56.6235 142.173C56.6235 139.03 58.8249 136.446 61.6705 136.446C64.5162 136.446 66.7846 139.03 66.7309 142.173C66.6773 145.317 64.5028 147.873 61.684 147.873ZM80.3417 147.873C77.5632 147.873 75.2947 145.317 75.2947 142.173C75.2947 139.03 77.4961 136.446 80.3417 136.446C83.1874 136.446 85.4424 139.03 85.3887 142.173C85.335 145.317 83.1605 147.873 80.3417 147.873Z" fill="#929292"/>
-                                    <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" fill="#289960"/>
-                                    <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" stroke="#282B30" stroke-width="5"/>
-                                    <rect x="12" y="208" width="359" height="540" rx="9" fill="#1E2124"/>
-                                    <rect x="27" y="222" width="168" height="25" rx="10" fill="#424549"/>
-                                    <rect x="27" y="405" width="106" height="25" rx="10" fill="#424549"/>
-                                    <rect x="120" y="482" width="107" height="29" rx="10" fill="#424549"/>
-                                    <rect x="27" y="476" width="74" height="74" rx="10" fill="#424549"/>
-                                    <rect x="27" y="565" width="329" height="36" rx="4" fill="#282B30"/>
-                                    <rect x="27" y="336" width="316" height="25" rx="10" fill="#424549"/>
-                                    <rect x="27" y="252" width="83" height="15" rx="7.5" fill="#424549"/>
-                                    <rect x="27" y="384" width="186" height="15" rx="7.5" fill="#424549"/>
-                                    <rect x="27" y="453" width="118" height="15" rx="7.5" fill="#424549"/>
-                                    <rect x="120" y="517" width="69" height="18" rx="9" fill="#424549"/>
-                                    <rect x="37" y="647" width="18" height="18" rx="9" fill="#424549"/>
-                                    <rect x="69" y="648" width="106" height="16" rx="8" fill="#424549"/>
-                                    <path d="M333.564 652.993C333.259 652.726 333.243 652.257 333.53 651.97C333.793 651.707 334.217 651.695 334.494 651.945L338.174 655.257C338.615 655.654 338.615 656.346 338.174 656.743L334.494 660.055C334.217 660.305 333.793 660.293 333.53 660.03C333.243 659.743 333.259 659.274 333.564 659.007L336.14 656.753C336.595 656.354 336.595 655.646 336.14 655.247L333.564 652.993Z" fill="#424549"/>
-                                    <path d="M333.564 710.493C333.259 710.226 333.243 709.757 333.53 709.47C333.793 709.207 334.217 709.195 334.494 709.445L338.174 712.757C338.615 713.154 338.615 713.846 338.174 714.243L334.494 717.555C334.217 717.805 333.793 717.793 333.53 717.53C333.243 717.243 333.259 716.774 333.564 716.507L336.14 714.253C336.595 713.854 336.595 713.146 336.14 712.747L333.564 710.493Z" fill="#424549"/>
-                                    <rect x="69" y="706" width="106" height="16" rx="8" fill="#424549"/>
-                                    <rect x="37" y="705" width="18" height="18" rx="9" fill="#424549"/>
-                                    <rect x="27" y="315" width="71" height="15" rx="7.5" fill="#424549"/>
-                                    <rect x="27" y="290" width="329" height="1" rx="0.5" fill="#424549"/>
-                                    </g>
-                                    <defs>
-                                    <clipPath id="clip0_30_2">
-                                    <rect width="383" height="764" rx="21" fill="white"/>
-                                    </clipPath>
-                                    </defs>
-                                    </svg>
-                                `;
-
-
-                                let effectContainer = document.createElement("div");
-
-                                effectContainer.classList.add('type-1-effect-preview')
-    
-                                effectContainer.innerHTML = `
-                                    <div class="modal-profile-effect-preview"></div>
-                                `;
-
-                                effectContainer.appendChild(effectBG);
-
-                                modalPreviewContainer.appendChild(effectContainer);
-
-
-                                const effectPreview = effectContainer.querySelector('.modal-profile-effect-preview');
-
-
-                                if (productId && discordProfileEffectsCache) {
-                                    // Find the profile effect configuration
-                                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, selectedVariant.items[0]);
-
-                                    if (profileEffect) {
-                                        // Set container to full width and auto height
-                                        effectPreview.style.width = '100%';
-                                        effectPreview.style.height = '100%';
-                                        effectPreview.style.aspectRatio = '0.1';
-
-                                        // Create and initialize the profile effects card with card-level hover
-                                        const effectsCard = new ProfileEffectsCard(effectPreview, profileEffect, effectContainer);
-
-                                        // Store reference for cleanup if needed
-                                        effectContainer._profileEffectsCard = effectsCard;
-                                    } else {
-                                        // Fallback if profile effect not found
-                                        effectPreview.innerHTML = ``;
-                                    }
-                                } else {
-                                    // Fallback if no product ID or cache
-                                    effectPreview.innerHTML = ``;
-                                }
                             } else if (selectedVariant.type === item_types.NAMEPLATE) {
-                                let nameplate_user = document.createElement("div");
-                
-                                nameplate_user.classList.add('nameplate-null-user');
-                                nameplate_user.classList.add('nameplate-preview');
-                                nameplate_user.innerHTML = `
-                                    <video disablepictureinpicture muted loop class="nameplate-null-user nameplate-video-preview" style="position: absolute; height: 100%; width: auto; right: 0;"></video>
-                                    <div class="nameplate-user-avatar avatar1"></div>
-                                    <p class="nameplate-user-name name1">Nameplate</p>
-                                `;
-
                                 const item = selectedVariant.items[0];
                                 const paletteName = item.palette;
                                 const bgcolor = nameplate_palettes[paletteName].darkBackground;
-
-                                const videoElement = nameplate_user.querySelector(".nameplate-video-preview");
-
-                                videoElement.src = `https://cdn.discordapp.com/assets/collectibles/${item.asset}asset.webm`;
-
-                                nameplate_user.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
-
-                                nameplate_user.addEventListener("mouseenter", () => {
-                                    videoElement.play();
-                                });
-                                nameplate_user.addEventListener("mouseleave", () => {
-                                    videoElement.pause();
-                                });
-
-                                modalPreviewContainer.innerHTML = ``;
-                                modalPreviewContainer.appendChild(nameplate_user);
 
                                 modalInner.querySelector('.modal2-profile-preview').innerHTML = `
                                     <div class="modal-nameplate-profile-preview">
@@ -2008,14 +1868,11 @@ async function loadSite() {
                                 `;
 
                                 if (currentUserData) {
-                                    nameplate_user.querySelector('.name1').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
                                     modalInner.querySelector('.name2').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
                                     let userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.webp?size=128';
                                     if (currentUserData.avatar.includes('a_')) {
                                         userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.gif?size=128';
                                     }
-
-                                    nameplate_user.querySelector('.avatar1').style.backgroundImage = `url(${userAvatar})`;
 
                                     modalInner.querySelector('.avatar2').style.backgroundImage = `url(${userAvatar})`;
                                 }
@@ -2030,8 +1887,9 @@ async function loadSite() {
                     } else {
                         modalInner.querySelector('.modal2-profile-preview').remove();
                     }
+                    modalInner.querySelector('.modal-item-type').innerHTML = `<p>${getItemTypeName(itemTypeForName)}</p>`;
 
-                } else {
+                } else if (tab === '2') {
                     modalInner.innerHTML = `
                         <div class="view-raw-modalv2-inner">
                             <textarea class="view-raw-modal-textbox" readonly>${JSON.stringify(product, undefined, 4)}</textarea>
@@ -2050,6 +1908,146 @@ async function loadSite() {
                         textbox.style.width = '100%';
                         textbox.style.height = textbox.scrollHeight + 'px';
                     });
+                } else if (tab === '3') {
+                    modalInner.innerHTML = `
+                        <div class="view-raw-modalv2-inner">
+                            <div class="product-discord-sa-sync">
+                                <div class="product">
+                                    <div class="top">
+                                        <p class="sub1">Discord</p>
+                                    </div>
+                                    <div class="bottom" id="discord">
+                                        <p class="sub2">Loading...</p>
+                                    </div>
+                                </div>
+                                <div class="synced" id="sync">
+                                </div>
+                                <div class="product">
+                                    <div class="top">
+                                        <p class="sub1">Shop Archives</p>
+                                    </div>
+                                    <div class="bottom" id="shop-archives">
+                                        <p class="sub2">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    const disDiv = modalInner.querySelector('#discord');
+                    const syncDiv = modalInner.querySelector('#sync');
+                    const saDiv = modalInner.querySelector('#shop-archives');
+                    let unsynced = false;
+
+                    const res1 = await fetch(APIV4 + '/product/' + product.sku_id + '?source=discord',{
+                        method: 'GET',
+                        headers: {
+                            "Authorization": localStorage.token
+                        }
+                    });
+                    if (!res1.ok) {
+                        disDiv.innerHTML = `
+                            <p class="sub2">This collectible doesn't exist on Discord</p>
+                        `;
+                        unsynced = true;
+                    } else {
+                        const disdata = await res1.json();
+                        disDiv.innerHTML = `
+                            <div class="item-info">
+                                <p class="sub3">${disdata.name}</p>
+                            </div>
+                        `;
+                    }
+                    
+
+                    const res2 = await fetch(APIV4 + '/product/' + product.sku_id);
+                    if (!res2.ok) {
+                        saDiv.innerHTML = `
+                            <p class="sub2">This collectible isn't on the Shop Archives Database</p>
+                            <button class="generic-button brand" id="sync-product">Sync Items</button>
+                        `;
+                        const btn = saDiv.querySelector("#sync-product");
+                        btn.addEventListener("click", async function () {
+                            btn.disabled = true;
+                            await fetch(APIV4 + endpnts.PRODUCT + product.sku_id, {
+                                method: "POST",
+                                headers: {
+                                    "Authorization": localStorage.token
+                                }
+                            });
+                            changeModalTab('3');
+                        });
+                        unsynced = true;
+                        if (!res1.ok) {
+                            saDiv.innerHTML = `
+                                <p class="sub2">This collectible isn't on the Shop Archives Database</p>
+                                <p class="sub2">You cannot add this item, it doesn't exist on Discord</p>
+                            `;
+                        }
+                    } else {
+                        const sadata = await res2.json();
+                        saDiv.innerHTML = `
+                            <div class="item-info">
+                                <p class="sub3">${sadata.name}</p>
+                            </div>
+                            <button class="generic-button brand" id="sync-product">Sync Items</button>
+                        `;
+                        if (!res1.ok) {
+                            saDiv.innerHTML = `
+                                <div class="item-info">
+                                    <p class="sub3">${sadata.name}</p>
+                                </div>
+                                <p class="sub2">You cannot sync this item, it doesn't exist on Discord</p>
+                            `;
+                        }
+                        const btn = saDiv.querySelector("#sync-product");
+                        if (btn) btn.addEventListener("click", async function () {
+                            btn.disabled = true;
+                            await fetch(APIV4 + endpnts.PRODUCT + product.sku_id, {
+                                method: "POST",
+                                headers: {
+                                    "Authorization": localStorage.token
+                                }
+                            });
+                            changeModalTab('3');
+                        });
+                    }
+
+                    if (unsynced === true) {
+                        syncDiv.classList.remove("sy");
+                        syncDiv.classList.add("un");
+                        syncDiv.innerHTML = `
+                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+                            <p>Unsynced</p>
+                        `;
+                    } else if (unsynced === false) {
+                        syncDiv.classList.remove("un");
+                        syncDiv.classList.add("sy");
+                        syncDiv.innerHTML = `
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <g clip-path="url(#clip0_387_27)">
+                                <path d="M13.1163 16.9387C13.1171 16.6745 13.2224 16.4214 13.4092 16.2346C13.596 16.0478 13.8491 15.9425 14.1133 15.9417L17.663 15.9417C18.6934 15.9059 19.6697 15.4716 20.3863 14.7304C21.1029 13.9891 21.5039 12.9987 21.5048 11.9676C21.5058 10.9366 21.1065 9.94545 20.3912 9.2029C19.676 8.46035 18.7004 8.02436 17.6701 7.98674L14.1133 7.97967C13.8622 7.96024 13.6277 7.84677 13.4566 7.66194C13.2855 7.4771 13.1905 7.23451 13.1905 6.98265C13.1905 6.73078 13.2855 6.4882 13.4566 6.30336C13.6277 6.11853 13.8622 6.00506 14.1133 5.98563L17.6771 5.98563C19.2402 6.02052 20.7275 6.6662 21.8204 7.78435C22.9132 8.9025 23.5246 10.4042 23.5237 11.9677C23.5228 13.5312 22.9096 15.0321 21.8154 16.149C20.7213 17.2658 19.2332 17.9098 17.6701 17.9428L14.1133 17.9357C13.8491 17.9349 13.596 17.8297 13.4092 17.6428C13.2224 17.456 13.1171 17.2029 13.1163 16.9387ZM10.8465 6.98972C10.8457 7.2539 10.7404 7.50704 10.5536 7.69385C10.3668 7.88066 10.1137 7.98595 9.84947 7.98674L6.29272 7.97967C5.23689 7.97967 4.22431 8.3991 3.47772 9.14568C2.73114 9.89227 2.31171 10.9049 2.31171 11.9607C2.31171 13.0165 2.73114 14.0291 3.47772 14.7757C4.22431 15.5223 5.23689 15.9417 6.29272 15.9417L9.84947 15.9346C10.1158 15.9346 10.3712 16.0404 10.5595 16.2287C10.7478 16.417 10.8536 16.6724 10.8536 16.9387C10.8536 17.205 10.7478 17.4604 10.5595 17.6487C10.3712 17.837 10.1158 17.9428 9.84947 17.9428L6.29272 17.9357C4.75011 17.8729 3.29156 17.216 2.2223 16.1023C1.15304 14.9886 0.55593 13.5046 0.55593 11.9607C0.55593 10.4168 1.15304 8.93273 2.2223 7.81906C3.29156 6.70539 4.75011 6.04842 6.29272 5.98563L9.8424 5.98563C9.97441 5.98509 10.1052 6.01069 10.2273 6.06096C10.3494 6.11123 10.4603 6.18517 10.5536 6.27851C10.647 6.37186 10.7209 6.48277 10.7712 6.60483C10.8214 6.7269 10.847 6.85771 10.8465 6.98972Z" fill="currentColor"/>
+                                <path d="M14.8136 12.9505C15.0519 12.9165 15.2699 12.7976 15.4276 12.6158C15.5853 12.434 15.6722 12.2013 15.6722 11.9606C15.6722 11.7199 15.5853 11.4872 15.4276 11.3054C15.2699 11.1235 15.0519 11.0047 14.8136 10.9706L9.15674 10.9706C9.01491 10.9504 8.87038 10.9608 8.73294 11.0013C8.5955 11.0418 8.46836 11.1113 8.36012 11.2051C8.25189 11.299 8.16508 11.4151 8.1056 11.5454C8.04611 11.6757 8.01532 11.8173 8.01532 11.9606C8.01532 12.1039 8.04611 12.2455 8.1056 12.3758C8.16508 12.5061 8.25189 12.6222 8.36012 12.7161C8.46836 12.8099 8.5955 12.8794 8.73294 12.9199C8.87038 12.9604 9.01491 12.9708 9.15674 12.9505L14.8136 12.9505Z" fill="currentColor"/>
+                                </g>
+                                <defs>
+                                <clipPath id="clip0_387_27">
+                                <rect width="24" height="24" fill="white"/>
+                                </clipPath>
+                                </defs>
+                            </svg>
+                            <p>Synced</p>
+                        `;
+                    }
+                } else if (tab === '4') {
+                    modalInner.innerHTML = `
+                        <div class="view-raw-modalv2-inner">
+                            <textarea class="view-raw-modal-textbox" readonly>${JSON.stringify(product, undefined, 4)}</textarea>
+                        </div>
+                    `;
+                    document.querySelectorAll('.view-raw-modal-textbox').forEach(textbox => {
+                        textbox.style.height = 'auto';
+                        textbox.style.width = '100%';
+                        textbox.style.height = textbox.scrollHeight + 'px';
+                    });
                 }
             }
 
@@ -2059,6 +2057,20 @@ async function loadSite() {
             modal.querySelector('#modalv2-tab-2').addEventListener("click", function () {
                 changeModalTab('2');
             });
+            if (currentUserData?.admin_level === 3) {
+                const tab = modal.querySelector('#modalv2-tab-3')
+                tab.classList.remove('hidden');
+                tab.addEventListener("click", function () {
+                    changeModalTab('3');
+                });
+            }
+            if (experimentIs('product_assets_tab', [1,2])) {
+                const tab = modal.querySelector('#modalv2-tab-4')
+                tab.classList.remove('hidden');
+                tab.addEventListener("click", function () {
+                    changeModalTab('4');
+                });
+            }
 
             changeModalTab('1');
 
@@ -2096,23 +2108,29 @@ async function loadSite() {
                             </svg>
                             <p>Overview</p>
                         </div>
-                        <div class="tab" id="category-modal-tab-3">
-                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                                <path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z" class=""></path>
-                            </svg>
-                            <p>Assets</p>
-                        </div>
-                        <div class="tab" id="category-modal-tab-6">
-                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                                <path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z" class=""></path>
-                            </svg>
-                            <p>URL Assets</p>
-                        </div>
                         <div class="tab disabled" id="category-modal-tab-4">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path fill="currentColor" d="M8 3C7.44771 3 7 3.44772 7 4V5C7 5.55228 7.44772 6 8 6H16C16.5523 6 17 5.55228 17 5V4C17 3.44772 16.5523 3 16 3H15.1245C14.7288 3 14.3535 2.82424 14.1002 2.52025L13.3668 1.64018C13.0288 1.23454 12.528 1 12 1C11.472 1 10.9712 1.23454 10.6332 1.64018L9.8998 2.52025C9.64647 2.82424 9.27121 3 8.8755 3H8Z"></path><path fill-rule="evenodd" clip-rule="evenodd" fill="currentColor" d="M19 4.49996V4.99996C19 6.65681 17.6569 7.99996 16 7.99996H8C6.34315 7.99996 5 6.65681 5 4.99996V4.49996C5 4.22382 4.77446 3.99559 4.50209 4.04109C3.08221 4.27826 2 5.51273 2 6.99996V19C2 20.6568 3.34315 22 5 22H19C20.6569 22 22 20.6568 22 19V6.99996C22 5.51273 20.9178 4.27826 19.4979 4.04109C19.2255 3.99559 19 4.22382 19 4.49996ZM8 12C7.44772 12 7 12.4477 7 13C7 13.5522 7.44772 14 8 14H16C16.5523 14 17 13.5522 17 13C17 12.4477 16.5523 12 16 12H8ZM7 17C7 16.4477 7.44772 16 8 16H13C13.5523 16 14 16.4477 14 17C14 17.5522 13.5523 18 13 18H8C7.44772 18 7 17.5522 7 17Z"></path>
                             </svg>
                             <p>Reviews</p>
+                        </div>
+                        <div class="tab hidden" id="category-modal-tab-3">
+                            <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14.2639 15.9375L12.5958 14.2834C11.7909 13.4851 11.3884 13.086 10.9266 12.9401C10.5204 12.8118 10.0838 12.8165 9.68048 12.9536C9.22188 13.1095 8.82814 13.5172 8.04068 14.3326L4.04409 18.2801M14.2639 15.9375L14.6053 15.599C15.4112 14.7998 15.8141 14.4002 16.2765 14.2543C16.6831 14.126 17.12 14.1311 17.5236 14.2687C17.9824 14.4251 18.3761 14.8339 19.1634 15.6514L20 16.4934M14.2639 15.9375L18.275 19.9565M18.275 19.9565C17.9176 20 17.4543 20 16.8 20H7.2C6.07989 20 5.51984 20 5.09202 19.782C4.71569 19.5903 4.40973 19.2843 4.21799 18.908C4.12796 18.7313 4.07512 18.5321 4.04409 18.2801M18.275 19.9565C18.5293 19.9256 18.7301 19.8727 18.908 19.782C19.2843 19.5903 19.5903 19.2843 19.782 18.908C20 18.4802 20 17.9201 20 16.8V16.4934M4.04409 18.2801C4 17.9221 4 17.4575 4 16.8V7.2C4 6.0799 4 5.51984 4.21799 5.09202C4.40973 4.71569 4.71569 4.40973 5.09202 4.21799C5.51984 4 6.07989 4 7.2 4H16.8C17.9201 4 18.4802 4 18.908 4.21799C19.2843 4.40973 19.5903 4.71569 19.782 5.09202C20 5.51984 20 6.0799 20 7.2V16.4934M17 8.99989C17 10.1045 16.1046 10.9999 15 10.9999C13.8954 10.9999 13 10.1045 13 8.99989C13 7.89532 13.8954 6.99989 15 6.99989C16.1046 6.99989 17 7.89532 17 8.99989Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p>ID Assets</p>
+                        </div>
+                        <div class="tab hidden" id="category-modal-tab-6">
+                            <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14.2639 15.9375L12.5958 14.2834C11.7909 13.4851 11.3884 13.086 10.9266 12.9401C10.5204 12.8118 10.0838 12.8165 9.68048 12.9536C9.22188 13.1095 8.82814 13.5172 8.04068 14.3326L4.04409 18.2801M14.2639 15.9375L14.6053 15.599C15.4112 14.7998 15.8141 14.4002 16.2765 14.2543C16.6831 14.126 17.12 14.1311 17.5236 14.2687C17.9824 14.4251 18.3761 14.8339 19.1634 15.6514L20 16.4934M14.2639 15.9375L18.275 19.9565M18.275 19.9565C17.9176 20 17.4543 20 16.8 20H7.2C6.07989 20 5.51984 20 5.09202 19.782C4.71569 19.5903 4.40973 19.2843 4.21799 18.908C4.12796 18.7313 4.07512 18.5321 4.04409 18.2801M18.275 19.9565C18.5293 19.9256 18.7301 19.8727 18.908 19.782C19.2843 19.5903 19.5903 19.2843 19.782 18.908C20 18.4802 20 17.9201 20 16.8V16.4934M4.04409 18.2801C4 17.9221 4 17.4575 4 16.8V7.2C4 6.0799 4 5.51984 4.21799 5.09202C4.40973 4.71569 4.71569 4.40973 5.09202 4.21799C5.51984 4 6.07989 4 7.2 4H16.8C17.9201 4 18.4802 4 18.908 4.21799C19.2843 4.40973 19.5903 4.71569 19.782 5.09202C20 5.51984 20 6.0799 20 7.2V16.4934M17 8.99989C17 10.1045 16.1046 10.9999 15 10.9999C13.8954 10.9999 13 10.1045 13 8.99989C13 7.89532 13.8954 6.99989 15 6.99989C16.1046 6.99989 17 7.89532 17 8.99989Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p>URL Assets</p>
+                        </div>
+                        <div class="tab hidden" id="category-modal-tab-8">
+                            <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14.2639 15.9375L12.5958 14.2834C11.7909 13.4851 11.3884 13.086 10.9266 12.9401C10.5204 12.8118 10.0838 12.8165 9.68048 12.9536C9.22188 13.1095 8.82814 13.5172 8.04068 14.3326L4.04409 18.2801M14.2639 15.9375L14.6053 15.599C15.4112 14.7998 15.8141 14.4002 16.2765 14.2543C16.6831 14.126 17.12 14.1311 17.5236 14.2687C17.9824 14.4251 18.3761 14.8339 19.1634 15.6514L20 16.4934M14.2639 15.9375L18.275 19.9565M18.275 19.9565C17.9176 20 17.4543 20 16.8 20H7.2C6.07989 20 5.51984 20 5.09202 19.782C4.71569 19.5903 4.40973 19.2843 4.21799 18.908C4.12796 18.7313 4.07512 18.5321 4.04409 18.2801M18.275 19.9565C18.5293 19.9256 18.7301 19.8727 18.908 19.782C19.2843 19.5903 19.5903 19.2843 19.782 18.908C20 18.4802 20 17.9201 20 16.8V16.4934M4.04409 18.2801C4 17.9221 4 17.4575 4 16.8V7.2C4 6.0799 4 5.51984 4.21799 5.09202C4.40973 4.71569 4.71569 4.40973 5.09202 4.21799C5.51984 4 6.07989 4 7.2 4H16.8C17.9201 4 18.4802 4 18.908 4.21799C19.2843 4.40973 19.5903 4.71569 19.782 5.09202C20 5.51984 20 6.0799 20 7.2V16.4934M17 8.99989C17 10.1045 16.1046 10.9999 15 10.9999C13.8954 10.9999 13 10.1045 13 8.99989C13 7.89532 13.8954 6.99989 15 6.99989C16.1046 6.99989 17 7.89532 17 8.99989Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p>Override Assets</p>
                         </div>
                         <div class="tab hidden disabled" id="category-modal-tab-5">
                             <svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2126,6 +2144,13 @@ async function loadSite() {
                                 <path d="M9.99171 4.91476C10.2381 4.66581 10.2377 4.26471 9.99081 4.01625L9.16787 3.18824C8.91804 2.93686 8.51118 2.93731 8.2619 3.18925L0.184466 11.3528C-0.0614893 11.6014 -0.061488 12.0016 0.184466 12.2503L8.2619 20.4138C8.51118 20.6658 8.91803 20.6662 9.16787 20.4148L9.99081 19.5867C10.2377 19.3383 10.2381 18.9373 9.99171 18.6882L3.61906 12.2503C3.37298 12.0017 3.37298 11.6013 3.61906 11.3527L9.99171 4.91476Z" fill="currentColor"/>
                             </svg>
                             <p>Raw</p>
+                        </div>
+                        <div class="tab hidden" id="category-modal-tab-7">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1.99976 20.59V19.4C2.00352 19.1363 2.11135 18.8847 2.29976 18.7L4.69976 16.28C4.7932 16.1873 4.90402 16.114 5.02586 16.0642C5.14769 16.0145 5.27816 15.9893 5.40976 15.99H5.99976L14.9998 6.99002L14.1498 6.14002C14.0504 6.04381 13.9721 5.92804 13.9198 5.80002L12.4298 2.07002C12.3934 1.97916 12.3845 1.87962 12.4042 1.78374C12.4238 1.68787 12.4712 1.59987 12.5404 1.53066C12.6096 1.46146 12.6976 1.41408 12.7935 1.39442C12.8894 1.37475 12.9889 1.38365 13.0798 1.42002L16.8098 2.92002C16.9369 2.9694 17.0526 3.04427 17.1498 3.14002L17.7898 3.78002C17.8827 3.68629 17.9933 3.6119 18.1152 3.56113C18.237 3.51036 18.3678 3.48422 18.4998 3.48422C18.6318 3.48422 18.7625 3.51036 18.8843 3.56113C19.0062 3.6119 19.1168 3.68629 19.2098 3.78002L20.2098 4.78002C20.3035 4.87299 20.3779 4.98359 20.4287 5.10545C20.4794 5.22731 20.5056 5.35801 20.5056 5.49002C20.5056 5.62203 20.4794 5.75274 20.4287 5.8746C20.3779 5.99646 20.3035 6.10706 20.2098 6.20002L21.7898 7.78002C21.8835 7.87299 21.9579 7.98359 22.0087 8.10545C22.0594 8.2273 22.0856 8.35801 22.0856 8.49002C22.0856 8.62203 22.0594 8.75274 22.0087 8.8746C21.9579 8.99646 21.8835 9.10706 21.7898 9.20002L20.2098 10.78C20.1168 10.8738 20.0062 10.9481 19.8843 10.9989C19.7625 11.0497 19.6318 11.0758 19.4998 11.0758C19.3678 11.0758 19.237 11.0497 19.1152 10.9989C18.9933 10.9481 18.8827 10.8738 18.7898 10.78L16.9998 9.00002L7.99976 18V18.59C7.99601 18.8538 7.88818 19.1054 7.69976 19.29L5.29976 21.71C5.20632 21.8027 5.09551 21.876 4.97367 21.9258C4.85183 21.9756 4.72137 22.0008 4.58976 22H3.39976C3.13599 21.9963 2.88439 21.8884 2.69976 21.7L2.27976 21.3C2.18708 21.2066 2.11376 21.0958 2.06399 20.9739C2.01423 20.8521 1.989 20.7216 1.98976 20.59H1.99976Z" fill="currentColor"></path>
+                                <path d="M8.23022 10.23C8.43022 10.43 8.74022 10.43 8.93022 10.23L10.2302 8.92999C10.3218 8.83652 10.3732 8.71086 10.3732 8.57999C10.3732 8.44911 10.3218 8.32345 10.2302 8.22998L6.50022 4.49999L6.80022 4.19999C6.98345 4.01306 7.08608 3.76174 7.08608 3.49999C7.08608 3.23823 6.98345 2.98691 6.80022 2.79999L6.30022 2.29999C6.10022 2.09999 5.85022 1.99999 5.60022 2.07999C5.17022 2.21999 4.43022 2.56999 3.50022 3.49999C2.86608 4.07663 2.37918 4.79669 2.08022 5.59999C2.00022 5.84999 2.11022 6.09999 2.29022 6.29999L2.79022 6.79999C2.88319 6.89371 2.99379 6.96811 3.11565 7.01888C3.23751 7.06965 3.36821 7.09578 3.50022 7.09578C3.63224 7.09578 3.76294 7.06965 3.8848 7.01888C4.00666 6.96811 4.11726 6.89371 4.21022 6.79999L4.50022 6.49999L8.23022 10.23ZM13.7702 15.06C13.6786 15.1534 13.6273 15.2791 13.6273 15.41C13.6273 15.5409 13.6786 15.6665 13.7702 15.76L15.5002 17.5L16.9402 19.9C16.9823 19.9692 17.0327 20.033 17.0902 20.09L18.8202 21.82C18.9202 21.92 19.0802 21.92 19.1802 21.82L21.8202 19.18C21.9202 19.08 21.9202 18.92 21.8202 18.82L20.1002 17.1C20.0401 17.0418 19.9729 16.9914 19.9002 16.95L17.5002 15.5L15.7702 13.77C15.6768 13.6784 15.5511 13.6271 15.4202 13.6271C15.2893 13.6271 15.1637 13.6784 15.0702 13.77L13.7702 15.07V15.06Z" fill="currentColor"></path>
+                            </svg>
+                            <p>Admin</p>
                         </div>
                     </div>
 
@@ -2186,7 +2211,10 @@ async function loadSite() {
                             <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${categoryData.sku_id}')">${categoryData.sku_id}</p>
                             <h1>${categoryData.name}</h1>
                             <p>${categoryData.summary ? categoryData.summary : ''}</p>
-                            <p class="updated-date">Last Updated: </p>
+                            <div class="misc-info">
+                                <p class="updated-date">Last Updated: </p>
+                                <p class="${categoryData.limited ? '' : 'hidden'}">We have limited data on this category</p>
+                            </div>
                             <div class="category-modal-quick-info-container">
                                 <div class="outer-block">
                                     <p class="quick-info-prices-title">Prices</p>
@@ -2210,16 +2238,7 @@ async function loadSite() {
                                 <div class="outer-block">
                                     <p>Community Rating</p>
                                     <div class="block">
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <g clip-path="url(#clip0_58_258)">
-                                            <path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="#FFEC3E"/>
-                                            </g>
-                                            <defs>
-                                            <clipPath id="clip0_58_258">
-                                            <rect width="24" height="24" fill="white"/>
-                                            </clipPath>
-                                            </defs>
-                                        </svg>
+                                        <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="#FFEC3E" d="M27.287 34.627c-.404 0-.806-.124-1.152-.371L18 28.422l-8.135 5.834c-.693.496-1.623.496-2.312-.008-.689-.499-.979-1.385-.721-2.194l3.034-9.792-8.062-5.681c-.685-.505-.97-1.393-.708-2.203.264-.808 1.016-1.357 1.866-1.363L12.947 13l3.179-9.549c.268-.809 1.023-1.353 1.874-1.353.851 0 1.606.545 1.875 1.353L23 13l10.036.015c.853.006 1.606.556 1.867 1.363.263.81-.022 1.698-.708 2.203l-8.062 5.681 3.034 9.792c.26.809-.033 1.695-.72 2.194-.347.254-.753.379-1.16.379z"/></svg>
                                         <h2 id="average-rating">N/A</h2>
                                         <h2>/</h2>
                                         <h1>5</h1>
@@ -2290,7 +2309,7 @@ async function loadSite() {
                             if (!product.prices) {
                                 return;
                             }
-                            if (product.type === item_types.AVATAR_DECORATION || product.type === item_types.PROFILE_EFFECT || product.type === item_types.NAMEPLATE || product.type === item_types.EXTERNAL_SKU) {
+                            if (product.type === item_types.AVATAR_DECORATION || product.type === item_types.PROFILE_EFFECT || product.type === item_types.NAMEPLATE || product.type === item_types.PROFILE_FRAME || product.type === item_types.EXTERNAL_SKU) {
 
                                 product.prices["0"]?.country_prices?.prices?.forEach(price => {
                                     if (price.currency === "usd") {
@@ -2339,8 +2358,8 @@ async function loadSite() {
                             }
                         });
 
-                        const standardPriceOutput = `US$${(standardUS / 100).toFixed(2)}`;
-                        const nitroPriceOutput = `US$${(nitroUS / 100).toFixed(2)}`;
+                        const standardPriceOutput = `US$${(standardUS / 100).toFixed(2).replace('.00', '')}`;
+                        const nitroPriceOutput = `US$${(nitroUS / 100).toFixed(2).replace('.00', '')}`;
 
                         pricesDetailBlock.innerHTML = `
                             <div class="raw-price-container" id="standardUS">
@@ -2349,13 +2368,13 @@ async function loadSite() {
                             <div class="raw-price-container" id="nitroUS">
                                 <h3>${nitroPriceOutput}</h3>
                             </div>
-                            <div class="raw-price-container" id="standardOrb">
+                            <div class="raw-price-container" style="grid-column: span 2;" id="standardOrb">
                                 <div class="orb-icon"></div>
-                                <h3>${standardOrb}</h3>
+                                <h3>${standardOrb.toLocaleString('en-US')}</h3>
                             </div>
-                            <div class="raw-price-container" id="nitroOrb">
+                            <div class="raw-price-container hidden" id="nitroOrb">
                                 <div class="orb-icon"></div>
-                                <h3>${nitroOrb}</h3>
+                                <h3>${nitroOrb.toLocaleString('en-US')}</h3>
                             </div>
                         `;
 
@@ -2419,6 +2438,7 @@ async function loadSite() {
                         let type0count = 0;
                         let type1count = 0;
                         let type2count = 0;
+                        let type3count = 0;
                         let type1000count = 0;
                         let type3000count = 0;
                         
@@ -2432,6 +2452,9 @@ async function loadSite() {
                             } else if (product.type === 2) {
                                 total += 1;
                                 type2count += 1;
+                            } else if (product.type === 3) {
+                                total += 1;
+                                type3count += 1;
                             } else if (product.type === 1000) {
                                 total += 1;
                                 type1000count += 1;
@@ -2485,6 +2508,13 @@ async function loadSite() {
         
                             productsDetailBlock.appendChild(itemCount);
                         }
+                        if (type3count) {
+                            let itemCount = document.createElement("p");
+        
+                            itemCount.textContent = 'Profile Frames: '+type3count;
+        
+                            productsDetailBlock.appendChild(itemCount);
+                        }
                         if (type1000count) {
                             let itemCount = document.createElement("p");
         
@@ -2511,6 +2541,10 @@ async function loadSite() {
                     });
                     
                     const reviewsTab = modal.querySelector('#category-modal-tab-4');
+                    if (settingsStore.staff_force_enable_reviews === 0) {
+                        reviewsTab.classList.add('has-tooltip');
+                        reviewsTab.setAttribute('data-tooltip', 'Reviews have been temporarily disabled');
+                    } else
                     if (categoryModalInfo.reviews_disabled != true || settingsStore.staff_force_viewable_reviews_tab === 1) {
                         reviewsTab.classList.remove('disabled');
                         reviewsTab.addEventListener("click", function () {
@@ -2548,6 +2582,33 @@ async function loadSite() {
                         reviewsTab.classList.add('has-tooltip');
                         reviewsTab.setAttribute('data-tooltip', 'Reviews have been disabled for this category');
                     }
+
+                    const tab3 = modal.querySelector('#category-modal-tab-3');
+                    const catalogBannerAssetEntry = Object.values(customCategoryAssets).find(entry =>
+                        typeof entry === "object" && entry.sku_id === categoryData.sku_id
+                    );
+                    if (Object.keys(categoryData.assets.id).length !== 0 || catalogBannerAssetEntry) {
+                        tab3.classList.remove('hidden');
+                        tab3.addEventListener("click", function () {
+                            changeModalTab('3');
+                        });
+                    }
+
+                    const tab6 = modal.querySelector('#category-modal-tab-6');
+                    if (Object.keys(categoryData.assets.url).length !== 0) {
+                        tab6.classList.remove('hidden');
+                        tab6.addEventListener("click", function () {
+                            changeModalTab('6');
+                        });
+                    }
+
+                    const tab8 = modal.querySelector('#category-modal-tab-8');
+                    if (Object.keys(categoryData.assets.overrides).length !== 0) {
+                        tab8.classList.remove('hidden');
+                        tab8.addEventListener("click", function () {
+                            changeModalTab('8');
+                        });
+                    }
         
                 } else if (tab === '2') {
                     modalInner.innerHTML = `
@@ -2568,26 +2629,26 @@ async function loadSite() {
 
                     const assetsContainer = modalInner.querySelector('.category-modal-assets-container');
 
+                    const ia = categoryData.assets.id;
+                    const ja = categoryData.assets.json;
+
                     const allAssets = {
-                        "Banner": categoryData.banner,
-                        "Banner Asset (Static)": categoryData.banner_asset?.static,
-                        "Banner Asset (Animated)": categoryData.banner_asset?.animated,
-                        "Logo": categoryData.logo,
-                        "Mobile Background": categoryData.mobile_bg,
-                        "Product Detail Page Background": categoryData.pdp_bg,
-                        "Success Modal Background": categoryData.success_modal_bg,
-                        "Mobile Banner": categoryData.mobile_banner,
-                        "Featured Block": categoryData.featured_block,
-                        "Hero Banner": categoryData.hero_banner,
-                        "Hero Banner Asset (Static)": categoryData.hero_banner_asset?.static,
-                        "Hero Banner Asset (Animated)": categoryData.hero_banner_asset?.animated,
-                        "Wide Banner": categoryData.wide_banner,
-                        "Hero Logo": categoryData.hero_logo,
-                        "Catalog Banner Asset (Static)": categoryData.catalog_banner_asset?.static,
-                        "Catalog Banner Asset (Animated)": categoryData.catalog_banner_asset?.animated,
-                        "Category Background": categoryData.category_bg,
-                        "Condensed Banner Left": categoryData.condensed_banner_left,
-                        "Condensed Banner Right": categoryData.condensed_banner_right
+                        "Banner": ia.banner,
+                        "Banner Asset (Static)": ja.banner_asset?.static,
+                        "Banner Asset (Animated)": ja.banner_asset?.animated,
+                        "Logo": ia.logo,
+                        "Mobile Background": ia.mobile_bg,
+                        "Product Detail Page Background": ia.pdp_bg,
+                        "Success Modal Background": ia.success_modal_bg,
+                        "Mobile Banner": ia.mobile_banner,
+                        "Featured Block": ia.featured_block,
+                        "Hero Banner": ia.hero_banner,
+                        "Hero Banner Asset (Static)": ja.hero_banner_asset?.static,
+                        "Hero Banner Asset (Animated)": ja.hero_banner_asset?.animated,
+                        "Wide Banner": ia.wide_banner,
+                        "Hero Logo": ia.hero_logo,
+                        "Catalog Banner Asset (Static)": ja.catalog_banner_asset?.static,
+                        "Catalog Banner Asset (Animated)": ja.catalog_banner_asset?.animated
                     };
 
                     let nullAssets = true;
@@ -2730,19 +2791,29 @@ async function loadSite() {
 
                     const assetsContainer = modalInner.querySelector('.category-modal-assets-container');
 
+                    const ua = categoryData.assets.url;
+
                     const allAssets = {
-                        "Hero Banner": categoryData.hero_banner_url,
-                        "Hero Banner Animated": categoryData.hero_banner_animated_url,
-                        "Hero Rive": categoryData.hero_rive_url,
-                        "Hero Logo": categoryData.hero_logo_url,
-                        "Catalog Banner": categoryData.catalog_banner_url,
-                        "Catalog Banner Animated": categoryData.catalog_banner_animated_url,
-                        "Featured Block": categoryData.featured_block_url,
-                        "Logo": categoryData.logo_url,
-                        "Product Detail Page Background": categoryData.pdp_bg_url,
-                        "Mobile Banner": categoryData.mobile_banner_url,
-                        "Mobile Background": categoryData.mobile_bg_url,
-                        "Mobile Hero": categoryData.mobile_hero_url,
+                        "Hero Banner": ua.hero_banner,
+                        "Hero Banner Animated": ua.hero_banner_animated,
+                        "Hero Rive": ua.hero_rive,
+                        "Hero Logo": ua.hero_logo,
+                        "Catalog Banner": ua.catalog_banner,
+                        "Catalog Banner Animated": ua.catalog_banner_animated,
+                        "Catalog Banner Rive": ua.catalog_banner_rive,
+                        "Featured Block": ua.featured_block,
+                        "Logo": ua.logo,
+                        "Product Detail Page Background": ua.pdp_bg,
+                        "Wide Banner": ua.wide_banner,
+                        "Wide Banner Animated": ua.wide_banner_animated,
+                        "Mobile Hero": ua.mobile_hero,
+                        "Mobile Hero Animated": ua.mobile_hero_animated,
+                        "Mobile Banner": ua.mobile_banner,
+                        "Mobile Background": ua.mobile_bg,
+                        "Shop Button Background Hover": ua.shop_button_bg_hover,
+                        "Upsell Banner Popout": ua.upsell_banner_popout,
+                        "Upsell Banner": ua.upsell_banner,
+                        "Tab Tooltip": ua.tab_tooltip,
                     };
 
                     let nullAssets = true;
@@ -2805,6 +2876,100 @@ async function loadSite() {
                         });
                     });
 
+                } else if (tab === '8') {
+                    modalInner.innerHTML = `
+                        <div class="category-modal-assets-container">
+                        </div>
+                    `;
+
+                    const assetsContainer = modalInner.querySelector('.category-modal-assets-container');
+
+                    const oa = categoryData.assets.overrides;
+
+                    const allAssets = {
+                        "Banner Animated": oa.banner_animated,
+                        "Hero Banner": oa.hero_banner,
+                        "Hero Banner Animated": oa.hero_banner_animated,
+                        "Hero Rive": oa.hero_rive,
+                        "Hero Logo": oa.hero_logo,
+                        "Catalog Banner": oa.catalog_banner,
+                        "Catalog Banner Animated": oa.catalog_banner_animated,
+                        "Catalog Banner Rive": oa.catalog_banner_rive,
+                        "Featured Block": oa.featured_block,
+                        "Logo": oa.logo,
+                        "Product Detail Page Background": oa.pdp_bg,
+                        "Wide Banner": oa.wide_banner,
+                        "Wide Banner Animated": oa.wide_banner_animated,
+                        "Mobile Hero": oa.mobile_hero,
+                        "Mobile Hero Animated": oa.mobile_hero_animated,
+                        "Mobile Banner": oa.mobile_banner,
+                        "Mobile Background": oa.mobile_bg,
+                        "Shop Button Background Hover": oa.shop_button_bg_hover,
+                        "Upsell Banner Popout": oa.upsell_banner_popout,
+                        "Upsell Banner": oa.upsell_banner,
+                        "Tab Tooltip": oa.tab_tooltip,
+                    };
+
+                    let nullAssets = true;
+
+                    Object.entries(allAssets).forEach(([asset, value]) => {
+                        if (!value) return; // skip null or undefined
+
+                        nullAssets = false;
+
+                        let assetDiv = document.createElement("div");
+
+                        assetDiv.classList.add('asset-div')
+
+                        if (value.includes(".webm") || asset.includes("Animated")) {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <video disablepictureinpicture autoplay muted loop src="${value}"></video> 
+                            `;
+                        } else if (asset.includes("Rive")) {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <p class="asset_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${value}')">${value}</p>
+                                <p>Rive files cannot be displayed here</p>
+                            `;
+                        } else if (value.includes(".png") || value.includes(".jpg") || !asset.includes("Animated")) {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <img src="${value}"></img> 
+                            `;
+                        } else {
+                            assetDiv.innerHTML = `
+                                <h2>${asset}</h2>
+                                <p class="asset_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${value}')">${value}</p>
+                                <img src="https://cdn.discordapp.com/app-assets/1096190356233670716/${value}.png?size=4096"></img> 
+                            `;
+                        }
+
+                        assetsContainer.appendChild(assetDiv);
+                    });
+
+                    if (nullAssets) {
+                        assetsContainer.innerHTML = `
+                            <div class="no-assets-container">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M13.96 5.46002L18.54 10.04C18.633 10.1337 18.7436 10.2081 18.8655 10.2589C18.9873 10.3097 19.118 10.3358 19.25 10.3358C19.3821 10.3358 19.5128 10.3097 19.6346 10.2589C19.7565 10.2081 19.8671 10.1337 19.96 10.04L21.34 8.66002C21.7125 8.28529 21.9216 7.77839 21.9216 7.25002C21.9216 6.72164 21.7125 6.21474 21.34 5.84002L18.16 2.66002C17.7853 2.28751 17.2784 2.07843 16.75 2.07843C16.2217 2.07843 15.7148 2.28751 15.34 2.66002L13.96 4.04002C13.8663 4.13298 13.7919 4.24358 13.7412 4.36544C13.6904 4.4873 13.6642 4.618 13.6642 4.75002C13.6642 4.88203 13.6904 5.01273 13.7412 5.13459C13.7919 5.25645 13.8663 5.36705 13.96 5.46002ZM2.11005 20.16L2.84005 15.94C2.94422 15.3306 3.2341 14.7683 3.67005 14.33L11.54 6.46002C11.633 6.36629 11.7436 6.29189 11.8655 6.24112C11.9873 6.19036 12.118 6.16422 12.25 6.16422C12.3821 6.16422 12.5128 6.19036 12.6346 6.24112C12.7565 6.29189 12.8671 6.36629 12.96 6.46002L17.54 11.04C17.6338 11.133 17.7082 11.2436 17.7589 11.3654C17.8097 11.4873 17.8358 11.618 17.8358 11.75C17.8358 11.882 17.8097 12.0127 17.7589 12.1346C17.7082 12.2565 17.6338 12.3671 17.54 12.46L9.67005 20.33C9.2344 20.7641 8.67585 21.0539 8.07005 21.16L3.84005 21.89C3.60388 21.9301 3.36155 21.9131 3.13331 21.8403C2.90508 21.7676 2.69759 21.6412 2.52821 21.4719C2.35882 21.3025 2.23247 21.095 2.15972 20.8667C2.08697 20.6385 2.06993 20.3962 2.11005 20.16Z" fill="currentColor"/>
+                                    <path d="M5 1L5.81027 3.18973L8 4L5.81027 4.81027L5 7L4.18973 4.81027L2 4L4.18973 3.18973L5 1Z" fill="currentColor"/>
+                                    <path d="M14 19L14.5402 20.4598L16 21L14.5402 21.5402L14 23L13.4598 21.5402L12 21L13.4598 20.4598L14 19Z" fill="currentColor"/>
+                                </svg>
+                                <p>This category has no Override assets.</p>
+                            </div>
+                        `;
+                    }
+
+                    document.querySelectorAll('.asset_id').forEach((el) => {
+                        el.addEventListener("click", function () {
+                            el.classList.add('clicked');
+                            setTimeout(() => {
+                                el.classList.remove('clicked');
+                            }, 500);
+                        });
+                    });
+
                 } else if (tab === '4') {
                     modalInner.innerHTML = `
                         <div class="category-modal-reviews-container">
@@ -2848,7 +3013,7 @@ async function loadSite() {
                                 }
                             });
 
-                            if (currentUserData.ban_config.ban_type >= 1 || settingsStore.staff_simulate_ban_type_1 === 1 || settingsStore.staff_simulate_ban_type_2 === 1 || currentUserData.types.guidelines_block === true || settingsStore.staff_simulate_guidelines_block === 1 || currentUserData.types.suspicious_account === true || settingsStore.staff_simulate_sus_block === 1) {
+                            if (currentUserData.banned >= 1 || settingsStore.staff_simulate_banned === 1 || currentUserData.types?.guidelines_block === true || settingsStore.staff_simulate_guidelines_block === 1 || currentUserData.types?.suspicious_account === true || settingsStore.staff_simulate_sus_block === 1) {
 
                                 let banTitle = 'You have been suspended from submitting reviews.';
                                 let banDisclaimer = `
@@ -2859,7 +3024,7 @@ async function loadSite() {
                                 `;
                                 let appealable = true;
 
-                                if (currentUserData.ban_config.ban_type === 2 || settingsStore.staff_simulate_ban_type_2 === 1) {
+                                if (currentUserData.banned === 1 || settingsStore.staff_simulate_banned === 1) {
                                     banTitle = 'You have been permanently banned from submitting reviews.';
                                     banDisclaimer = `
                                         <p>You have violated our</p>
@@ -2869,7 +3034,7 @@ async function loadSite() {
                                     appealable = false;
                                 }
 
-                                if (currentUserData.types.guidelines_block === true || settingsStore.staff_simulate_guidelines_block === 1) {
+                                if (currentUserData.types?.guidelines_block === true || settingsStore.staff_simulate_guidelines_block === 1) {
                                     banTitle = 'You cannot submit reviews.';
                                     banDisclaimer = `
                                         <p>Your username violates our</p>
@@ -2879,7 +3044,7 @@ async function loadSite() {
                                     appealable = false;
                                 }
 
-                                if (currentUserData.types.suspicious_account === true || settingsStore.staff_simulate_sus_block === 1) {
+                                if (currentUserData.types?.suspicious_account === true || settingsStore.staff_simulate_sus_block === 1) {
                                     banTitle = 'You cannot submit reviews.';
                                     banDisclaimer = `
                                         <p>Suspicious activity has been detected on your account, you cannot submit review temporarily.</p>
@@ -2930,11 +3095,11 @@ async function loadSite() {
                             } else {
                                 reviewInputContainer.innerHTML = `
                                     <div id="star-rating" class="stars">
-                                        <svg class="has-tooltip" data-tooltip="1 Star" data-value="1" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
-                                        <svg class="has-tooltip" data-tooltip="2 Stars" data-value="2" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
-                                        <svg class="has-tooltip" data-tooltip="3 Stars" data-value="3" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
-                                        <svg class="has-tooltip" data-tooltip="4 Stars" data-value="4" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
-                                        <svg class="has-tooltip" data-tooltip="5 Stars" data-value="5" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_131_2)"><path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="currentColor"></path></g><defs><clipPath id="clip0_131_2"><rect width="24" height="24" fill="currentColor"></rect></clipPath></defs></svg>
+                                        <svg class="has-tooltip" data-tooltip="1 Star" data-value="1" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="currentColor" d="M27.287 34.627c-.404 0-.806-.124-1.152-.371L18 28.422l-8.135 5.834c-.693.496-1.623.496-2.312-.008-.689-.499-.979-1.385-.721-2.194l3.034-9.792-8.062-5.681c-.685-.505-.97-1.393-.708-2.203.264-.808 1.016-1.357 1.866-1.363L12.947 13l3.179-9.549c.268-.809 1.023-1.353 1.874-1.353.851 0 1.606.545 1.875 1.353L23 13l10.036.015c.853.006 1.606.556 1.867 1.363.263.81-.022 1.698-.708 2.203l-8.062 5.681 3.034 9.792c.26.809-.033 1.695-.72 2.194-.347.254-.753.379-1.16.379z"/></svg>
+                                        <svg class="has-tooltip" data-tooltip="2 Stars" data-value="2" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="currentColor" d="M27.287 34.627c-.404 0-.806-.124-1.152-.371L18 28.422l-8.135 5.834c-.693.496-1.623.496-2.312-.008-.689-.499-.979-1.385-.721-2.194l3.034-9.792-8.062-5.681c-.685-.505-.97-1.393-.708-2.203.264-.808 1.016-1.357 1.866-1.363L12.947 13l3.179-9.549c.268-.809 1.023-1.353 1.874-1.353.851 0 1.606.545 1.875 1.353L23 13l10.036.015c.853.006 1.606.556 1.867 1.363.263.81-.022 1.698-.708 2.203l-8.062 5.681 3.034 9.792c.26.809-.033 1.695-.72 2.194-.347.254-.753.379-1.16.379z"/></svg>
+                                        <svg class="has-tooltip" data-tooltip="3 Stars" data-value="3" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="currentColor" d="M27.287 34.627c-.404 0-.806-.124-1.152-.371L18 28.422l-8.135 5.834c-.693.496-1.623.496-2.312-.008-.689-.499-.979-1.385-.721-2.194l3.034-9.792-8.062-5.681c-.685-.505-.97-1.393-.708-2.203.264-.808 1.016-1.357 1.866-1.363L12.947 13l3.179-9.549c.268-.809 1.023-1.353 1.874-1.353.851 0 1.606.545 1.875 1.353L23 13l10.036.015c.853.006 1.606.556 1.867 1.363.263.81-.022 1.698-.708 2.203l-8.062 5.681 3.034 9.792c.26.809-.033 1.695-.72 2.194-.347.254-.753.379-1.16.379z"/></svg>
+                                        <svg class="has-tooltip" data-tooltip="4 Stars" data-value="4" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="currentColor" d="M27.287 34.627c-.404 0-.806-.124-1.152-.371L18 28.422l-8.135 5.834c-.693.496-1.623.496-2.312-.008-.689-.499-.979-1.385-.721-2.194l3.034-9.792-8.062-5.681c-.685-.505-.97-1.393-.708-2.203.264-.808 1.016-1.357 1.866-1.363L12.947 13l3.179-9.549c.268-.809 1.023-1.353 1.874-1.353.851 0 1.606.545 1.875 1.353L23 13l10.036.015c.853.006 1.606.556 1.867 1.363.263.81-.022 1.698-.708 2.203l-8.062 5.681 3.034 9.792c.26.809-.033 1.695-.72 2.194-.347.254-.753.379-1.16.379z"/></svg>
+                                        <svg class="has-tooltip" data-tooltip="5 Stars" data-value="5" width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="currentColor" d="M27.287 34.627c-.404 0-.806-.124-1.152-.371L18 28.422l-8.135 5.834c-.693.496-1.623.496-2.312-.008-.689-.499-.979-1.385-.721-2.194l3.034-9.792-8.062-5.681c-.685-.505-.97-1.393-.708-2.203.264-.808 1.016-1.357 1.866-1.363L12.947 13l3.179-9.549c.268-.809 1.023-1.353 1.874-1.353.851 0 1.606.545 1.875 1.353L23 13l10.036.015c.853.006 1.606.556 1.867 1.363.263.81-.022 1.698-.708 2.203l-8.062 5.681 3.034 9.792c.26.809-.033 1.695-.72 2.194-.347.254-.753.379-1.16.379z"/></svg>
                                     </div>
 
                                     <svg class="review-specific-item-button has-tooltip" data-tooltip="Choose Item to review" width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -2952,7 +3117,7 @@ async function loadSite() {
                                     <input class="hidden" autocomplete="off" id="specific-item-sku" placeholder="specific-item-sku">
 
                                     <input autocomplete="off" id="write-review-post-input" placeholder="Write a review for ${categoryData.name}...">
-                                    <p class="write-review-text-limit">100</p>
+                                    <p class="write-review-text-limit">200</p>
                                     <svg class="review-send-icon has-tooltip" data-tooltip="Submit Review" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M6.6 10.02 14 11.4a.6.6 0 0 1 0 1.18L6.6 14l-2.94 5.87a1.48 1.48 0 0 0 1.99 1.98l17.03-8.52a1.48 1.48 0 0 0 0-2.64L5.65 2.16a1.48 1.48 0 0 0-1.99 1.98l2.94 5.88Z" class=""></path></svg>
                                 `;
                                 if (hasReviewAlready) {
@@ -2966,7 +3131,7 @@ async function loadSite() {
                             const reviewSendIcon = modalInner.querySelector('.review-send-icon');
                             const errorOutput = modalInner.querySelector('.write-review-disclaimer-error');
 
-                            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'review_specific_item')?.treatment === 1) {
+                            if (experimentIs('review_specific_item', 1)) {
                             } else {
                                 specificItemChoose.classList.add('hidden')
                             }
@@ -2978,20 +3143,9 @@ async function loadSite() {
 
                             const input = reviewInput;
                             const counter = modalInner.querySelector('.write-review-text-limit');
-                            let maxLength = 100;
+                            let maxLength = 200;
 
                             if (counter) {
-                                if (currentUserData.xp_information.level >= 3 || currentUserData.user_features.includes("REVIEW_200_CHAR")) {
-                                    maxLength = 200;
-                                    counter.classList.add('has-tooltip');
-                                    counter.setAttribute('data-tooltip', 'Review length limit extended thanks to XP!');
-                                }
-
-                                if (currentUserData.xp_information.level >= 5 || currentUserData.user_features.includes("REVIEW_300_CHAR")) {
-                                    maxLength = 300;
-                                    counter.classList.add('has-tooltip');
-                                    counter.setAttribute('data-tooltip', 'Review length limit extended thanks to XP!');
-                                }
 
                                 function updateCounter() {
                                     const currentLength = input.value.length;
@@ -3109,14 +3263,14 @@ async function loadSite() {
                                 let reviewDiv = document.createElement("div");
                                 reviewDiv.classList.add('category-modal-review-container');
             
-                                if (review.types.flag != 0 && review.user.id != currentUserData?.id) {
+                                if (review.flag !=+ 0 && review.user.id !=+ currentUserData?.id) {
                                     reviewDiv.innerHTML = `
                                         <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                                             <path fill="currentColor" d="M1.3 21.3a1 1 0 1 0 1.4 1.4l20-20a1 1 0 0 0-1.4-1.4l-20 20ZM3.16 16.05c.18.24.53.26.74.05l.72-.72c.18-.18.2-.45.05-.66a15.7 15.7 0 0 1-1.43-2.52.48.48 0 0 1 0-.4c.4-.9 1.18-2.37 2.37-3.72C7.13 6.38 9.2 5 12 5c.82 0 1.58.12 2.28.33.18.05.38 0 .52-.13l.8-.8c.25-.25.18-.67-.15-.79A9.79 9.79 0 0 0 12 3C4.89 3 1.73 10.11 1.11 11.7a.83.83 0 0 0 0 .6c.25.64.9 2.15 2.05 3.75Z" class=""></path>
                                             <path fill="currentColor" d="M8.18 10.81c-.13.43.36.65.67.34l2.3-2.3c.31-.31.09-.8-.34-.67a4 4 0 0 0-2.63 2.63ZM12.85 15.15c-.31.31-.09.8.34.67a4.01 4.01 0 0 0 2.63-2.63c.13-.43-.36-.65-.67-.34l-2.3 2.3Z" class=""></path>
                                             <path fill="currentColor" d="M9.72 18.67a.52.52 0 0 0-.52.13l-.8.8c-.25.25-.18.67.15.79 1.03.38 2.18.61 3.45.61 7.11 0 10.27-7.11 10.89-8.7a.83.83 0 0 0 0-.6c-.25-.64-.9-2.15-2.05-3.75a.49.49 0 0 0-.74-.05l-.72.72a.51.51 0 0 0-.05.66 15.7 15.7 0 0 1 1.43 2.52c.06.13.06.27 0 .4-.4.9-1.18 2.37-2.37 3.72C16.87 17.62 14.8 19 12 19c-.82 0-1.58-.12-2.28-.33Z" class=""></path>
                                         </svg>
-                                        <p class="review-text-content">This review has been censored due to inappropriate content.</p>
+                                        <p class="review-text-content">This review has been censored due to sensitive content.</p>
                                         <div style="flex: 1;"></div>
                                         <button class="generic-button brand">
                                             Show
@@ -3136,8 +3290,8 @@ async function loadSite() {
                                 }
 
                                 async function revealReview() {
-                                    if (review.types.system != 0) {
-                                        const type = reviews_system_types.find(type => type.id === review.types.system).codename;
+                                    if (review.system && review.system !== 0) {
+                                        const type = reviews_system_types.find(type => type.id === review.system).codename;
                                         reviewDiv.style.backgroundColor = `var(--bg-feedback-${type})`;
                                         reviewDiv.classList.add(`bg-feedback-${type}`);
                                     }
@@ -3208,7 +3362,7 @@ async function loadSite() {
                                     dateContainer.querySelector('.review-date').textContent = `${formatted}`;
                                     dateContainer.querySelector('.inv').textContent = `${formatted}`;
 
-                                    if (currentUserData?.id === review.user.id || currentUserData?.types.admin_level >= 1) {
+                                    if (currentUserData?.id === review.user.id || currentUserData?.admin_level >= 1) {
                                         let deleteReviewIcon = document.createElement("div");
 
                                         deleteReviewIcon.innerHTML = `
@@ -3222,7 +3376,7 @@ async function loadSite() {
                                         async function reviewDeleteHandle() {
                                             const status = await deleteReviewById(review.id);
 
-                                            if (status.error && status.message) {
+                                            if (status.failed) {
                                             } else {
                                                 await fetchCategoryData();
                                                 fetchAndRenderReviews();
@@ -3233,32 +3387,13 @@ async function loadSite() {
                                         reviewDiv.querySelector(".shop-modal-review-moderation-buttons").appendChild(deleteReviewIcon);
                                     }
 
-                                    if (review.text.length > 100 && currentUserData) {
-                                        let xpReviewIcon = document.createElement("div");
-
-                                        xpReviewIcon.style.height = '20px';
-                                        xpReviewIcon.classList.add('rawicon');
-                                        xpReviewIcon.classList.add('clickable');
-                                        xpReviewIcon.addEventListener("click", function () {
-                                            closeModal();
-                                            setModalv3InnerContent('xp_perks');
-                                        });
-                                        xpReviewIcon.innerHTML = `
-                                            <svg class="has-tooltip" data-tooltip="This user unlocked extended reviews with an XP Perk!" width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M13.5 0L17.1462 9.85378L27 13.5L17.1462 17.1462L13.5 27L9.85378 17.1462L0 13.5L9.85378 9.85378L13.5 0Z" fill="currentColor"></path>
-                                            </svg>
-                                        `;
-
-                                        reviewDiv.querySelector(".review-user-container").appendChild(xpReviewIcon);
-                                    }
-
-                                    if (review.types.flag != 0 && review.user.id === currentUserData?.id) {
+                                    if (review.flag !== 0 && review.user.id === currentUserData?.id) {
                                         let hiddenReviewIcon = document.createElement("div");
 
                                         hiddenReviewIcon.style.height = '20px';
                                         hiddenReviewIcon.classList.add('rawicon');
                                         hiddenReviewIcon.innerHTML = `
-                                            <svg class="has-tooltip" data-tooltip="This review has been flagged as inappropriate and may be hidden to some users" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                            <svg class="has-tooltip" data-tooltip="This review has been flagged as sensitive and may be hidden to some users" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                                                 <path fill="currentColor" d="M1.3 21.3a1 1 0 1 0 1.4 1.4l20-20a1 1 0 0 0-1.4-1.4l-20 20ZM3.16 16.05c.18.24.53.26.74.05l.72-.72c.18-.18.2-.45.05-.66a15.7 15.7 0 0 1-1.43-2.52.48.48 0 0 1 0-.4c.4-.9 1.18-2.37 2.37-3.72C7.13 6.38 9.2 5 12 5c.82 0 1.58.12 2.28.33.18.05.38 0 .52-.13l.8-.8c.25-.25.18-.67-.15-.79A9.79 9.79 0 0 0 12 3C4.89 3 1.73 10.11 1.11 11.7a.83.83 0 0 0 0 .6c.25.64.9 2.15 2.05 3.75Z" class=""></path>
                                                 <path fill="currentColor" d="M8.18 10.81c-.13.43.36.65.67.34l2.3-2.3c.31-.31.09-.8-.34-.67a4 4 0 0 0-2.63 2.63ZM12.85 15.15c-.31.31-.09.8.34.67a4.01 4.01 0 0 0 2.63-2.63c.13-.43-.36-.65-.67-.34l-2.3 2.3Z" class=""></path>
                                                 <path fill="currentColor" d="M9.72 18.67a.52.52 0 0 0-.52.13l-.8.8c-.25.25-.18.67.15.79 1.03.38 2.18.61 3.45.61 7.11 0 10.27-7.11 10.89-8.7a.83.83 0 0 0 0-.6c-.25-.64-.9-2.15-2.05-3.75a.49.49 0 0 0-.74-.05l-.72.72a.51.51 0 0 0-.05.66 15.7 15.7 0 0 1 1.43 2.52c.06.13.06.27 0 .4-.4.9-1.18 2.37-2.37 3.72C16.87 17.62 14.8 19 12 19c-.82 0-1.58-.12-2.28-.33Z" class=""></path>
@@ -3266,13 +3401,13 @@ async function loadSite() {
                                         `;
 
                                         reviewDiv.querySelector(".review-user-container").appendChild(hiddenReviewIcon);
-                                    } else if (review.types.flag != 0) {
+                                    } else if (review.flag !== 0) {
                                         let hiddenReviewIcon = document.createElement("div");
 
                                         hiddenReviewIcon.style.height = '20px';
                                         hiddenReviewIcon.classList.add('rawicon');
                                         hiddenReviewIcon.innerHTML = `
-                                            <svg class="has-tooltip" data-tooltip="This review has been flagged as inappropriate" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                            <svg class="has-tooltip" data-tooltip="This review has been flagged as sensitive" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                                                 <path fill="currentColor" d="M1.3 21.3a1 1 0 1 0 1.4 1.4l20-20a1 1 0 0 0-1.4-1.4l-20 20ZM3.16 16.05c.18.24.53.26.74.05l.72-.72c.18-.18.2-.45.05-.66a15.7 15.7 0 0 1-1.43-2.52.48.48 0 0 1 0-.4c.4-.9 1.18-2.37 2.37-3.72C7.13 6.38 9.2 5 12 5c.82 0 1.58.12 2.28.33.18.05.38 0 .52-.13l.8-.8c.25-.25.18-.67-.15-.79A9.79 9.79 0 0 0 12 3C4.89 3 1.73 10.11 1.11 11.7a.83.83 0 0 0 0 .6c.25.64.9 2.15 2.05 3.75Z" class=""></path>
                                                 <path fill="currentColor" d="M8.18 10.81c-.13.43.36.65.67.34l2.3-2.3c.31-.31.09-.8-.34-.67a4 4 0 0 0-2.63 2.63ZM12.85 15.15c-.31.31-.09.8.34.67a4.01 4.01 0 0 0 2.63-2.63c.13-.43-.36-.65-.67-.34l-2.3 2.3Z" class=""></path>
                                                 <path fill="currentColor" d="M9.72 18.67a.52.52 0 0 0-.52.13l-.8.8c-.25.25-.18.67.15.79 1.03.38 2.18.61 3.45.61 7.11 0 10.27-7.11 10.89-8.7a.83.83 0 0 0 0-.6c-.25-.64-.9-2.15-2.05-3.75a.49.49 0 0 0-.74-.05l-.72.72a.51.51 0 0 0-.05.66 15.7 15.7 0 0 1 1.43 2.52c.06.13.06.27 0 .4-.4.9-1.18 2.37-2.37 3.72C16.87 17.62 14.8 19 12 19c-.82 0-1.58-.12-2.28-.33Z" class=""></path>
@@ -3282,7 +3417,7 @@ async function loadSite() {
                                         reviewDiv.querySelector(".review-user-container").appendChild(hiddenReviewIcon);
                                     }
 
-                                    if (review.types.pinned === true) {
+                                    if (review.pinned && review.pinned === true) {
                                         let pinnedReviewIcon = document.createElement("div");
 
                                         pinnedReviewIcon.style.height = '20px';
@@ -3326,7 +3461,7 @@ async function loadSite() {
                                         reviewDiv.querySelector('.review-avatar-container').remove();
                                     }
 
-                                    if (!review.user.types.system) {
+                                    if (!review.user.system) {
                                         reviewDiv.querySelector('.review-system-tag-container').remove();
                                     }
     
@@ -3417,39 +3552,17 @@ async function loadSite() {
                                     if (review.rating != null) {
                                         for (let i = 0; i < 5; i++) {
                                             let starRate = document.createElement("div");
-        
                                             starRate.innerHTML = `
-                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <g clip-path="url(#clip0_58_258)">
-                                                    <path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="#575757"></path>
-                                                    </g>
-                                                    <defs>
-                                                    <clipPath id="clip0_58_258">
-                                                    <rect width="24" height="24" fill="white"></rect>
-                                                    </clipPath>
-                                                    </defs>
-                                                </svg>
+                                                <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="#575757" d="M27.287 34.627c-.404 0-.806-.124-1.152-.371L18 28.422l-8.135 5.834c-.693.496-1.623.496-2.312-.008-.689-.499-.979-1.385-.721-2.194l3.034-9.792-8.062-5.681c-.685-.505-.97-1.393-.708-2.203.264-.808 1.016-1.357 1.866-1.363L12.947 13l3.179-9.549c.268-.809 1.023-1.353 1.874-1.353.851 0 1.606.545 1.875 1.353L23 13l10.036.015c.853.006 1.606.556 1.867 1.363.263.81-.022 1.698-.708 2.203l-8.062 5.681 3.034 9.792c.26.809-.033 1.695-.72 2.194-.347.254-.753.379-1.16.379z"/></svg>
                                             `;
-        
                                             reviewDiv.querySelector('.possible-stars').appendChild(starRate);
                                         }
         
                                         for (let i = 0; i < review.rating; i++) {
                                             let starRate = document.createElement("div");
-        
                                             starRate.innerHTML = `
-                                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <g clip-path="url(#clip0_58_258)">
-                                                    <path d="M12 1L14.6942 9.2918H23.4127L16.3593 14.4164L19.0534 22.7082L12 17.5836L4.94658 22.7082L7.64074 14.4164L0.587322 9.2918H9.30583L12 1Z" fill="#FFEC3E"></path>
-                                                    </g>
-                                                    <defs>
-                                                    <clipPath id="clip0_58_258">
-                                                    <rect width="24" height="24" fill="white"></rect>
-                                                    </clipPath>
-                                                    </defs>
-                                                </svg>
+                                                <svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="#FFEC3E" d="M27.287 34.627c-.404 0-.806-.124-1.152-.371L18 28.422l-8.135 5.834c-.693.496-1.623.496-2.312-.008-.689-.499-.979-1.385-.721-2.194l3.034-9.792-8.062-5.681c-.685-.505-.97-1.393-.708-2.203.264-.808 1.016-1.357 1.866-1.363L12.947 13l3.179-9.549c.268-.809 1.023-1.353 1.874-1.353.851 0 1.606.545 1.875 1.353L23 13l10.036.015c.853.006 1.606.556 1.867 1.363.263.81-.022 1.698-.708 2.203l-8.062 5.681 3.034 9.792c.26.809-.033 1.695-.72 2.194-.347.254-.753.379-1.16.379z"/></svg>
                                             `;
-        
                                             reviewDiv.querySelector('.star-rating').appendChild(starRate);
                                         }
                                     }
@@ -3466,7 +3579,7 @@ async function loadSite() {
                                         }
                                     }
 
-                                    reviewDiv.querySelector('.review-text-content').textContent = `${review.text}`;
+                                    reviewDiv.querySelector('.review-text-content').textContent = `${review.content}`;
                                     const rsic = reviewDiv.querySelector('.review-specific-item-container')
                                     if (review.item_sku_id) {
                                         rsic.innerHTML = `
@@ -3509,7 +3622,7 @@ async function loadSite() {
 
                                     const displayName = reviewDiv.querySelector('.review-user-display-name');
                                     displayName.textContent = review.user.global_name ? review.user.global_name : review.user.username;
-                                    if (review.user.display_name_styles && JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_render')?.treatment === 1) {
+                                    if (review.user.display_name_styles && experimentIs('display_name_style_render', 1)) {
                                         const dns = renderDisplayNameStyle(review.user.display_name_styles);
                                         displayName.classList.add(dns.class);
                                         Object.assign(displayName.style, dns.style);
@@ -3520,7 +3633,7 @@ async function loadSite() {
                                     }
                                 }
                                 
-                                if (review.types.pinned === true) {
+                                if (review.pinned && review.pinned === true) {
                                     reviewsContainer.insertBefore(reviewDiv, reviewsContainer.firstChild);
                                 } else {
                                     reviewsContainer.appendChild(reviewDiv);
@@ -3536,9 +3649,9 @@ async function loadSite() {
                             `;
 
                             if (categoryModalInfo.reviews_disabled === true) {
-                            } else if (currentUserData && currentUserData.ban_config.ban_type === 0) {
+                            } else if (currentUserData && currentUserData.banned === 0) {
                                 reviewDiv.querySelector('.review-text-content').textContent = 'This category currently has no reviews. You could be the first!';
-                            } else if (currentUserData && currentUserData.ban_config.ban_type >= 1) {
+                            } else if (currentUserData && currentUserData.banned === 1) {
                             } else if (isMobileCache) {
                                 reviewDiv.querySelector('.review-text-content').textContent = 'This category currently has no reviews. Open Shop Archives on a desktop device to submit reviews!';
                             } else {
@@ -3683,6 +3796,146 @@ async function loadSite() {
                             modalInner.querySelector('.category-modal-xp-rewards-container').appendChild(promoCard)
                         }
                     });
+                } else if (tab === '7') {
+                    modalInner.innerHTML = `
+                        <div class="add-category-fields-con">
+                        this doesnt do anything yet
+                            <div class="add-category-fields-fill">
+                            </div>
+                        </div>
+                    `;
+                    const app = modalInner.querySelector(".add-category-fields-fill");
+
+                    function createSection(title) {
+                        const div = document.createElement("div");
+                        div.className = "section";
+                        div.style.display = "flex";
+                        div.style.flexDirection = "column";
+                        div.style.gap = "10px";
+                    
+                        const h = document.createElement("h3");
+                        h.textContent = title;
+                    
+                        div.appendChild(h);
+                        return div;
+                    }
+                    
+                    // Products
+                    const productSection = createSection("Products");
+                    const productList = document.createElement("div");
+                    productList.className = "products";
+                    productList.style.display = "flex";
+                    productList.style.flexDirection = "column";
+                    productList.style.gap = "10px";
+
+                    const addBtn = document.createElement("button");
+                    addBtn.textContent = "+ Add Product";
+                    addBtn.className = "generic-button brand";
+
+                    addBtn.onclick = () => addProduct("");
+
+                    function addProduct(value) {
+                        const row = document.createElement("div");
+                        row.className = "product-item";
+                        row.style.display = "flex";
+                        row.style.gap = "10px";
+                        row.style.marginBottom = "5px";
+
+                        const input = document.createElement("input");
+                        input.value = value;
+
+                        // Move Up Button
+                        const moveUp = document.createElement("button");
+                        moveUp.textContent = "/\\";
+                        moveUp.className = "generic-button primary";
+                        moveUp.onclick = () => {
+                            if (row.previousElementSibling) {
+                                productList.insertBefore(row, row.previousElementSibling);
+                            }
+                        };
+                    
+                        // Move Down Button
+                        const moveDown = document.createElement("button");
+                        moveDown.textContent = "\\/";
+                        moveDown.className = "generic-button primary";
+                        moveDown.onclick = () => {
+                            if (row.nextElementSibling) {
+                                productList.insertBefore(row.nextElementSibling, row);
+                            }
+                        };
+                    
+                        const remove = document.createElement("button");
+                        remove.textContent = "X";
+                        remove.className = "generic-button red";
+                        remove.onclick = () => row.remove();
+                    
+                        row.appendChild(input);
+                        row.appendChild(moveUp);
+                        row.appendChild(moveDown);
+                        row.appendChild(remove);
+                        productList.appendChild(row);
+                    }
+
+                    productSection.appendChild(productList);
+                    productSection.appendChild(addBtn);
+                    app.appendChild(productSection);
+
+                    if (Array.isArray(categoryData.products)) {
+                        categoryData.products.forEach(p => addProduct(p.sku_id));
+                    }
+
+                    const submitBtn = document.createElement("button");
+                    submitBtn.textContent = "Submit";
+                    submitBtn.className = "generic-button green";
+
+                    submitBtn.onclick = async () => {
+                        const data = {
+                            assets: { id: {}, url: {} },
+                            text_config: {},
+                            products: []
+                        };
+                  
+                        // // Base
+                        // baseFields.forEach(f => {
+                        //     data[f] = document.getElementById(f).value || "";
+                        // });
+                  
+                        // // Assets ID
+                        // assetsIdFields.forEach(f => {
+                        //     const val = document.getElementById(`assets.id.${f}`).value.trim();
+                        //     if (val) data.assets.id[f] = val;
+                        // });
+                  
+                        // // Assets URL
+                        // assetsUrlFields.forEach(f => {
+                        //     const val = document.getElementById(`assets.url.${f}`).value.trim();
+                        //     if (val) data.assets.url[f] = val;
+                        // });
+                  
+                        // // Text config
+                        // textConfigFields.forEach(f => {
+                        //     const val = document.getElementById(`text_config.${f}`).value.trim();
+                        //     if (val) data.text_config[f] = val;
+                        // });
+                  
+                        // Products
+                        document.querySelectorAll(".product-item input").forEach(i => {
+                            if (i.value.trim()) data.products.push(i.value.trim());
+                        });
+                  
+                        console.log("Sending:", data);
+                  
+                        if (SAVE_API_URL) {
+                            await fetch(SAVE_API_URL, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(data)
+                            });
+                        }
+                    };
+
+                    app.appendChild(submitBtn);
+
                 } else {
                     modalInner.innerHTML = ``;
                 }
@@ -3701,14 +3954,13 @@ async function loadSite() {
                 // Raw
                 changeModalTab('2');
             });
-            modal.querySelector('#category-modal-tab-3').addEventListener("click", function () {
-                // Assets
-                changeModalTab('3');
-            });
-            modal.querySelector('#category-modal-tab-6').addEventListener("click", function () {
-                // Assets 2
-                changeModalTab('6');
-            });
+            if (currentUserData?.admin_level === 3) {
+                const tab = modal.querySelector('#category-modal-tab-7')
+                tab.classList.remove('hidden');
+                tab.addEventListener("click", function () {
+                    changeModalTab('7');
+                });
+            }
             
 
             document.body.appendChild(modal);
@@ -3733,12 +3985,12 @@ async function loadSite() {
             }
 
             async function fetchCategoryData() {
-                const rawCategoryData = await fetch(redneredAPI + endpoints.CATEGORY_MODAL_INFO + categoryData.sku_id);
-
+                let url = APIV4 + endpnts.CATEGORY + categoryData.sku_id + endpnts.REVIEWS;
+                apiUrl = new URL(url);
+                const rawCategoryData = await fetch(apiUrl);
                 if (!rawCategoryData.ok) {
                     return
                 }
-
                 const data = await rawCategoryData.json();
 
                 if (data.message) {
@@ -3842,7 +4094,7 @@ async function loadSite() {
                     <p>Appearance</p>
                 </div>
 
-                <div class="side-tabs-button" id="modal-v3-tab-advanced" onclick="setModalv3InnerContent('advanced')">
+                <div class="side-tabs-button hidden" id="modal-v3-tab-advanced" onclick="setModalv3InnerContent('advanced')">
                     <p>Advanced</p>
                 </div>
 
@@ -3866,22 +4118,22 @@ async function loadSite() {
                 </div>
             `;
 
-            if (currentUserData && currentUserData.ban_config.ban_type === 0) {
-                const xpSettingssContainer = modal.querySelector("#xp-rewards-tabs-modalv3-container");
-                xpSettingssContainer.innerHTML = `
-                    <hr>
-                    <div class="side-tabs-category-text-container">
-                        <p>XP CORNER</p>
-                    </div>
+            // if (currentUserData && currentUserData.banned === 0) {
+            //     const xpSettingssContainer = modal.querySelector("#xp-rewards-tabs-modalv3-container");
+            //     xpSettingssContainer.innerHTML = `
+            //         <hr>
+            //         <div class="side-tabs-category-text-container">
+            //             <p>XP CORNER</p>
+            //         </div>
 
-                    <div class="side-tabs-button" id="modal-v3-tab-xp_events" onclick="setModalv3InnerContent('xp_events')">
-                        <p>Events</p>
-                    </div>
-                    <div class="side-tabs-button" id="modal-v3-tab-xp_perks" onclick="setModalv3InnerContent('xp_perks')">
-                        <p>Levels</p>
-                    </div>
-                `;
-            }
+            //         <div class="side-tabs-button" id="modal-v3-tab-xp_events" onclick="setModalv3InnerContent('xp_events')">
+            //             <p>Events</p>
+            //         </div>
+            //         <div class="side-tabs-button" id="modal-v3-tab-xp_perks" onclick="setModalv3InnerContent('xp_perks')">
+            //             <p>Levels</p>
+            //         </div>
+            //     `;
+            // }
 
             if (settingsStore.dev === 1) {
                 modal.querySelector("#staff-options-modalv3-container").innerHTML = `
@@ -4256,7 +4508,7 @@ async function loadSite() {
                 method: "GET"
             };
 
-            if (currentUserData && currentUserData.types.admin_level > 0) {
+            if (currentUserData && currentUserData.admin_level > 0) {
                 methodAndHeaders = {
                     method: "GET",
                     headers: {
@@ -4266,9 +4518,9 @@ async function loadSite() {
             }
 
             apiUrl = new URL(redneredAPI + endpoints.USERS + userID);
-            if (currentUserData && currentUserData.types.admin_level > 0) {
-                apiUrl.searchParams.append("include-debug-info", "true");
-            }
+            // if (currentUserData && currentUserData.admin_level > 0) {
+            //     apiUrl.searchParams.append("include-debug-info", "true");
+            // }
             const rawUserData = await fetch(apiUrl,
                 methodAndHeaders
             );
@@ -4493,7 +4745,7 @@ async function loadSite() {
                     const displayName = modalInner.querySelector('#users-displayname');
                     if (cacheUserData.global_name) displayName.textContent = cacheUserData.global_name;
                     else displayName.textContent = cacheUserData.username;
-                    if (cacheUserData.display_name_styles && JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_render')?.treatment === 1) {
+                    if (cacheUserData.display_name_styles && experimentIs('display_name_style_render', 1)) {
                         const dns = renderDisplayNameStyle(cacheUserData.display_name_styles);
                         displayName.classList.add(dns.class);
                         Object.assign(displayName.style, dns.style);
@@ -4505,7 +4757,7 @@ async function loadSite() {
 
                     if (cacheUserData.username) modalInner.querySelector('#users-username').textContent = cacheUserData.username;
 
-                    if (!cacheUserData.types.system) modalInner.querySelector('.review-system-tag-container').remove();
+                    if (!cacheUserData.system) modalInner.querySelector('.review-system-tag-container').remove();
 
 
                     const serverTagAsset = modalInner.querySelector('.review-server-tag-container');
@@ -4625,19 +4877,19 @@ async function loadSite() {
                         target.dataset.overridden = "true";
 
                         const banButton = target.querySelector('#drove-user-edit-ban');
-                        if (cacheUserData.ban_config?.ban_type >= 1) {
+                        if (cacheUserData.banned >= 1) {
                             banButton.classList.add('brand');
                             banButton.textContent = `Unban`;
                         } else {
                             banButton.classList.add('red');
                             banButton.textContent = `Ban`;
                         }
-                        if (cacheUserData.types.admin_level >= currentUserData.types.admin_level) {
+                        if (cacheUserData.admin_level >= currentUserData.admin_level) {
                             banButton.classList.add('has-tooltip');
                             banButton.setAttribute('data-tooltip', 'You cannot ban a user if their Admin Level is equal to or greater than yours');
                             banButton.disabled = true;
                         }
-                        else if (cacheUserData.ban_config?.ban_type >= 1) {
+                        else if (cacheUserData.banned >= 1) {
                             banButton.addEventListener("click", async () => {
                                 banButton.disabled = true;
                                 banButton.textContent = `...`;
@@ -4648,9 +4900,7 @@ async function loadSite() {
                                             "Authorization": localStorage.token
                                         },
                                         body: JSON.stringify({
-                                            ban_config: {
-                                                "ban_type": 0
-                                            }
+                                            banned: 0
                                         })
                                     });
                                     closeModal();
@@ -4658,7 +4908,7 @@ async function loadSite() {
                                 } catch {}
                             });
                         }
-                        else if (cacheUserData.ban_config?.ban_type === 0) {
+                        else if (cacheUserData.banned === 0) {
                             banButton.addEventListener("click", async () => {
                                 banButton.disabled = true;
                                 banButton.textContent = `...`;
@@ -4669,9 +4919,7 @@ async function loadSite() {
                                             "Authorization": localStorage.token
                                         },
                                         body: JSON.stringify({
-                                            ban_config: {
-                                                "ban_type": 2
-                                            }
+                                            banned: 1
                                         })
                                     });
                                     closeModal();
@@ -4701,7 +4949,7 @@ async function loadSite() {
                             }
                         });
 
-                        if (currentUserData.types.admin_level === cacheUserData.types.admin_level) {
+                        if (currentUserData.admin_level === cacheUserData.admin_level) {
                             admin_level_El.parentElement.style.opacity = '0.5';
                             let d = document.createElement("div");
                             d.classList.add('staff-option-disabled');
@@ -4717,7 +4965,7 @@ async function loadSite() {
                             updateSaveButton();
                         });
 
-                        if (currentUserData.types.admin_level <= 2) {
+                        if (currentUserData.admin_level <= 2) {
                             target.querySelectorAll('#admin_3_only').forEach((el) => {
                                 el.style.opacity = '0.5';
                                 let d = document.createElement("div");
@@ -4728,7 +4976,7 @@ async function loadSite() {
                             });
                         }
 
-                        if (currentUserData.types.admin_level <= 1) {
+                        if (currentUserData.admin_level <= 1) {
                             target.querySelectorAll('#admin_2_only').forEach((el) => {
                                 el.style.opacity = '0.5';
                                 let d = document.createElement("div");
@@ -4739,7 +4987,7 @@ async function loadSite() {
                             });
                         }
 
-                        if (currentUserData.types.admin_level === 0) {
+                        if (currentUserData.admin_level === 0) {
                             target.querySelectorAll('.card').forEach((el) => {
                                 el.style.opacity = '0.5';
                                 let d = document.createElement("div");
@@ -4751,7 +4999,7 @@ async function loadSite() {
                         }
 
                         for (const option of admin_level_El.options) {
-                            if (option.value === String(cacheUserData.types.admin_level)) {
+                            if (option.value === String(cacheUserData.admin_level)) {
                                 option.selected = true;
                                 break;
                             }
@@ -4761,7 +5009,7 @@ async function loadSite() {
                         });
 
                         for (const option of system_El.options) {
-                            if (option.value === String(cacheUserData.types.system)) {
+                            if (option.value === String(cacheUserData.system)) {
                                 option.selected = true;
                                 break;
                             }
@@ -4789,8 +5037,8 @@ async function loadSite() {
                             const isChanged =
                                 normalize(cacheUserData.experiment_hash) !== normalize(experiment_hash_El.value) ||
                                 normalize(cacheUserData.profile_information.xp_balance) !== normalize(xp_balance_El.value) ||
-                                normalize(cacheUserData.types.admin_level) !== normalize(admin_level_El.value) ||
-                                normalize(cacheUserData.types.system) !== normalize(system_El.value);
+                                normalize(cacheUserData.admin_level) !== normalize(admin_level_El.value) ||
+                                normalize(cacheUserData.system) !== normalize(system_El.value);
                         
                             toggleButton(isChanged);
                         }
@@ -4805,10 +5053,10 @@ async function loadSite() {
                             if (normalize(cacheUserData.profile_information.xp_balance) !== normalize(xp_balance_El.value)) {
                                 body.xp_balance = xp_balance_El.value;
                             }
-                            if (normalize(cacheUserData.types.admin_level) !== normalize(admin_level_El.value)) {
+                            if (normalize(cacheUserData.admin_level) !== normalize(admin_level_El.value)) {
                                 body.admin_level = admin_level_El.value;
                             }
-                            if (normalize(cacheUserData.types.system) !== normalize(system_El.value)) {
+                            if (normalize(cacheUserData.system) !== normalize(system_El.value)) {
                                 body.system = system_El.value;
                             }
                             try {
@@ -4857,7 +5105,7 @@ async function loadSite() {
                 // Raw
                 changeModalTab('2');
             });
-            if (currentUserData && currentUserData.types.admin_level > 0) {
+            if (currentUserData && currentUserData.admin_level > 0) {
                 modal.querySelector('#user-modal-tab-3').addEventListener("click", function () {
                     // Edit
                     changeModalTab('3');
@@ -4865,7 +5113,7 @@ async function loadSite() {
             } else {
                 modal.querySelector('#user-modal-tab-3').classList.add('hidden');
             }
-            if (currentUserData && JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system_v2')?.treatment === 1) {
+            if (currentUserData && experimentIs('xp_system_v2', 1)) {
                 modal.querySelector('#user-modal-tab-4').addEventListener("click", function () {
                     // Inventory
                     changeModalTab('4');
@@ -4926,6 +5174,9 @@ async function loadSite() {
 
             addParams({itemId: quest.id})
 
+            let asseturl = `https://cdn.discordapp.com/quests/${quest.id}/${quest.assets.hero}`;
+            if (quest.assets.hero.includes("quests")) asseturl = `https://cdn.discordapp.com/${quest.assets.hero}`;
+
             modal.innerHTML = `
                 <div class="category-modal-inner">
                     <div class="modalv2-tabs-container">
@@ -4943,8 +5194,8 @@ async function loadSite() {
                             <p>Overview</p>
                         </div>
                         <div class="tab" id="category-modal-tab-3">
-                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                                <path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z" class=""></path>
+                            <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M14.2639 15.9375L12.5958 14.2834C11.7909 13.4851 11.3884 13.086 10.9266 12.9401C10.5204 12.8118 10.0838 12.8165 9.68048 12.9536C9.22188 13.1095 8.82814 13.5172 8.04068 14.3326L4.04409 18.2801M14.2639 15.9375L14.6053 15.599C15.4112 14.7998 15.8141 14.4002 16.2765 14.2543C16.6831 14.126 17.12 14.1311 17.5236 14.2687C17.9824 14.4251 18.3761 14.8339 19.1634 15.6514L20 16.4934M14.2639 15.9375L18.275 19.9565M18.275 19.9565C17.9176 20 17.4543 20 16.8 20H7.2C6.07989 20 5.51984 20 5.09202 19.782C4.71569 19.5903 4.40973 19.2843 4.21799 18.908C4.12796 18.7313 4.07512 18.5321 4.04409 18.2801M18.275 19.9565C18.5293 19.9256 18.7301 19.8727 18.908 19.782C19.2843 19.5903 19.5903 19.2843 19.782 18.908C20 18.4802 20 17.9201 20 16.8V16.4934M4.04409 18.2801C4 17.9221 4 17.4575 4 16.8V7.2C4 6.0799 4 5.51984 4.21799 5.09202C4.40973 4.71569 4.71569 4.40973 5.09202 4.21799C5.51984 4 6.07989 4 7.2 4H16.8C17.9201 4 18.4802 4 18.908 4.21799C19.2843 4.40973 19.5903 4.71569 19.782 5.09202C20 5.51984 20 6.0799 20 7.2V16.4934M17 8.99989C17 10.1045 16.1046 10.9999 15 10.9999C13.8954 10.9999 13 10.1045 13 8.99989C13 7.89532 13.8954 6.99989 15 6.99989C16.1046 6.99989 17 7.89532 17 8.99989Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                             <p>Assets</p>
                         </div>
@@ -4963,7 +5214,7 @@ async function loadSite() {
                         </div>
                     </div>
 
-                    <img class="category-modal-banner-preview" src="https://cdn.discordapp.com/quests/${quest.id}/${quest.assets.hero}">
+                    <img class="category-modal-banner-preview" src="${asseturl}">
                     
                     <div id="category-modal-inner-content">
                     </div>
@@ -4994,13 +5245,19 @@ async function loadSite() {
                 if (tab === '1') {
                     const required = renderQuestRequirement(quest);
 
+                    let assettaskurl = `https://cdn.discordapp.com/quests/${quest.id}/dark/${quest.assets.game_tile}`;
+                    if (quest.assets.game_tile.includes("quests")) assettaskurl = `https://cdn.discordapp.com/${quest.assets.game_tile}`;
+
+                    let assetrewardurl = `https://cdn.discordapp.com/quests/${quest.id}/${quest.rewards_config.rewards[0].asset}?format=webp`;
+                    if (quest.rewards_config.rewards[0].asset?.includes("quests")) assetrewardurl = `https://cdn.discordapp.com/${quest.rewards_config.rewards[0].asset}?format=webp`;
+                    
                     modalInner.innerHTML = `
                         <div class="category-modal-bottom-container">
                             <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${quest.id}')">${quest.id}</p>
                             <h1>${quest.messages.quest_name} Quest</h1>
                             <div class="quest-modal-block">
                                 <div class="task-icon">
-                                    <img src="https://cdn.discordapp.com/quests/${quest.id}/dark/${quest.assets.game_tile}">
+                                    <img src="${assettaskurl}">
                                 </div>
                                 <div>
                                     <h2>Task</h2>
@@ -5009,7 +5266,7 @@ async function loadSite() {
                             </div>
                             <div class="quest-modal-block">
                                 <div class="reward-icon">
-                                    <img src="https://cdn.discordapp.com/quests/${quest.id}/${quest.rewards_config.rewards[0].asset}?format=webp">
+                                    <img src="${assetrewardurl}">
                                 </div>
                                 <div>
                                     <h2>Reward</h2>
@@ -5096,14 +5353,18 @@ async function loadSite() {
                         assetDiv.classList.add('asset-div')
 
                         if (value.includes(".webm") || value.includes(".mp4")) {
+                            let asseturl = `https://cdn.discordapp.com/quests/${quest.id}/${value}`;
+                            if (value.includes("quests")) asseturl = `https://cdn.discordapp.com/${value}`;
                             assetDiv.innerHTML = `
                                 <h2>${asset}</h2>
-                                <video controls disablepictureinpicture muted loop src="https://cdn.discordapp.com/quests/${quest.id}/${value}"></video> 
+                                <video controls disablepictureinpicture muted loop src="${asseturl}"></video> 
                             `;
                         } else if (value.includes(".png") || value.includes(".jpg") || value.includes(".jpeg") || value.includes(".svg")) {
+                            let asseturl = `https://cdn.discordapp.com/quests/${quest.id}/${value}`;
+                            if (value.includes("quests")) asseturl = `https://cdn.discordapp.com/${value}`;
                             assetDiv.innerHTML = `
                                 <h2>${asset}</h2>
-                                <img src="https://cdn.discordapp.com/quests/${quest.id}/${value}"></img> 
+                                <img src="${asseturl}"></img> 
                             `;
                         }
 
@@ -5192,8 +5453,10 @@ async function loadSite() {
                 changeModalTab('3');
             });
 
+            let tasks = quest.task_config?.tasks ?? quest.task_config_v2.tasks;
+
             const tab = modal.querySelector('#category-modal-tab-4');
-            if (quest.task_config.tasks["WATCH_VIDEO"] || quest.task_config.tasks["WATCH_VIDEO_ON_MOBILE"]) {
+            if (tasks["WATCH_VIDEO"] || tasks["WATCH_VIDEO_ON_MOBILE"]) {
                 tab.classList.remove('disabled');
                 tab.classList.remove('has-tooltip');
                 tab.removeAttribute('data-tooltip');
@@ -5611,26 +5874,19 @@ async function loadSite() {
                     <div class="modal-bg"><div class="modal-bg-color"></div></div>
                     <div class="modal-top">
                         <div class="logo">
-                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                                <path fill="currentColor" fill-rule="evenodd" d="M5 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V5a3 3 0 0 0-3-3H5ZM4 5.5C4 4.67 4.67 4 5.5 4h13c.83 0 1.5.67 1.5 1.5v6c0 .83-.67 1.5-1.5 1.5h-2.65c-.5 0-.85.5-.85 1a3 3 0 1 1-6 0c0-.5-.35-1-.85-1H5.5A1.5 1.5 0 0 1 4 11.5v-6Z" clip-rule="evenodd" class=""></path>
-                            </svg>
+                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M22.95 11.05a1 1 0 0 1 1 1 11.5 11.5 0 0 1-19.43 8.33l-.08.08v2.2a1.1 1.1 0 0 1-.68 1 1.1 1.1 0 0 1-1.19-.23 1.1 1.1 0 0 1-.32-.78v-4.8a1.1 1.1 0 0 1 .52-.94l.03-.01c.08-.05.17-.09.25-.11l.05-.01.24-.03h4.82a1.09 1.09 0 0 1 .2.02h.02a1.1 1.1 0 0 1 .18.06l.03.01.07.03.02.02.06.03.03.02.04.03a1.1 1.1 0 0 1 .44.88l-.01.15V18a1.1 1.1 0 0 1-.3.61l-.12.1-.03.02a1.09 1.09 0 0 1-.63.2l-2.18-.02-.04.04a9.5 9.5 0 0 0 16.01-6.91 1 1 0 0 1 1-1Z" fill="currentColor" class=""></path><path fill-rule="evenodd" d="M13.41 7.2c1.1.15 1.96.72 2.59 1.7l-1.35 1.09c-.38-.6-.8-1-1.24-1.18v2.24c.86.16 1.53.45 2.02.86.5.4.74 1.02.74 1.84 0 .81-.25 1.48-.77 1.98-.5.5-1.17.81-1.99.94v1.2h-1.38v-1.18a4.39 4.39 0 0 1-1.83-.58c-.5-.31-.9-.71-1.2-1.2l1.41-1.22c.44.7.98 1.12 1.62 1.28v-2.4a4.19 4.19 0 0 1-1.91-.9 2.32 2.32 0 0 1-.79-1.83c0-.72.25-1.31.75-1.77a3.4 3.4 0 0 1 1.95-.87V6h1.38v1.2Zm0 7.75c.56-.15.84-.48.84-1.02a.97.97 0 0 0-.2-.64c-.12-.16-.33-.29-.64-.4v2.06ZM12.03 8.8c-.27.08-.48.2-.63.39a.84.84 0 0 0-.23.57c0 .25.07.45.19.6.13.15.36.28.67.39V8.8Z" clip-rule="evenodd" fill="currentColor" class=""></path><path d="M21.16 0a1.1 1.1 0 0 1 1.09 1.1v4.8c0 .3-.12.57-.32.78l-.08.07-.08.06-.02.01-.07.05-.03.01-.05.02-.06.03h-.03a1.12 1.12 0 0 1-.11.04l-.04.01h-.05l-.06.02H16.35a1.1 1.1 0 0 1-1.02-1.52 1.1 1.1 0 0 1 .35-.45l.02-.02a1.1 1.1 0 0 1 .64-.2l2.18.02.07-.07A9.5 9.5 0 0 0 3 12.05a1 1 0 1 1-2 0 11.5 11.5 0 0 1 19-8.71l.06-.05v-2.2a1.1 1.1 0 0 1 .68-1c.13-.06.27-.1.42-.09Z" fill="currentColor" class=""></path></svg>
                             <div class="right-top">
-                                <h1>News</h1>
-                                <h2>You will be notified about major Shop Archives news here.</h2>
+                                <h1>Change Currency (BETA)</h1>
+                                <h2>Select your preferred currency to make browsing easier for you.</h2>
                             </div>
                         </div>
                         <div class="info-blocks">
                         </div>
                     </div>
 
-                    <div class="news-output">
-
-                    </div>
-
-                    <div class="error-output">
-                        <img src="https://cdn.yapper.shop/assets/207.png">
-                        <h2>All is quiet.</h2>
-                        <p>We have no news right now, come back later.</p>
+                    <div class="news-output-container">
+                        <div class="news-output">
+                        </div>
                     </div>
 
                     <div data-modal-top-product-buttons>
@@ -5641,19 +5897,59 @@ async function loadSite() {
                 </div>
             `;
 
-            // newsUpdatesCache.forEach(news => {
-            //     const card = document.createElement('div');
-            //     card.classList.add('card');
-            //     card.innerHTML = `
-            //         <h2>${news.title}</h2>
-            //         <div class="bottom">
-            //             <img src="${news.img}">
-            //             <p>${news.detail}</p>
-            //         </div>
-            //     `;
-            //     modal.querySelector('.news-output').appendChild(card)
-            // });
-            // if (newsUpdatesCache.length != 0) modal.querySelector('.error-output').remove();
+            const newsOutput = modal.querySelector('.news-output');
+            const settingCurrency = Number(settingsStore.currency);
+            const currencyKey = Object.keys(currency_types).find(key => Number(key) === settingCurrency);
+
+            Object.values(converted_currencies).forEach(currency => {
+                let price = currency.amounts["3499"];
+                if (currency?.display_type === "fixed") {
+                    if (typeof price === "number") {
+                        price = (price / 100).toFixed(2).replace('.00', '');
+                    }
+                } 
+                else if (currency?.display_type === "locale") {
+                    if (typeof price === "number") {
+                        price = price.toLocaleString("en-US");
+                    }
+                }
+                const card = document.createElement('button');
+                card.classList.add('card');
+                card.id = currency.currency;
+                card.innerHTML = `
+                    <h3>${currency.name}</h3>
+                    <div class="bottom">
+                        <p>${currency.currency}</p>
+                    </div>
+                    <div class="side">
+                        <p>Preview:</p>
+                        <h2>${currency.extension}${price}</h2>
+                    </div>
+                `;
+                if (currency.currency === converted_currencies[currencyKey].currency) {
+                    card.classList.add('selected');
+                }
+                card.addEventListener('click', async () => {
+                    newsOutput.querySelectorAll('.selected').forEach((el) => {
+                        el.classList.remove("selected");
+                    });
+                    newsOutput.querySelectorAll('.card').forEach((el) => {
+                        el.disabled = true;
+                    });
+                    card.classList.add('selected');
+
+                    const currencyKey2 = Object.keys(converted_currencies).find(key => converted_currencies[key].currency === currency.currency);
+                    changeSetting('currency', Number(currencyKey2));
+                    document.getElementById('current-currency').textContent = converted_currencies[currencyKey2].currency;
+
+                    await loadPage(currentPageCache, true);
+                    newsOutput.querySelectorAll('.card').forEach((el) => {
+                        el.disabled = false;
+                    });
+                    card.classList.add('selected');
+                });
+                newsOutput.appendChild(card)
+            });
 
 
 
@@ -5794,6 +6090,284 @@ async function loadSite() {
                     closeModal();
                 }
             });
+        } else if (type === "addCategory") {
+            modal.innerHTML = `
+                <div class="category-modal-inner">
+                    <div class="modalv2-tabs-container">
+                        <div class="tab" id="category-modal-tab-1">
+                            <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="m13.96 5.46 4.58 4.58a1 1 0 0 0 1.42 0l1.38-1.38a2 2 0 0 0 0-2.82l-3.18-3.18a2 2 0 0 0-2.82 0l-1.38 1.38a1 1 0 0 0 0 1.42ZM2.11 20.16l.73-4.22a3 3 0 0 1 .83-1.61l7.87-7.87a1 1 0 0 1 1.42 0l4.58 4.58a1 1 0 0 1 0 1.42l-7.87 7.87a3 3 0 0 1-1.6.83l-4.23.73a1.5 1.5 0 0 1-1.73-1.73Z" class=""></path>
+                            </svg>
+                            <p>this</p>
+                        </div>
+                    </div>
+                    
+                    <div id="category-modal-inner-content">
+                    </div>
+        
+                    <div data-modal-top-product-buttons>
+                        <div class="has-tooltip" data-tooltip="Close" data-close-product-card-button>
+                            <svg class="modalv2_top_icon" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            function changeModalTab(tab) {
+                modal.querySelectorAll('.selected').forEach((el) => {
+                    el.classList.remove("selected");
+                });
+        
+                modal.querySelector('#category-modal-tab-'+tab).classList.add('selected');
+        
+                const modalInner = modal.querySelector('#category-modal-inner-content');
+        
+                if (tab === '1') {
+
+                    modalInner.innerHTML = `
+                        <div class="add-category-fields-con">
+                            <div class="add-category-fields-fill">
+                            </div>
+                        </div>
+                    `;
+
+                    const LOAD_API_URL = ""; // e.g. "https://api.example.com/product/123"
+                    const SAVE_API_URL = "https://api.example.com/save"; // e.g. "https://api.example.com/save"
+
+                    // ===== STRUCTURE =====
+                    const baseFields = [
+                      "sku_id",
+                      "name",
+                      "summary",
+                      "store_listing_id",
+                      "unpublished_at"
+                    ];
+
+                    const assetsIdFields = [
+                      "banner","logo","mobile_bg","pdp_bg","success_modal_bg",
+                      "mobile_banner","featured_block","hero_banner","wide_banner","hero_logo"
+                    ];
+
+                    const assetsUrlFields = [
+                      "hero_banner","hero_banner_animated","hero_rive","hero_logo",
+                      "catalog_banner","catalog_banner_animated","catalog_banner_rive",
+                      "featured_block","logo","pdp_bg","wide_banner","wide_banner_animated",
+                      "mobile_hero","mobile_hero_animated","mobile_banner","mobile_bg"
+                    ];
+
+                    const textConfigFields = [
+                      "hero_block_title","mobile_hero_block_title","mobile_products_title",
+                      "mobile_summary","wide_banner_title","wide_banner_body","banner_text_color"
+                    ];
+
+                    const app = modalInner.querySelector(".add-category-fields-fill");
+
+                    // ===== HELPERS =====
+                    function createInput(id, labelText) {
+                      const div = document.createElement("div");
+                      div.className = "field";
+                    
+                      const label = document.createElement("label");
+                      label.textContent = labelText;
+                    
+                      const input = document.createElement("input");
+                      input.id = id;
+                    
+                      div.appendChild(label);
+                      div.appendChild(input);
+                    
+                      return div;
+                    }
+
+                    function createSection(title) {
+                      const div = document.createElement("div");
+                      div.className = "section";
+                    
+                      const h = document.createElement("h3");
+                      h.textContent = title;
+                    
+                      div.appendChild(h);
+                      return div;
+                    }
+
+                    // ===== BUILD UI =====
+
+                    // Base fields
+                    baseFields.forEach(f => {
+                      app.appendChild(createInput(f, f));
+                    });
+
+                    // Assets
+                    const assetsSection = createSection("Assets");
+
+                    // ID
+                    const idSection = createSection("assets.id");
+                    assetsIdFields.forEach(f => {
+                      idSection.appendChild(createInput(`assets.id.${f}`, f));
+                    });
+
+                    // URL
+                    const urlSection = createSection("assets.url");
+                    assetsUrlFields.forEach(f => {
+                      urlSection.appendChild(createInput(`assets.url.${f}`, f));
+                    });
+
+                    assetsSection.appendChild(idSection);
+                    assetsSection.appendChild(urlSection);
+                    app.appendChild(assetsSection);
+
+                    // Text Config
+                    const textSection = createSection("Text Config");
+                    textConfigFields.forEach(f => {
+                      textSection.appendChild(createInput(`text_config.${f}`, f));
+                    });
+                    app.appendChild(textSection);
+
+                    // Products
+                    const productSection = createSection("Products");
+                    const productList = document.createElement("div");
+                    productList.className = "products";
+
+                    const addBtn = document.createElement("button");
+                    addBtn.textContent = "+ Add Product";
+                    addBtn.className = "generic-button brand";
+
+                    addBtn.onclick = () => addProduct("");
+
+                    function addProduct(value) {
+                      const row = document.createElement("div");
+                      row.className = "product-item";
+                    
+                      const input = document.createElement("input");
+                      input.value = value;
+                    
+                      const remove = document.createElement("button");
+                      remove.textContent = "X";
+                      remove.className = "generic-button red";
+                    
+                      remove.onclick = () => row.remove();
+                    
+                      row.appendChild(input);
+                      row.appendChild(remove);
+                      productList.appendChild(row);
+                    }
+
+                    productSection.appendChild(productList);
+                    productSection.appendChild(addBtn);
+                    app.appendChild(productSection);
+
+                    // Submit
+                    const submitBtn = document.createElement("button");
+                    submitBtn.textContent = "Submit";
+                    submitBtn.className = "generic-button green";
+
+                    submitBtn.onclick = async () => {
+                      const data = {
+                        assets: { id: {}, url: {} },
+                        text_config: {},
+                        products: []
+                      };
+                  
+                      // Base
+                      baseFields.forEach(f => {
+                        data[f] = document.getElementById(f).value || "";
+                      });
+                  
+                      // Assets ID
+                      assetsIdFields.forEach(f => {
+                        const val = document.getElementById(`assets.id.${f}`).value.trim();
+                        if (val) data.assets.id[f] = val;
+                      });
+                  
+                      // Assets URL
+                      assetsUrlFields.forEach(f => {
+                        const val = document.getElementById(`assets.url.${f}`).value.trim();
+                        if (val) data.assets.url[f] = val;
+                      });
+                  
+                      // Text config
+                      textConfigFields.forEach(f => {
+                        const val = document.getElementById(`text_config.${f}`).value.trim();
+                        if (val) data.text_config[f] = val;
+                      });
+                  
+                      // Products
+                      document.querySelectorAll(".product-item input").forEach(i => {
+                        if (i.value.trim()) data.products.push(i.value.trim());
+                      });
+                  
+                      console.log("Sending:", data);
+                  
+                      if (SAVE_API_URL) {
+                        await fetch(SAVE_API_URL, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(data)
+                        });
+                      }
+                    };
+
+                    app.appendChild(submitBtn);
+
+                    // ===== LOAD FROM API =====
+                    async function loadData() {
+                      if (!LOAD_API_URL) return;
+                    
+                      const res = await fetch(LOAD_API_URL);
+                      const json = await res.json();
+                    
+                      // Base
+                      baseFields.forEach(f => {
+                        if (json[f]) document.getElementById(f).value = json[f];
+                      });
+                  
+                      // Assets
+                      if (json.assets?.id) {
+                        for (let k in json.assets.id) {
+                          const el = document.getElementById(`assets.id.${k}`);
+                          if (el) el.value = json.assets.id[k];
+                        }
+                      }
+                  
+                      if (json.assets?.url) {
+                        for (let k in json.assets.url) {
+                          const el = document.getElementById(`assets.url.${k}`);
+                          if (el) el.value = json.assets.url[k];
+                        }
+                      }
+                  
+                      // Text config
+                      if (json.text_config) {
+                        for (let k in json.text_config) {
+                          const el = document.getElementById(`text_config.${k}`);
+                          if (el) el.value = json.text_config[k];
+                        }
+                      }
+                  
+                      // Products
+                      if (Array.isArray(json.products)) {
+                        json.products.forEach(p => addProduct(p));
+                      }
+                    }
+
+                    loadData();
+        
+                } else {
+                    modalInner.innerHTML = ``;
+                }
+            }
+            window.changeModalTab = changeModalTab;
+
+            modal.querySelector('#category-modal-tab-1').addEventListener("click", function () {
+                // WIP
+                changeModalTab('1');
+            });
+
+            changeModalTab('1');
+
+            modal.querySelector("[data-close-product-card-button]").addEventListener('click', () => {
+                closeModal();
+            });
         }
 
         if (type != "fromCategoryBanner" && type != "userSettings" && type != "openUserModal" && type != "openLoadingTest" && type != "tradingCardPackOpening" && type != "tradingCardPackBrowse") {
@@ -5871,66 +6445,46 @@ async function loadSite() {
         const categoryAssetEntry = Object.values(customCategoryAssets).find(entry =>
             typeof entry === "object" && entry.sku_id === categoryData.sku_id
         );
+        const ia = categoryData.assets.id;
+        const ja = categoryData.assets.json;
+        const ua = categoryData.assets.url;
+        const oa = categoryData.assets.overrides;
 
         let categoryBanner = customCategoryAssets[0];
-        if (category_client_overrides[categoryClientDataId]?.banner_override) {
-            categoryBanner = category_client_overrides[categoryClientDataId]?.banner_override;
-        }
-        else if (categoryData.banner_asset?.static) {
-            categoryBanner = categoryData.banner_asset?.static;
-        }
-        else if (categoryData.full_src && categoryData.banner) {
-            categoryBanner = categoryData.banner;
-        }
-        else if (categoryData.banner) {
-            categoryBanner = `https://cdn.discordapp.com/app-assets/1096190356233670716/${categoryData.banner}.png?size=4096`;
-        }
+        if (category_client_overrides[categoryClientDataId]?.banner_override) categoryBanner = category_client_overrides[categoryClientDataId]?.banner_override;
+        else if (ja.banner_asset?.static) categoryBanner = ja.banner_asset?.static;
+        else if (ia.banner) categoryBanner = `https://cdn.discordapp.com/app-assets/1096190356233670716/${ia.banner}.png?size=4096`;
 
         let categoryHeroBanner = customCategoryAssets[2];
-        if (category_client_overrides[categoryClientDataId]?.hero_banner_override) {
-            categoryHeroBanner = category_client_overrides[categoryClientDataId]?.hero_banner_override;
-        }
-        else if (categoryAssetEntry?.hero_banner_asset?.static) {
-            categoryHeroBanner = categoryAssetEntry?.hero_banner_asset?.static;
-        }
-        else if (categoryData.hero_banner_url) {
-            categoryHeroBanner = categoryData.hero_banner_url;
-        }
-        else if (categoryData.hero_banner_asset?.static) {
-            categoryHeroBanner = categoryData.hero_banner_asset?.static;
-        }
-        else if (categoryData.full_src && categoryData.hero_banner) {
-            categoryHeroBanner = categoryData.hero_banner;
-        }
-        else if (categoryData.hero_banner) {
-            categoryHeroBanner = `https://cdn.discordapp.com/app-assets/1096190356233670716/${categoryData.hero_banner}.png?size=4096`;
-        }
-        else if (categoryBanner && categoryBanner !== customCategoryAssets[0]) {
-            categoryHeroBanner = categoryBanner;
-        }
+        if (category_client_overrides[categoryClientDataId]?.hero_banner_override) categoryHeroBanner = category_client_overrides[categoryClientDataId]?.hero_banner_override;
+        else if (categoryAssetEntry?.hero_banner_asset?.static) categoryHeroBanner = categoryAssetEntry?.hero_banner_asset?.static;
+        else if (oa.hero_banner) categoryHeroBanner = oa.hero_banner;
+        else if (ua.hero_banner) categoryHeroBanner = ua.hero_banner;
+        else if (ja.hero_banner_asset?.static) categoryHeroBanner = ja.hero_banner_asset?.static;
+        else if (ia.hero_banner) categoryHeroBanner = `https://cdn.discordapp.com/app-assets/1096190356233670716/${ia.hero_banner}.png?size=4096`;
+        else if (categoryBanner && categoryBanner !== customCategoryAssets[0]) categoryHeroBanner = categoryBanner;
 
         let modalBanner = null;
-        if (category_client_overrides[categoryClientDataId]?.modal_hero_banner) {
-            modalBanner = category_client_overrides[categoryClientDataId]?.modal_hero_banner
-        }
-        else if (categoryHeroBanner) {
-            modalBanner = categoryHeroBanner;
-        }
-        else if (categoryBanner) {
-            modalBanner = categoryBanner;
-        }
+        if (category_client_overrides[categoryClientDataId]?.modal_hero_banner) modalBanner = category_client_overrides[categoryClientDataId]?.modal_hero_banner
+        else if (categoryHeroBanner) modalBanner = categoryHeroBanner;
+        else if (categoryBanner) modalBanner = categoryBanner;
 
         let catalogBannerAsset = customCategoryAssets[1];
+        if (categoryAssetEntry?.catalog_banner_asset) catalogBannerAsset = categoryAssetEntry?.catalog_banner_asset?.static;
+        else if (oa.catalog_banner) catalogBannerAsset = oa.catalog_banner;
+        else if (ua.catalog_banner) catalogBannerAsset = ua.catalog_banner;
 
-        if (categoryAssetEntry?.catalog_banner_asset) {
-            catalogBannerAsset = categoryAssetEntry?.catalog_banner_asset?.static;
-        }
+        let catalogBannerAssetAnimated;
+        if (ua.catalog_banner_animated) catalogBannerAssetAnimated = ua.catalog_banner_animated;
+        else if (oa.catalog_banner_animated) catalogBannerAssetAnimated = oa.catalog_banner_animated;
+        else if (ua.catalog_banner_animated) catalogBannerAssetAnimated = ua.catalog_banner_animated;
 
         return {
             categoryBanner,
             categoryHeroBanner,
             modalBanner,
-            catalogBannerAsset
+            catalogBannerAsset,
+            catalogBannerAssetAnimated
         }
     }
 
@@ -5989,9 +6543,11 @@ async function loadSite() {
                 const card = document.createElement("div");
                 card.classList.add('quest-card');
                 card.setAttribute('data-id', quest.id);
+                let herobanner = `https://cdn.discordapp.com/quests/${quest.id}/${quest.assets.hero}`;
+                if (quest.assets.hero.includes("quests")) herobanner = `https://cdn.discordapp.com/${quest.assets.hero}`;
                 card.innerHTML = `
                     <div class="section1">
-                        <img class="hero" src="https://cdn.discordapp.com/quests/${quest.id}/${quest.assets.hero}">
+                        <img class="hero" src="${herobanner}">
                         <img class="logo" src="https://cdn.discordapp.com/quests/${quest.id}/dark/${quest.assets.logotype}">
                         <p class="publisher">Promoted by ${quest.messages.game_publisher}</p>
                         <p class="date">Ends ${formatted}</p>
@@ -6061,6 +6617,7 @@ async function loadSite() {
                     if (quest.rewards_config.rewards[0]?.asset?.includes('.mp4') || quest.rewards_config.rewards[0]?.asset?.includes('.webm') || quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) {
                         const rewardImg = document.createElement("video");
                         let src = `https://cdn.discordapp.com/quests/${quest.id}/${quest.rewards_config.rewards[0].asset}`;
+                        if (quest.rewards_config.rewards[0].asset?.includes("quests")) src = `https://cdn.discordapp.com/${quest.rewards_config.rewards[0].asset}`;
                         if (quest.rewards_config.rewards[0].type === quest_reward_types.VIRTUAL_CURRENCY) src = `https://cdn.discordapp.com/assets/content/fb761d9c206f93cd8c4e7301798abe3f623039a4054f2e7accd019e1bb059fc8.webm`;
                         rewardImg.src = src;
 
@@ -6081,6 +6638,7 @@ async function loadSite() {
                     } else {
                         const rewardImg = document.createElement("img");
                         let src = `https://cdn.discordapp.com/quests/${quest.id}/${quest.rewards_config.rewards[0].asset}?format=webp`;
+                        if (quest.rewards_config.rewards[0].asset.includes("quests")) src = `https://cdn.discordapp.com/${quest.rewards_config.rewards[0].asset}`;
                         rewardImg.src = src;
 
                         rewardIcon.appendChild(rewardImg);
@@ -6107,7 +6665,9 @@ async function loadSite() {
                     });
                 }
 
-                if (quest.task_config.tasks["WATCH_VIDEO"] || quest.task_config.tasks["WATCH_VIDEO_ON_MOBILE"]) {
+                let tasks = quest.task_config?.tasks ?? quest.task_config_v2.tasks;
+
+                if (tasks["WATCH_VIDEO"] || tasks["WATCH_VIDEO_ON_MOBILE"]) {
                     let button = document.createElement('button');
                     button.classList.add('generic-button');
                     button.classList.add('primary');
@@ -6212,7 +6772,7 @@ async function loadSite() {
                 <a class="shop-card-var-title" data-shop-card-var-title></a>
             </div>
             <div class="card-button-container"data-product-card-open-in-shop>
-                <button class="card-button" onclick="redirectToLink('https://discord.com/shop#itemSkuId=${product.sku_id}')" title="Open this item in the Discord Shop">Open In Shop</button>
+                <button class="card-button" onclick="redirectToLink('https://discord.com/shop#itemSkuId=${product.sku_id}')" title="Open this item in the Discord Shop">Open In Discord</button>
             </div>
             <div class="shop-card-tag-container" data-shop-card-tag-container>
             </div>
@@ -6224,66 +6784,133 @@ async function loadSite() {
 
         const priceContainer = card.querySelector("[data-shop-price-container]");
 
-        let priceStandard = null;
-        let priceOrb = null;
+        if (product.prices) {
+            let extension = null;
+            let priceStandard = null;
+            let priceStandardCrossed = null;
+            let priceOrb = null;
 
-        if (currentUserData?.premium_type === 2 && product.prices) {
-            product.prices["4"]?.country_prices?.prices?.forEach(price => {
-                if (price.currency === "usd") {
-                    priceStandard = price.amount;
-                }
-                if (price.currency === "discord_orb") {
-                    priceOrb = price.amount;
-                }
-            });
-        } else if (product.prices) {
             product.prices["0"]?.country_prices?.prices?.forEach(price => {
-                if (price.currency === "usd") {
-                    priceStandard = price.amount;
-                }
-                if (price.currency === "discord_orb") {
-                    priceOrb = price.amount;
-                }
+                if (price.currency === "usd") priceStandard = price.amount;
+                if (price.currency === "discord_orb") priceOrb = price.amount;
             });
-            priceContainer.classList.add('hide-nitro-icon');
-        }
-
-        let orbsExclusive = true;
-
-        if (priceStandard != null) {
-            orbsExclusive = false;
-            let us_price = document.createElement("div");
-    
-            us_price.innerHTML = `
-                <div class="nitro-icon"></div>
-                <a>US$${(priceStandard / 100).toFixed(2)}</a>
-            `;
             
-            priceContainer.appendChild(us_price);
-        }
+            product.prices["4"]?.country_prices?.prices?.forEach(price => {
+                if (price.currency === "usd") priceStandardCrossed = price.amount;
+            });
 
-        if (priceOrb != null) {
-            let orb_price = document.createElement("div");
-    
-            orb_price.innerHTML = `
-                <div class="orb-icon"></div>
-                <a>${priceOrb}</a>
-            `;
-            if (priceStandard != null) {
-                orb_price.style.marginLeft = `auto`;
-            } else {
-                orb_price.style.marginLeft = `unset`;
+            if (currentUserData?.premium_type === 2) {
+                priceStandard = priceStandardCrossed;
             }
             
-            priceContainer.appendChild(orb_price);
-        }
+            // 2. Convert to Local Currency if settings exist
+            const settingCurrency = Number(settingsStore.currency);
+            const currencyKey = Object.keys(currency_types).find(key => Number(key) === settingCurrency);
 
-        if (!priceStandard && !priceOrb) {
-            orbsExclusive = false;
-        }
+            if (currencyKey) {
+                const details = converted_currencies[currencyKey];
+                extension = details?.extension ?? "??$";
 
-        if (orbsExclusive) {
-            createCardTag('ORBS EXCLUSIVES')
+                if (settingCurrency !== 0) {
+                    // Normalize keys (prevents number vs string issues)
+                    const keyStandard = String(priceStandard);
+                    const keyCrossed = String(priceStandardCrossed);
+                
+                    const standardVal = details?.amounts?.[keyStandard];
+                    const crossedVal = details?.amounts?.[keyCrossed];
+                
+                    // Handle independently (fixes your issue)
+                    priceStandard =
+                        standardVal === undefined ? "???" : standardVal;
+                
+                    priceStandardCrossed =
+                        crossedVal === undefined ? "???" : crossedVal;
+                }
+            
+                // Format safely
+                if (details?.display_type === "fixed") {
+                    if (typeof priceStandard === "number") {
+                        priceStandard = (priceStandard / 100).toFixed(2).replace('.00', '');
+                    }
+                
+                    if (typeof priceStandardCrossed === "number") {
+                        priceStandardCrossed = (priceStandardCrossed / 100).toFixed(2).replace('.00', '');
+                    }
+                } 
+                else if (details?.display_type === "locale") {
+                    if (typeof priceStandard === "number") {
+                        priceStandard = priceStandard.toLocaleString("en-US");
+                    }
+                
+                    if (typeof priceStandardCrossed === "number") {
+                        priceStandardCrossed = priceStandardCrossed.toLocaleString("en-US");
+                    }
+                }
+            }
+
+            let orbsExclusive = false;
+
+            const standardPriceCheck = product.prices["0"]?.country_prices?.prices?.find(p => p.currency === "usd");
+            const nitroPriceCheck = product.prices["4"]?.country_prices?.prices?.find(p => p.currency === "usd");
+
+            if (!standardPriceCheck && !nitroPriceCheck) {
+                orbsExclusive = true;
+            }
+
+            if (priceStandard !== null && orbsExclusive === false) {
+                let us_price = document.createElement("div");
+                let fullprice = extension + priceStandard;
+                if (category.sku_id === discord_categories.DISXCORE) {
+                    fullprice = "Included with Nitro";
+                }
+    
+                us_price.innerHTML = `
+                    <svg class="nitro-icon" width="78" height="78" viewBox="0 0 78 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M52.7473 39C52.7473 43.1925 49.6598 46.3125 45.5323 46.3125C44.5742 46.3262 43.6233 46.1454 42.7372 45.7811C41.851 45.4168 41.0479 44.8765 40.3765 44.1929C39.7051 43.5094 39.1793 42.6967 38.831 41.8042C38.4826 40.9116 38.3189 39.9576 38.3498 39C38.3498 34.8075 41.4373 31.6875 45.5648 31.6875C49.6923 31.6875 52.7798 34.8075 52.7798 39H52.7473ZM74.7498 39C74.7498 55.2825 61.7498 68.25 45.5323 68.25C38.952 68.2896 32.5537 66.0919 27.3866 62.0173C22.2195 57.9427 18.5905 52.2331 17.0948 45.825H10.8548L7.92976 32.175H17.2248C18.0698 29.055 19.4348 26.0325 21.1573 23.4H6.14226L3.24976 9.75H44.6548C62.1723 9.75 74.7498 22.7175 74.7498 39ZM60.9048 39C60.9048 30.3225 54.0798 23.4 45.5323 23.4C43.4955 23.4041 41.4797 23.8121 39.6016 24.6004C37.7236 25.3887 36.0204 26.5415 34.5908 27.9923C33.1612 29.4431 32.0335 31.1629 31.2729 33.0524C30.5123 34.9418 30.134 36.9634 30.1598 39C30.1598 47.6775 36.9848 54.6 45.5323 54.6C47.569 54.5959 49.5848 54.1879 51.4629 53.3996C53.341 52.6114 55.0441 51.4585 56.4737 50.0077C57.9033 48.5569 59.031 46.8371 59.7916 44.9476C60.5522 43.0582 60.9305 41.0366 60.9048 39Z" fill="currentColor"/>
+                    </svg>
+                    <a>${fullprice}</a>
+                `;
+                
+                priceContainer.appendChild(us_price);
+            }
+
+            if (priceOrb !== null) {
+                let orb_price = document.createElement("div");
+    
+                orb_price.innerHTML = `
+                    <svg width="78" height="78" viewBox="0 0 78 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_402_76)">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M40.2666 7.24549C39.4788 6.91817 38.5938 6.91817 37.8058 7.24549L17.533 15.6691C16.7452 15.9964 16.1194 16.6242 15.7931 17.4144L7.39573 37.7508C7.06942 38.541 7.06942 39.4288 7.39573 40.219L15.7931 60.5554C16.1194 61.3456 16.7452 61.9734 17.533 62.3008L37.8058 70.7244C38.5938 71.0516 39.4788 71.0516 40.2666 70.7244L60.5396 62.3008C61.3273 61.9734 61.9532 61.3456 62.2796 60.5554L70.6767 40.219C71.0031 39.4288 71.0031 38.541 70.6767 37.7508L62.2796 17.4144C61.9532 16.6242 61.3273 15.9964 60.5396 15.6691L40.2666 7.24549ZM37.9701 15.8347C38.5581 15.2447 39.5117 15.2447 40.0997 15.8346L62.066 37.8684C62.6542 38.4584 62.6542 39.4148 62.066 40.0048L40.0997 62.0386C39.5117 62.6286 38.5581 62.6286 37.9701 62.0386L16.006 40.0048C15.4179 39.4148 15.4179 38.4584 16.006 37.8684L37.9701 15.8347Z" fill="currentColor"/>
+                            <path d="M39.9865 27.1512C40.5578 29.7174 41.8419 32.069 43.6904 33.9334C45.5388 35.798 47.8759 37.0992 50.4309 37.6864C50.6809 37.7444 50.9038 37.8856 51.0635 38.087C51.2232 38.2884 51.3102 38.5382 51.3102 38.7954C51.3102 39.0528 51.2232 39.3026 51.0635 39.504C50.9038 39.7054 50.6809 39.8466 50.4309 39.9044C47.8789 40.4776 45.5418 41.7668 43.6926 43.622C41.8431 45.477 40.558 47.8214 39.9865 50.3814C39.9289 50.6322 39.7882 50.856 39.5874 51.0162C39.3866 51.1764 39.1376 51.2636 38.881 51.2636C38.6244 51.2636 38.3756 51.1764 38.1748 51.0162C37.974 50.856 37.8333 50.6322 37.7755 50.3814C37.1923 47.822 35.8995 45.4804 34.0463 43.6266C32.1931 41.7728 29.855 40.4824 27.302 39.9044C27.0522 39.8466 26.8291 39.7054 26.6694 39.504C26.5097 39.3026 26.4227 39.0528 26.4227 38.7954C26.4227 38.5382 26.5097 38.2884 26.6694 38.087C26.8291 37.8856 27.0522 37.7444 27.302 37.6864C29.8558 37.1 32.1929 35.803 34.0455 33.9448C35.8979 32.0866 37.1907 29.742 37.7755 27.1804C37.8299 26.9287 37.9677 26.7031 38.1662 26.5401C38.365 26.3772 38.6128 26.2867 38.8694 26.2833C39.126 26.2799 39.3762 26.3639 39.579 26.5215C39.782 26.6791 39.9257 26.9011 39.9865 27.1512Z" fill="currentColor"/>
+                        </g>
+                        <defs>
+                            <clipPath id="clip0_402_76">
+                                <rect width="64" height="64" fill="white" transform="translate(7 7)"/>
+                            </clipPath>
+                        </defs>
+                    </svg>
+                    <a>${formatOrbPrice.format(priceOrb)}</a>
+                `;
+                
+                priceContainer.appendChild(orb_price);
+            }
+
+            if (currentUserData?.premium_type === 2) {} else {
+                priceContainer.querySelector('.nitro-icon')?.remove();
+            }
+            if (category.sku_id === discord_categories.DISXCORE) {
+                priceContainer.querySelector('.nitro-icon')?.remove();
+            }
+
+            if (!priceStandard && !priceOrb) {
+                orbsExclusive = false;
+            }
+
+            if (orbsExclusive) {
+                createCardTag('ORBS EXCLUSIVE')
+            } else if (product.premium_type === 2) {
+                createCardTag('NITRO EXCLUSIVE')
+            }
         }
 
         function createCardTag(text, type, toDate) {
@@ -6291,19 +6918,63 @@ async function loadSite() {
             tag.classList.add('shop-card-tag');
             tag.textContent = text;
             cardTag.appendChild(tag);
+            if (text === 'ORBS EXCLUSIVE') {
+                cardTag.innerHTML = `
+                    <p class="shop-card-tag">ORBS EXCLUSIVE</p>
+                    <svg width="25" height="19" viewBox="0 0 25 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M18.1701 0.137761C17.9839 0.0138636 17.7574 -0.0287596 17.5405 0.0192529L11.9581 1.25505C11.7412 1.30307 11.5516 1.4378 11.431 1.62961L8.32825 6.56577C8.20768 6.75757 8.16603 6.99072 8.21244 7.21395L9.40677 12.9589C9.45318 13.1822 9.58387 13.3772 9.77006 13.5011L14.5619 16.6896C14.7481 16.8135 14.9746 16.8561 15.1915 16.8081L20.7739 15.5723C20.9908 15.5243 21.1804 15.3895 21.301 15.1977L24.4037 10.2616C24.5243 10.0698 24.5659 9.83661 24.5195 9.61337L23.3252 3.86839C23.2788 3.64515 23.1481 3.45013 22.9619 3.32624L18.1701 0.137761ZM17.1795 2.28279C17.3576 2.15618 17.6016 2.20209 17.7243 2.38533L22.3108 9.22957C22.4336 9.41283 22.3888 9.664 22.2106 9.79061L15.5563 14.5191C15.3782 14.6457 15.1342 14.5998 15.0115 14.4165L10.4255 7.57236C10.3028 7.3891 10.3476 7.13794 10.5258 7.01132L17.1795 2.28279Z" fill="white"/>
+                        <path d="M17.1644 5.35162C17.1901 6.05305 17.4084 6.73245 17.7938 7.31109C18.1793 7.88977 18.7162 8.34404 19.3424 8.62129C19.4036 8.64857 19.4541 8.69638 19.4855 8.75696C19.5169 8.81755 19.5274 8.88733 19.5153 8.95488C19.5033 9.02247 19.4693 9.08389 19.419 9.12909C19.3687 9.17428 19.305 9.20063 19.2383 9.20377C18.5585 9.23139 17.9 9.4574 17.3398 9.85554C16.7796 10.2536 16.3407 10.8074 16.0744 11.4522C16.0479 11.5152 16.0014 11.5672 15.9425 11.5996C15.8836 11.632 15.8158 11.6429 15.7501 11.6306C15.6845 11.6182 15.6249 11.5833 15.5811 11.5316C15.5372 11.4799 15.5117 11.4143 15.5087 11.3457C15.4795 10.6455 15.2586 9.96826 14.8715 9.39218C14.4843 8.8161 13.9466 8.36462 13.3205 8.08988C13.2593 8.06267 13.2088 8.01485 13.1774 7.95427C13.146 7.89368 13.1355 7.8239 13.1476 7.7563C13.1596 7.68876 13.1936 7.62734 13.2439 7.58214C13.2942 7.53695 13.3579 7.51061 13.4246 7.50741C14.1055 7.4764 14.7643 7.24835 15.3255 6.84959C15.8867 6.45081 16.3275 5.89735 16.5973 5.25281C16.623 5.18934 16.6689 5.13671 16.7273 5.10349C16.7858 5.07028 16.8535 5.05844 16.9193 5.06991C16.9851 5.08137 17.0452 5.11548 17.0897 5.16663C17.1342 5.2178 17.1606 5.28301 17.1644 5.35162Z" fill="white"/>
+                        <path d="M6.74732 2.1207C6.93834 2.00471 7.16632 1.97159 7.38113 2.02866L10.0393 2.73473L8.60252 5.04222L7.65117 4.30565C7.47824 4.17168 7.2324 4.20722 7.10246 4.38517L2.24814 11.0315C2.11827 11.2095 2.1532 11.4623 2.32613 11.5963L8.78619 16.5995C8.95913 16.7335 9.20471 16.698 9.33465 16.52L10.5494 14.8568L13.2335 16.66L9.6941 18.81C9.50315 18.926 9.27514 18.9591 9.06029 18.9021L3.53177 17.4333C3.31699 17.3763 3.13299 17.2337 3.02015 17.037L0.116293 11.9749C0.00345567 11.7782 -0.0288863 11.5434 0.0263657 11.3223L1.44819 5.63227C1.50343 5.41121 1.64163 5.22184 1.83254 5.10584L6.74732 2.1207Z" fill="white"/>
+                        <path d="M7.57699 7.18885L8.84132 13.3849C8.84903 13.4228 8.85925 13.4599 8.87129 13.496C8.85859 13.5441 8.83458 13.5885 8.80092 13.6251C8.75507 13.6749 8.69423 13.7072 8.62818 13.7168C8.56209 13.7264 8.4947 13.7128 8.43715 13.678C8.37963 13.6432 8.33518 13.5893 8.31115 13.5252C8.06768 12.8704 7.64936 12.2997 7.10449 11.8789C6.55963 11.4582 5.91038 11.2044 5.23176 11.147C5.16538 11.1411 5.10288 11.1121 5.05444 11.0649C5.00598 11.0177 4.97441 10.9549 4.96502 10.8868C4.95565 10.8188 4.96883 10.7495 5.00262 10.6902C5.03641 10.631 5.08876 10.5853 5.15098 10.5607C5.78738 10.3101 6.34218 9.87982 6.75164 9.3193C7.161 8.75882 7.40845 8.09071 7.46573 7.3917C7.47058 7.32314 7.498 7.25838 7.54321 7.20788C7.55304 7.1969 7.56353 7.18666 7.57471 7.17737C7.57543 7.18116 7.57622 7.18506 7.57699 7.18885Z" fill="white"/>
+                    </svg>
+                `;
+                cardTag.classList.add('has-tooltip');
+                cardTag.setAttribute('data-tooltip', `This item is exclusive to the Orbs currency, it can be claimed with Discord Orbs`);
+            } else if (text === 'NITRO EXCLUSIVE') {
+                cardTag.innerHTML = `
+                    <p class="shop-card-tag">NITRO EXCLUSIVE</p>
+                    <svg width="78" height="78" viewBox="0 0 78 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M52.7473 39C52.7473 43.1925 49.6598 46.3125 45.5323 46.3125C44.5742 46.3262 43.6233 46.1454 42.7372 45.7811C41.851 45.4168 41.0479 44.8765 40.3765 44.1929C39.7051 43.5094 39.1793 42.6967 38.831 41.8042C38.4826 40.9116 38.3189 39.9576 38.3498 39C38.3498 34.8075 41.4373 31.6875 45.5648 31.6875C49.6923 31.6875 52.7798 34.8075 52.7798 39H52.7473ZM74.7498 39C74.7498 55.2825 61.7498 68.25 45.5323 68.25C38.952 68.2896 32.5537 66.0919 27.3866 62.0173C22.2195 57.9427 18.5905 52.2331 17.0948 45.825H10.8548L7.92976 32.175H17.2248C18.0698 29.055 19.4348 26.0325 21.1573 23.4H6.14226L3.24976 9.75H44.6548C62.1723 9.75 74.7498 22.7175 74.7498 39ZM60.9048 39C60.9048 30.3225 54.0798 23.4 45.5323 23.4C43.4955 23.4041 41.4797 23.8121 39.6016 24.6004C37.7236 25.3887 36.0204 26.5415 34.5908 27.9923C33.1612 29.4431 32.0335 31.1629 31.2729 33.0524C30.5123 34.9418 30.134 36.9634 30.1598 39C30.1598 47.6775 36.9848 54.6 45.5323 54.6C47.569 54.5959 49.5848 54.1879 51.4629 53.3996C53.341 52.6114 55.0441 51.4585 56.4737 50.0077C57.9033 48.5569 59.031 46.8371 59.7916 44.9476C60.5522 43.0582 60.9305 41.0366 60.9048 39Z" fill="currentColor"/>
+                    </svg>
+                `;
+                cardTag.classList.add('has-tooltip');
+                cardTag.setAttribute('data-tooltip', `This item is exclusive to Nitro users, it can be used at any time with Nitro`);
+            } else if (text === 'RANDOM') {
+                cardTag.innerHTML = `
+                    <p class="shop-card-tag">RANDOM</p>
+                    <svg width="800px" height="800px" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" fill="none"><g fill="currentColor">
+                        <path d="M5 4a1 1 0 000 2h.01a1 1 0 000-2H5zM7 8a1 1 0 011-1h.01a1 1 0 010 2H8a1 1 0 01-1-1zM11.01 10a1 1 0 100 2h.01a1 1 0 100-2h-.01z"/>
+                        <path fill-rule="evenodd" d="M3.25 1A2.25 2.25 0 001 3.25v9.5A2.25 2.25 0 003.25 15h9.5A2.25 2.25 0 0015 12.75v-9.5A2.25 2.25 0 0012.75 1h-9.5zM2.5 3.25a.75.75 0 01.75-.75h9.5a.75.75 0 01.75.75v9.5a.75.75 0 01-.75.75h-9.5a.75.75 0 01-.75-.75v-9.5z" clip-rule="evenodd"/></g>
+                    </svg>
+                `;
+                cardTag.classList.add('has-tooltip');
+                cardTag.setAttribute('data-tooltip', `This Profile Effect has a random outcome each time it is played`);
+            }
             if (type === 1) {
                 function updateTimer() {
                     const now = new Date();
                     const timeDiff = toDate - now;
+                    cardTag.innerHTML = `
+                        <p class="shop-card-tag">time</p>
+                        <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 7V12L9.5 13.5M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    `;
+                    const tagText = cardTag.querySelector('.shop-card-tag');
+                    cardTag.classList.add('has-tooltip');
         
                     if (timeDiff <= 0) {
-                        tag.textContent = `OFF SALE`;
+                        tagText.textContent = `OFF SALE`;
                         clearInterval(timerInterval);
+                        cardTag.setAttribute('data-tooltip', `This item was limited edition and is no longer in the Discord shop`);
                     } else {
                         const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
                         const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / 1000);
-                        tag.textContent = `${days} DAYS LEFT IN SHOP`;
+                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+                        tagText.textContent = `${days} DAYS LEFT IN SHOP`;
+                        if (days === 0) tagText.textContent = `LAST DAY IN SHOP`;
+                        cardTag.setAttribute('data-tooltip', `Leaves the Discord shop in ${days} Days, ${hours} Hours, ${minutes} Minutes and ${seconds} Seconds`);
                     }
                 }
         
@@ -6330,9 +7001,9 @@ async function loadSite() {
             }
         }
 
-        const unpublishedAt = new Date(product.unpublished_at);
+        const unpublishedAt = new Date(category.unpublished_at);
                                 
-        if (product.unpublished_at && !isNaN(unpublishedAt.getTime())) {
+        if (category.unpublished_at && !isNaN(unpublishedAt.getTime())) {
             createCardTag(null, 1, unpublishedAt)
         }
 
@@ -6344,9 +7015,11 @@ async function loadSite() {
 
         const previewContainer = card.querySelector('[data-shop-card-preview-container]');
         const itemName = card.querySelector('.shop-card-name');
+        const itemSummary = card.querySelector('.shop-card-summary');
+        let randomProfileEffect = false;
 
         if (product.type === item_types.AVATAR_DECORATION) {
-            previewContainer.classList.add('type-0-preview-container-container')
+            previewContainer.classList.add('type-0-preview-container-container');
             previewContainer.innerHTML = `
                 <div class="type-0-preview-container">
                     <div class="type-0-preview-background"></div>
@@ -6369,70 +7042,23 @@ async function loadSite() {
 
             effectBG.classList.add('type-1-effect-background')
     
-            effectBG.innerHTML = `
-                <svg width="383" height="764" viewBox="0 0 383 764" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g clip-path="url(#clip0_30_2)">
-                <rect width="383" height="142" fill="#424549"/>
-                <rect y="142" width="383" height="625" fill="#282B30"/>
-                <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" fill="#424549"/>
-                <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" stroke="#282B30" stroke-width="7"/>
-                <path d="M90.5028 121.958C86.8115 120.235 82.9189 119.019 78.9189 118.335C78.3686 119.333 77.8719 120.358 77.429 121.411C73.1739 120.755 68.8383 120.755 64.5699 121.411C64.1269 120.358 63.6303 119.333 63.0799 118.335C59.0799 119.033 55.1739 120.249 51.4826 121.971C44.1537 133.015 42.1671 143.786 43.1604 154.407C47.4557 157.632 52.2611 160.093 57.3618 161.665C58.5162 160.093 59.5363 158.411 60.4088 156.662C58.7443 156.033 57.147 155.254 55.6168 154.338C56.0195 154.038 56.4088 153.737 56.798 153.436C65.7914 157.742 76.2075 157.742 85.2008 153.436C85.5901 153.75 85.9793 154.065 86.382 154.338C84.8518 155.254 83.2411 156.033 81.5766 156.676C82.4491 158.425 83.4693 160.093 84.6236 161.665C89.7377 160.093 94.5431 157.646 98.8384 154.407C100.006 142.091 96.8519 131.43 90.4894 121.958H90.5028ZM61.684 147.873C58.9189 147.873 56.6235 145.317 56.6235 142.173C56.6235 139.03 58.8249 136.446 61.6705 136.446C64.5162 136.446 66.7846 139.03 66.7309 142.173C66.6773 145.317 64.5028 147.873 61.684 147.873ZM80.3417 147.873C77.5632 147.873 75.2947 145.317 75.2947 142.173C75.2947 139.03 77.4961 136.446 80.3417 136.446C83.1874 136.446 85.4424 139.03 85.3887 142.173C85.335 145.317 83.1605 147.873 80.3417 147.873Z" fill="#929292"/>
-                <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" fill="#289960"/>
-                <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" stroke="#282B30" stroke-width="5"/>
-                <rect x="12" y="208" width="359" height="540" rx="9" fill="#1E2124"/>
-                <rect x="27" y="222" width="168" height="25" rx="10" fill="#424549"/>
-                <rect x="27" y="405" width="106" height="25" rx="10" fill="#424549"/>
-                <rect x="120" y="482" width="107" height="29" rx="10" fill="#424549"/>
-                <rect x="27" y="476" width="74" height="74" rx="10" fill="#424549"/>
-                <rect x="27" y="565" width="329" height="36" rx="4" fill="#282B30"/>
-                <rect x="27" y="336" width="316" height="25" rx="10" fill="#424549"/>
-                <rect x="27" y="252" width="83" height="15" rx="7.5" fill="#424549"/>
-                <rect x="27" y="384" width="186" height="15" rx="7.5" fill="#424549"/>
-                <rect x="27" y="453" width="118" height="15" rx="7.5" fill="#424549"/>
-                <rect x="120" y="517" width="69" height="18" rx="9" fill="#424549"/>
-                <rect x="37" y="647" width="18" height="18" rx="9" fill="#424549"/>
-                <rect x="69" y="648" width="106" height="16" rx="8" fill="#424549"/>
-                <path d="M333.564 652.993C333.259 652.726 333.243 652.257 333.53 651.97C333.793 651.707 334.217 651.695 334.494 651.945L338.174 655.257C338.615 655.654 338.615 656.346 338.174 656.743L334.494 660.055C334.217 660.305 333.793 660.293 333.53 660.03C333.243 659.743 333.259 659.274 333.564 659.007L336.14 656.753C336.595 656.354 336.595 655.646 336.14 655.247L333.564 652.993Z" fill="#424549"/>
-                <path d="M333.564 710.493C333.259 710.226 333.243 709.757 333.53 709.47C333.793 709.207 334.217 709.195 334.494 709.445L338.174 712.757C338.615 713.154 338.615 713.846 338.174 714.243L334.494 717.555C334.217 717.805 333.793 717.793 333.53 717.53C333.243 717.243 333.259 716.774 333.564 716.507L336.14 714.253C336.595 713.854 336.595 713.146 336.14 712.747L333.564 710.493Z" fill="#424549"/>
-                <rect x="69" y="706" width="106" height="16" rx="8" fill="#424549"/>
-                <rect x="37" y="705" width="18" height="18" rx="9" fill="#424549"/>
-                <rect x="27" y="315" width="71" height="15" rx="7.5" fill="#424549"/>
-                <rect x="27" y="290" width="329" height="1" rx="0.5" fill="#424549"/>
-                </g>
-                <defs>
-                <clipPath id="clip0_30_2">
-                <rect width="383" height="764" rx="21" fill="white"/>
-                </clipPath>
-                </defs>
-                </svg>
-            `;
+            effectBG.innerHTML = profileEffectBG;
             
             card.appendChild(effectBG);
             
-            // Get the product ID from the first item
-            const productId = product.items && product.items[0] ? product.items[0].id : null;
-            
-            if (productId && discordProfileEffectsCache) {
-                // Find the profile effect configuration
-                const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, product.items[0]);
+            const profileEffect = product.items[0];
+
+            if (product.items[0].effects[0].randomizedSources.length !== 0) randomProfileEffect = true;
                 
-                if (profileEffect) {
-                    // Set container to full width and auto height
-                    previewContainer.style.width = '100%';
-                    previewContainer.style.height = '100%';
-                    previewContainer.style.aspectRatio = '0.1';
-                    
-                    // Create and initialize the profile effects card with card-level hover
-                    const effectsCard = new ProfileEffectsCard(previewContainer, profileEffect, card);
-                    
-                    // Store reference for cleanup if needed
-                    card._profileEffectsCard = effectsCard;
-                } else {
-                    // Fallback if profile effect not found
-                    previewContainer.innerHTML = ``;
-                }
+            if (profileEffect) {
+                previewContainer.style.width = '100%';
+                previewContainer.style.height = '100%';
+                previewContainer.style.aspectRatio = '0.1';
+
+                const effectsCard = new ProfileEffectsCard(previewContainer, profileEffect, card);
+                
+                card._profileEffectsCard = effectsCard;
             } else {
-                // Fallback if no product ID or cache
                 previewContainer.innerHTML = ``;
             }
         } else if (product.type === item_types.NAMEPLATE) {
@@ -6508,154 +7134,142 @@ async function loadSite() {
             createDudNameplatePreview(2);
             createDudNameplatePreview(1);
 
+        } else if (product.type === item_types.PROFILE_FRAME) {
+
+            previewContainer.classList.add('type-3-preview-container')
+
+            let frameContainer = document.createElement("div");
+
+            frameContainer.classList.add('frameContainer');
+    
+            frameContainer.innerHTML = profileEffectBG;
+            
+            previewContainer.appendChild(frameContainer);
+
+            const frameContainerDiv = frameContainer.querySelector('.frameContainerDiv');
+            const frameContainerDivback = frameContainer.querySelector('.frameContainerDivback');
+            const layers = product.items[0].layers;
+            layers.forEach(layer => {
+                const src = `https://cdn.discordapp.com/media/v1/collectibles-shop/${product.sku_id}/${layer.id}/static`;
+                let img = document.createElement("img");
+                img.src = src;
+                img.classList.add(`a-${layer.anchor}`);
+                img.classList.add(`t-${layer.type}`);
+                if (layer.order === "front") frameContainerDiv.appendChild(img);
+                if (layer.order === "back") frameContainerDivback.appendChild(img);
+            });
+            
         } else if (product.type === item_types.BUNDLE) {
             previewContainer.classList.add('type-1000-preview-container')
 
-            if (product.items.find(item => item.type === item_types.AVATAR_DECORATION)) {
-
-                let decorationBundleContainer = document.createElement("div");
-
-                decorationBundleContainer.classList.add('type-0-preview-container')
-    
-                decorationBundleContainer.innerHTML = `
-                    <div class="type-0-preview-background"></div>
-                    <img class="type-0-preview" loading="lazy" src="https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=false"></img>
+            if (experimentIs('use_bundle_preview_assets', 1) && product.preview_assets?.fg_static) {
+                let bundleContent = document.createElement("div");
+                bundleContent.classList.add('bundle-preview-assets')
+                bundleContent.innerHTML = `
+                    <img class="bg" loading="lazy" src="${product.preview_assets.bg_static}"></img>
+                    <img class="fg" loading="lazy" src="${product.preview_assets.fg_static}"></img>
                 `;
+                itemSummary.textContent = `${product.items.length} Items`;
                 
-                previewContainer.appendChild(decorationBundleContainer);
+                previewContainer.appendChild(bundleContent);
+            } else {
+                if (product.items.find(item => item.type === item_types.AVATAR_DECORATION)) {
 
-                const decorationPreview = decorationBundleContainer.querySelector('.type-0-preview')
-                card.addEventListener("mouseenter", () => {
-                    decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=true`;
-                });
-                card.addEventListener("mouseleave", () => {
-                    decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=false`;
-                });
-            }
-            if (product.items.find(item => item.type === item_types.PROFILE_EFFECT)) {
+                    let decorationBundleContainer = document.createElement("div");
 
-                let effectBundleContainer = document.createElement("div");
-
-                effectBundleContainer.classList.add('effectBundleContainer');
+                    decorationBundleContainer.classList.add('type-0-preview-container')
     
-                effectBundleContainer.innerHTML = `
-                    <svg width="383" height="764" viewBox="0 0 383 764" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <g clip-path="url(#clip0_30_2)">
-                    <rect width="383" height="142" fill="#424549"/>
-                    <rect y="142" width="383" height="625" fill="#282B30"/>
-                    <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" fill="#424549"/>
-                    <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" stroke="#282B30" stroke-width="7"/>
-                    <path d="M90.5028 121.958C86.8115 120.235 82.9189 119.019 78.9189 118.335C78.3686 119.333 77.8719 120.358 77.429 121.411C73.1739 120.755 68.8383 120.755 64.5699 121.411C64.1269 120.358 63.6303 119.333 63.0799 118.335C59.0799 119.033 55.1739 120.249 51.4826 121.971C44.1537 133.015 42.1671 143.786 43.1604 154.407C47.4557 157.632 52.2611 160.093 57.3618 161.665C58.5162 160.093 59.5363 158.411 60.4088 156.662C58.7443 156.033 57.147 155.254 55.6168 154.338C56.0195 154.038 56.4088 153.737 56.798 153.436C65.7914 157.742 76.2075 157.742 85.2008 153.436C85.5901 153.75 85.9793 154.065 86.382 154.338C84.8518 155.254 83.2411 156.033 81.5766 156.676C82.4491 158.425 83.4693 160.093 84.6236 161.665C89.7377 160.093 94.5431 157.646 98.8384 154.407C100.006 142.091 96.8519 131.43 90.4894 121.958H90.5028ZM61.684 147.873C58.9189 147.873 56.6235 145.317 56.6235 142.173C56.6235 139.03 58.8249 136.446 61.6705 136.446C64.5162 136.446 66.7846 139.03 66.7309 142.173C66.6773 145.317 64.5028 147.873 61.684 147.873ZM80.3417 147.873C77.5632 147.873 75.2947 145.317 75.2947 142.173C75.2947 139.03 77.4961 136.446 80.3417 136.446C83.1874 136.446 85.4424 139.03 85.3887 142.173C85.335 145.317 83.1605 147.873 80.3417 147.873Z" fill="#929292"/>
-                    <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" fill="#289960"/>
-                    <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" stroke="#282B30" stroke-width="5"/>
-                    <rect x="12" y="208" width="359" height="540" rx="9" fill="#1E2124"/>
-                    <rect x="27" y="222" width="168" height="25" rx="10" fill="#424549"/>
-                    <rect x="27" y="405" width="106" height="25" rx="10" fill="#424549"/>
-                    <rect x="120" y="482" width="107" height="29" rx="10" fill="#424549"/>
-                    <rect x="27" y="476" width="74" height="74" rx="10" fill="#424549"/>
-                    <rect x="27" y="565" width="329" height="36" rx="4" fill="#282B30"/>
-                    <rect x="27" y="336" width="316" height="25" rx="10" fill="#424549"/>
-                    <rect x="27" y="252" width="83" height="15" rx="7.5" fill="#424549"/>
-                    <rect x="27" y="384" width="186" height="15" rx="7.5" fill="#424549"/>
-                    <rect x="27" y="453" width="118" height="15" rx="7.5" fill="#424549"/>
-                    <rect x="120" y="517" width="69" height="18" rx="9" fill="#424549"/>
-                    <rect x="37" y="647" width="18" height="18" rx="9" fill="#424549"/>
-                    <rect x="69" y="648" width="106" height="16" rx="8" fill="#424549"/>
-                    <path d="M333.564 652.993C333.259 652.726 333.243 652.257 333.53 651.97C333.793 651.707 334.217 651.695 334.494 651.945L338.174 655.257C338.615 655.654 338.615 656.346 338.174 656.743L334.494 660.055C334.217 660.305 333.793 660.293 333.53 660.03C333.243 659.743 333.259 659.274 333.564 659.007L336.14 656.753C336.595 656.354 336.595 655.646 336.14 655.247L333.564 652.993Z" fill="#424549"/>
-                    <path d="M333.564 710.493C333.259 710.226 333.243 709.757 333.53 709.47C333.793 709.207 334.217 709.195 334.494 709.445L338.174 712.757C338.615 713.154 338.615 713.846 338.174 714.243L334.494 717.555C334.217 717.805 333.793 717.793 333.53 717.53C333.243 717.243 333.259 716.774 333.564 716.507L336.14 714.253C336.595 713.854 336.595 713.146 336.14 712.747L333.564 710.493Z" fill="#424549"/>
-                    <rect x="69" y="706" width="106" height="16" rx="8" fill="#424549"/>
-                    <rect x="37" y="705" width="18" height="18" rx="9" fill="#424549"/>
-                    <rect x="27" y="315" width="71" height="15" rx="7.5" fill="#424549"/>
-                    <rect x="27" y="290" width="329" height="1" rx="0.5" fill="#424549"/>
-                    </g>
-                    <defs>
-                    <clipPath id="clip0_30_2">
-                    <rect width="383" height="764" rx="21" fill="white"/>
-                    </clipPath>
-                    </defs>
-                    </svg>
-                    <div class="effectBundleContainerDiv"></div>
-                `;
-                
-                previewContainer.appendChild(effectBundleContainer);
+                    decorationBundleContainer.innerHTML = `
+                        <div class="type-0-preview-background"></div>
+                        <img class="type-0-preview" loading="lazy" src="https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=false"></img>
+                    `;
+                    
+                    previewContainer.appendChild(decorationBundleContainer);
 
-                const effectBundleContainerDiv = effectBundleContainer.querySelector('.effectBundleContainerDiv');
-                // Get the product ID from the first item
-                const productId = product.items.find(item => item.type === item_types.PROFILE_EFFECT) ? product.items.find(item => item.type === item_types.PROFILE_EFFECT).id : null;
-                const productItem = product.items && product.items.find(item => item.type === item_types.PROFILE_EFFECT) ? product.items.find(item => item.type === item_types.PROFILE_EFFECT) : null;
-                
-                if (productId && discordProfileEffectsCache) {
-                    // Find the profile effect configuration
-                    const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, productItem);
+                    const decorationPreview = decorationBundleContainer.querySelector('.type-0-preview')
+                    card.addEventListener("mouseenter", () => {
+                        decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=true`;
+                    });
+                    card.addEventListener("mouseleave", () => {
+                        decorationPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${product.items.find(item => item.type === item_types.AVATAR_DECORATION).asset}.png?size=4096&passthrough=false`;
+                    });
+                }
+                if (product.items.find(item => item.type === item_types.PROFILE_EFFECT)) {
+
+                    let effectBundleContainer = document.createElement("div");
+
+                    effectBundleContainer.classList.add('effectBundleContainer');
+    
+                    effectBundleContainer.innerHTML = profileEffectBG;
+
+                    previewContainer.appendChild(effectBundleContainer);
+
+                    const effectBundleContainerDiv = effectBundleContainer.querySelector('.effectBundleContainerDiv');
+                    const productItem = product.items && product.items.find(item => item.type === item_types.PROFILE_EFFECT) ? product.items.find(item => item.type === item_types.PROFILE_EFFECT) : null;
+
+                    const profileEffect = productItem;
 
                     if (profileEffect) {
-                        // Set container to full width and auto height
                         effectBundleContainerDiv.style.width = '100%';
                         effectBundleContainerDiv.style.height = '100%';
                         effectBundleContainerDiv.style.aspectRatio = '0.1';
 
-                        // Create and initialize the profile effects card with card-level hover
                         const effectsCard = new ProfileEffectsCard(effectBundleContainerDiv, profileEffect, card);
 
-                        // Store reference for cleanup if needed
                         card._profileEffectsCard = effectsCard;
                     } else {
-                        // Fallback if profile effect not found
                         effectBundleContainerDiv.innerHTML = ``;
                     }
-                } else {
-                    // Fallback if no product ID or cache
-                    effectBundleContainerDiv.innerHTML = ``;
                 }
-            }
-            if (product.items.find(item => item.type === item_types.NAMEPLATE)) {
+                if (product.items.find(item => item.type === item_types.NAMEPLATE)) {
 
-                previewContainer.classList.add('three-way-bundle')
+                    previewContainer.classList.add('three-way-bundle')
 
 
-                let nameplateBundleContainer = document.createElement("div");
+                    let nameplateBundleContainer = document.createElement("div");
 
-                nameplateBundleContainer.classList.add('type-2-preview-container')
+                    nameplateBundleContainer.classList.add('type-2-preview-container')
 
-                let nameplate_user = document.createElement("div");
+                    let nameplate_user = document.createElement("div");
 
-                nameplate_user.classList.add('nameplate-null-user');
-                nameplate_user.classList.add('nameplate-preview');
-                nameplate_user.innerHTML = `
-                    <video disablepictureinpicture muted loop class="nameplate-null-user nameplate-video-preview" style="position: absolute; height: 100%; width: auto; right: 0;"></video>
-                    <div class="nameplate-user-avatar"></div>
-                    <p class="nameplate-user-name">Nameplate</p>
-                `;
+                    nameplate_user.classList.add('nameplate-null-user');
+                    nameplate_user.classList.add('nameplate-preview');
+                    nameplate_user.innerHTML = `
+                        <video disablepictureinpicture muted loop class="nameplate-null-user nameplate-video-preview" style="position: absolute; height: 100%; width: auto; right: 0;"></video>
+                        <div class="nameplate-user-avatar"></div>
+                        <p class="nameplate-user-name">Nameplate</p>
+                    `;
 
-                if (currentUserData) {
-                    nameplate_user.querySelector('.nameplate-user-name').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
-                    let userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.webp?size=128';
-                    if (currentUserData.avatar.includes('a_')) {
-                        userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.gif?size=128';
+                    if (currentUserData) {
+                        nameplate_user.querySelector('.nameplate-user-name').textContent = currentUserData.global_name ? currentUserData.global_name : currentUserData.username;
+                        let userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.webp?size=128';
+                        if (currentUserData.avatar.includes('a_')) {
+                            userAvatar = 'https://cdn.discordapp.com/avatars/'+currentUserData.id+'/'+currentUserData.avatar+'.gif?size=128';
+                        }
+
+                        nameplate_user.querySelector('.nameplate-user-avatar').style.backgroundImage = `url(${userAvatar})`;
                     }
 
-                    nameplate_user.querySelector('.nameplate-user-avatar').style.backgroundImage = `url(${userAvatar})`;
+                    const item = product.items.find(item => item.type === item_types.NAMEPLATE);
+                    const paletteName = item.palette;
+                    const bgcolor = nameplate_palettes[paletteName].darkBackground;
+
+                    const videoElement = nameplate_user.querySelector(".nameplate-video-preview");
+
+                    videoElement.src = `https://cdn.discordapp.com/assets/collectibles/${item.asset}asset.webm`;
+
+                    nameplate_user.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
+
+                    card.addEventListener("mouseenter", () => {
+                        videoElement.play();
+                    });
+                    card.addEventListener("mouseleave", () => {
+                        videoElement.pause();
+                    });
+
+                    nameplateBundleContainer.appendChild(nameplate_user);
+                    previewContainer.appendChild(nameplateBundleContainer);
                 }
-
-                const item = product.items.find(item => item.type === item_types.NAMEPLATE);
-                const paletteName = item.palette;
-                const bgcolor = nameplate_palettes[paletteName].darkBackground;
-
-                const videoElement = nameplate_user.querySelector(".nameplate-video-preview");
-
-                videoElement.src = `https://cdn.discordapp.com/assets/collectibles/${item.asset}asset.webm`;
-
-                nameplate_user.style.backgroundImage = `linear-gradient(90deg, #00000000 -30%, ${bgcolor} 200%)`;
-
-                card.addEventListener("mouseenter", () => {
-                    videoElement.play();
-                });
-                card.addEventListener("mouseleave", () => {
-                    videoElement.pause();
-                });
-
-                nameplateBundleContainer.appendChild(nameplate_user);
-                previewContainer.appendChild(nameplateBundleContainer);
             }
         } else if (product.type === item_types.VARIANTS_GROUP) {
             previewContainer.classList.add('type-2000-preview-container')
@@ -6738,79 +7352,29 @@ async function loadSite() {
 
                     effectBG.classList.add('type-1-effect-background')
     
-                    effectBG.innerHTML = `
-                        <svg width="383" height="764" viewBox="0 0 383 764" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <g clip-path="url(#clip0_30_2)">
-                        <rect width="383" height="142" fill="#424549"/>
-                        <rect y="142" width="383" height="625" fill="#282B30"/>
-                        <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" fill="#424549"/>
-                        <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" stroke="#282B30" stroke-width="7"/>
-                        <path d="M90.5028 121.958C86.8115 120.235 82.9189 119.019 78.9189 118.335C78.3686 119.333 77.8719 120.358 77.429 121.411C73.1739 120.755 68.8383 120.755 64.5699 121.411C64.1269 120.358 63.6303 119.333 63.0799 118.335C59.0799 119.033 55.1739 120.249 51.4826 121.971C44.1537 133.015 42.1671 143.786 43.1604 154.407C47.4557 157.632 52.2611 160.093 57.3618 161.665C58.5162 160.093 59.5363 158.411 60.4088 156.662C58.7443 156.033 57.147 155.254 55.6168 154.338C56.0195 154.038 56.4088 153.737 56.798 153.436C65.7914 157.742 76.2075 157.742 85.2008 153.436C85.5901 153.75 85.9793 154.065 86.382 154.338C84.8518 155.254 83.2411 156.033 81.5766 156.676C82.4491 158.425 83.4693 160.093 84.6236 161.665C89.7377 160.093 94.5431 157.646 98.8384 154.407C100.006 142.091 96.8519 131.43 90.4894 121.958H90.5028ZM61.684 147.873C58.9189 147.873 56.6235 145.317 56.6235 142.173C56.6235 139.03 58.8249 136.446 61.6705 136.446C64.5162 136.446 66.7846 139.03 66.7309 142.173C66.6773 145.317 64.5028 147.873 61.684 147.873ZM80.3417 147.873C77.5632 147.873 75.2947 145.317 75.2947 142.173C75.2947 139.03 77.4961 136.446 80.3417 136.446C83.1874 136.446 85.4424 139.03 85.3887 142.173C85.335 145.317 83.1605 147.873 80.3417 147.873Z" fill="#929292"/>
-                        <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" fill="#289960"/>
-                        <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" stroke="#282B30" stroke-width="5"/>
-                        <rect x="12" y="208" width="359" height="540" rx="9" fill="#1E2124"/>
-                        <rect x="27" y="222" width="168" height="25" rx="10" fill="#424549"/>
-                        <rect x="27" y="405" width="106" height="25" rx="10" fill="#424549"/>
-                        <rect x="120" y="482" width="107" height="29" rx="10" fill="#424549"/>
-                        <rect x="27" y="476" width="74" height="74" rx="10" fill="#424549"/>
-                        <rect x="27" y="565" width="329" height="36" rx="4" fill="#282B30"/>
-                        <rect x="27" y="336" width="316" height="25" rx="10" fill="#424549"/>
-                        <rect x="27" y="252" width="83" height="15" rx="7.5" fill="#424549"/>
-                        <rect x="27" y="384" width="186" height="15" rx="7.5" fill="#424549"/>
-                        <rect x="27" y="453" width="118" height="15" rx="7.5" fill="#424549"/>
-                        <rect x="120" y="517" width="69" height="18" rx="9" fill="#424549"/>
-                        <rect x="37" y="647" width="18" height="18" rx="9" fill="#424549"/>
-                        <rect x="69" y="648" width="106" height="16" rx="8" fill="#424549"/>
-                        <path d="M333.564 652.993C333.259 652.726 333.243 652.257 333.53 651.97C333.793 651.707 334.217 651.695 334.494 651.945L338.174 655.257C338.615 655.654 338.615 656.346 338.174 656.743L334.494 660.055C334.217 660.305 333.793 660.293 333.53 660.03C333.243 659.743 333.259 659.274 333.564 659.007L336.14 656.753C336.595 656.354 336.595 655.646 336.14 655.247L333.564 652.993Z" fill="#424549"/>
-                        <path d="M333.564 710.493C333.259 710.226 333.243 709.757 333.53 709.47C333.793 709.207 334.217 709.195 334.494 709.445L338.174 712.757C338.615 713.154 338.615 713.846 338.174 714.243L334.494 717.555C334.217 717.805 333.793 717.793 333.53 717.53C333.243 717.243 333.259 716.774 333.564 716.507L336.14 714.253C336.595 713.854 336.595 713.146 336.14 712.747L333.564 710.493Z" fill="#424549"/>
-                        <rect x="69" y="706" width="106" height="16" rx="8" fill="#424549"/>
-                        <rect x="37" y="705" width="18" height="18" rx="9" fill="#424549"/>
-                        <rect x="27" y="315" width="71" height="15" rx="7.5" fill="#424549"/>
-                        <rect x="27" y="290" width="329" height="1" rx="0.5" fill="#424549"/>
-                        </g>
-                        <defs>
-                        <clipPath id="clip0_30_2">
-                        <rect width="383" height="764" rx="21" fill="white"/>
-                        </clipPath>
-                        </defs>
-                        </svg>
-                    `;
+                    effectBG.innerHTML = profileEffectBG;
 
                     card.appendChild(effectBG);
 
-                    // Get the product ID from the first item
-                    const productId = selectedVariant.items && selectedVariant.items[0] ? selectedVariant.items[0].id : null;
 
-                    if (productId && discordProfileEffectsCache) {
-                        // Find the profile effect configuration
-                        const profileEffect = findProfileEffectByProductId(discordProfileEffectsCache, productId, selectedVariant.items[0]);
+                    const profileEffect = selectedVariant.items[0];
 
-                        if (profileEffect) {
-                            // Set container to full width and auto height
-                            previewContainer.style.width = '100%';
-                            previewContainer.style.height = '100%';
-                            previewContainer.style.aspectRatio = '0.1';
+                    if (profileEffect) {
+                        previewContainer.style.width = '100%';
+                        previewContainer.style.height = '100%';
+                        previewContainer.style.aspectRatio = '0.1';
 
+                        if (isFirstTimeLoadingVariant == true) {
+                            const effectsCard = new ProfileEffectsCard(previewContainer, profileEffect, card, {
+                                startImmediately: false
+                            });
+                            isFirstTimeLoadingVariant = false;
 
-
-                            // Create and initialize the profile effects card with card-level hover
-                            if (isFirstTimeLoadingVariant == true) {
-                                const effectsCard = new ProfileEffectsCard(previewContainer, profileEffect, card, {
-                                    startImmediately: false
-                                });
-                                isFirstTimeLoadingVariant = false;
-
-                                // Store reference for cleanup if needed
-                                card._profileEffectsCard = effectsCard;
-                            } else {
-                                card._profileEffectsCard.updateProfileEffect(profileEffect, true);
-                            }
+                            card._profileEffectsCard = effectsCard;
                         } else {
-                            // Fallback if profile effect not found
-                            previewContainer.innerHTML = ``;
+                            card._profileEffectsCard.updateProfileEffect(profileEffect, true);
                         }
                     } else {
-                        // Fallback if no product ID or cache
                         previewContainer.innerHTML = ``;
                     }
                 } else if (selectedVariant.type === item_types.NAMEPLATE) {
@@ -6952,6 +7516,10 @@ async function loadSite() {
             createCardTag('UPDATE REQUIRED');
         }
 
+        if (randomProfileEffect) {
+            createCardTag('RANDOM');
+        }
+
         card.addEventListener("click", (event) => {
             if (event.target.matches(".shop-card-var")) {
             } else {
@@ -6993,7 +7561,7 @@ async function loadSite() {
     
             container.appendChild(btn('< Back', currentPage - 1, currentPage === 1, false, true));
     
-            const range = Math.min(5, totalPages);
+            const range = Math.min(10, totalPages);
             let startPage = Math.max(1, currentPage - 2);
             let endPage = Math.min(totalPages, startPage + range - 1);
             if (endPage - startPage < range - 1) startPage = Math.max(1, endPage - range + 1);
@@ -7068,6 +7636,21 @@ async function loadSite() {
             output.innerHTML = '';
             const pageData = paginate(filteredData, page, itemsPerPage);
             output.scrollTo(0,0);
+
+            if (currentUserData && currentUserData.admin_level === 3 && currentPage === 1) {
+                const addCategory = document.createElement("div");
+                addCategory.classList.add('category-container');
+                addCategory.innerHTML = `
+                    <div class="add-category-banner">
+                        <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M13 3a1 1 0 1 0-2 0v8H3a1 1 0 1 0 0 2h8v8a1 1 0 0 0 2 0v-8h8a1 1 0 0 0 0-2h-8V3Z"></path></svg>
+                        <p>Add category</p>
+                    </div>
+                `;
+                addCategory.querySelector('.add-category-banner').addEventListener("click", function () {
+                    openModal('category-modal', 'addCategory');
+                });
+                output.appendChild(addCategory);
+            }
     
             pageData.forEach((categoryData) => {
                 const category = document.createElement("div");
@@ -7080,24 +7663,19 @@ async function loadSite() {
                 const bannersOutput = getCategoryBanners(categoryData);
                 const categoryBanner = bannersOutput.categoryBanner;
                 const modalBanner = bannersOutput.modalBanner;
-                const overridenCatalogBannerAsset = bannersOutput.catalogBannerAsset;
     
                 const bannerContainer = document.createElement('div');
-                if (categoryData.catalog_banner_url || overridenCatalogBannerAsset !== customCategoryAssets[1]) {
+                if (bannersOutput.catalogBannerAsset !== customCategoryAssets[1]) {
                     bannerContainer.classList.add('catalog-banner-container');
 
-                    if (categoryData.catalog_banner_url && !categoryData.catalog_banner_animated_url) {
+                    if (bannersOutput.catalogBannerAsset && !bannersOutput.catalogBannerAssetAnimated) {
                         bannerContainer.innerHTML = `
-                            <img src="${categoryData.catalog_banner_url}">
+                            <img src="${bannersOutput.catalogBannerAsset}">
                         `;
-                    } else if (categoryData.catalog_banner_animated_url) {
+                    } else if (bannersOutput.catalogBannerAssetAnimated) {
                         bannerContainer.innerHTML = `
-                            <video disablepictureinpicture muted loop autoplay src="${categoryData.catalog_banner_animated_url}"></video>
-                            <img src="${categoryData.catalog_banner_url}">
-                        `;
-                    } else if (overridenCatalogBannerAsset) {
-                        bannerContainer.innerHTML = `
-                            <img src="${overridenCatalogBannerAsset}">
+                            <video disablepictureinpicture muted loop autoplay src="${bannersOutput.catalogBannerAssetAnimated}"></video>
+                            <img src="${bannersOutput.catalogBannerAsset}">
                         `;
                     }
                 } else if (categoryBanner !== customCategoryAssets[0]) {
@@ -7212,7 +7790,7 @@ async function loadSite() {
                 } else {
                     bannerContainer.classList.add('catalog-banner-container');
                     bannerContainer.innerHTML = `
-                        <img src="${overridenCatalogBannerAsset}">
+                        <img src="${bannersOutput.catalogBannerAsset}">
                     `;
                 }
                 category.appendChild(bannerContainer);
@@ -7273,9 +7851,9 @@ async function loadSite() {
                                             <path fill="currentColor" fill-rule="evenodd" d="M7 4a1 1 0 0 0 0 2h3a1 1 0 1 1 0 2H5.5a1 1 0 0 0 0 2H8a1 1 0 1 1 0 2H6a1 1 0 1 0 0 2h1.25A8 8 0 1 0 15 4H7Zm8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" clip-rule="evenodd" class=""></path>
                                             <path fill="currentColor" d="M2.5 10a1 1 0 0 0 0-2H2a1 1 0 0 0 0 2h.5Z" class=""></path>
                                         </svg>
-                                        $${totals.usd_4.toFixed(2)}
+                                        US$${totals.usd_4.toFixed(2)}
                                     </p>
-                                    <p>$${totals.usd_0.toFixed(2)}</p>
+                                    <p>US$${totals.usd_0.toFixed(2)}</p>
                                 </div>
                                 <div>
                                     <p>
@@ -7283,11 +7861,12 @@ async function loadSite() {
                                             <path d="M10.4092 0.076753C10.1616 -0.0255843 9.88336 -0.0255844 9.63569 0.076753L3.26336 2.71036C3.01574 2.8127 2.81901 3.00899 2.71644 3.25605L0.0769252 9.61416C-0.0256417 9.86122 -0.0256418 10.1388 0.0769252 10.3858L2.71644 16.744C2.81901 16.991 3.01574 17.1873 3.26336 17.2897L9.63569 19.9233C9.88336 20.0256 10.1616 20.0256 10.4092 19.9233L16.7816 17.2897C17.0292 17.1873 17.2259 16.991 17.3285 16.744L19.9679 10.3858C20.0705 10.1388 20.0705 9.86122 19.9679 9.61416L17.3285 3.25605C17.2259 3.00899 17.0292 2.8127 16.7816 2.71036L10.4092 0.076753ZM9.68733 2.76214C9.87214 2.57769 10.1719 2.57768 10.3567 2.76212L17.2614 9.65093C17.4462 9.83539 17.4462 10.1344 17.2614 10.3189L10.3567 17.2077C10.1719 17.3921 9.87214 17.3921 9.68733 17.2077L2.78337 10.3189C2.59853 10.1344 2.59853 9.83539 2.78337 9.65093L9.68733 2.76214Z" fill="currentColor"></path>
                                             <path d="M10.321 6.3001C10.5005 7.10241 10.9042 7.83763 11.4852 8.42053C12.0662 9.0035 12.8008 9.41031 13.6039 9.5939C13.6825 9.61203 13.7526 9.65618 13.8028 9.71915C13.853 9.78211 13.8803 9.86021 13.8803 9.94063C13.8803 10.0211 13.853 10.0992 13.8028 10.1622C13.7526 10.2251 13.6825 10.2693 13.6039 10.2874C12.8018 10.4666 12.0672 10.8696 11.4859 11.4497C10.9046 12.0296 10.5006 12.7626 10.321 13.563C10.3029 13.6414 10.2586 13.7113 10.1955 13.7614C10.1324 13.8115 10.0541 13.8388 9.97348 13.8388C9.89283 13.8388 9.81461 13.8115 9.75151 13.7614C9.6884 13.7113 9.64415 13.6414 9.62598 13.563C9.44267 12.7628 9.03632 12.0307 8.4538 11.4511C7.87129 10.8715 7.13636 10.4681 6.33387 10.2874C6.25534 10.2693 6.18522 10.2251 6.13502 10.1622C6.08483 10.0992 6.0575 10.0211 6.0575 9.94063C6.0575 9.86021 6.08483 9.78211 6.13502 9.71915C6.18522 9.65618 6.25534 9.61203 6.33387 9.5939C7.13661 9.41056 7.87122 9.00506 8.45355 8.4241C9.03582 7.84314 9.44217 7.1101 9.62598 6.30923C9.64309 6.23055 9.68639 6.15999 9.74881 6.10906C9.81129 6.05812 9.88919 6.02981 9.96985 6.02876C10.0505 6.02769 10.1292 6.05395 10.1929 6.10322C10.2567 6.1525 10.3019 6.2219 10.321 6.3001Z" fill="currentColor"></path>
                                         </svg>
-                                        ${totals.orb_0}
+                                        ${formatOrbPrice.format(totals.orb_0)}
                                     </p>
                                 </div>
                             </div>
                         </div>
+                        <img src="https://cdn.yapper.shop/assets/213.png">
                     `;
                 } else if (categoryData.sku_id === "6") {
                     bannerContainer.remove();
@@ -7389,8 +7968,10 @@ async function loadSite() {
                 document.querySelector('.categories-container').innerHTML = `
                     <div class="shop-loading-error-container">
                         <img src="https://cdn.yapper.shop/assets/207.png">
-                        <h2>Oopsie, no results found.</h2>
-                        <p>We weren't able to find any items that matched your search.</p>
+                        <div class="error-block">
+                            <h2>Oopsie, no results found.</h2>
+                            <p>We weren't able to find any items that matched your search.</p>
+                        </div>
                     </div>
                 `;
             }
@@ -7546,12 +8127,23 @@ async function loadSite() {
 
 
     function renderShopLoadingError(error, output) {
+        let reasonTitle = "Unknown Error";
+        let reason = "Unknown Error";
+        if (error) {
+            reasonTitle = `${error.status}: ${error.error}`;
+            reason = error.message;
+        }
         output.innerHTML = `
             <div class="shop-loading-error-container">
                 <img src="https://cdn.yapper.shop/assets/207.png">
-                <h2>Oopsie, something went wrong.</h2>
-                <p>We weren't able to load this page. Check back later.</p>
-                <p>Error: ${error}</p>
+                <div class="error-block">
+                    <h2>Oopsie, something went wrong.</h2>
+                    <p>We encountered an error while trying to load this page.</p>
+                    <div class="reason-block">
+                        <h3>${reasonTitle}</h3>
+                        <p>${reason}</p>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -7576,33 +8168,34 @@ async function loadSite() {
             leaksTab.setAttribute('data-tooltip', 'Dummy Data');
 
         } else {
-            const rawData = await fetch(redneredAPI + endpoints.DISCORD_LEAKED_CATEGORIES);
+            // const rawData = await fetch(redneredAPI + endpoints.DISCORD_LEAKED_CATEGORIES);
 
-            if (!rawData.ok) {
+            // if (!rawData.ok) {
 
-            } else {
-                const data = await rawData.json();
+            // } else {
+            //     const data = await rawData.json();
 
-                if (data.categories.length != 0 && data.version) {
-                    const leaksTab = document.getElementById('shop-tab-1');
-                    leaksTab.classList.remove('hidden');
-                    let tooltipValue;
-                    if (data.categories.length === 1) {
-                        tooltipValue = 'New '+data.categories[0].name+' Leaks!';
-                    } else if (data.categories.length === 2) {
-                        tooltipValue = 'New '+data.categories[0].name+' & '+data.categories[1].name+' Leaks!';
-                    } else if (data.categories.length >= 3) {
-                        tooltipValue = data.categories.length+' New Leaked Categories!';
-                    }
-                    leaksTab.setAttribute('data-tooltip', tooltipValue);
+            //     if (data.categories.length != 0 && data.version) {
+            //         const leaksTab = document.getElementById('shop-tab-1');
+            //         leaksTab.classList.remove('hidden');
+            //         let tooltipValue;
+            //         if (data.categories.length === 1) {
+            //             tooltipValue = 'New '+data.categories[0].name+' Leaks!';
+            //         } else if (data.categories.length === 2) {
+            //             tooltipValue = 'New '+data.categories[0].name+' & '+data.categories[1].name+' Leaks!';
+            //         } else if (data.categories.length >= 3) {
+            //             tooltipValue = data.categories.length+' New Leaked Categories!';
+            //         }
+            //         leaksTab.setAttribute('data-tooltip', tooltipValue);
 
-                    if (localStorage.latest_discord_leaked_categories_version === data.version.toString()) {
-                        leaksTab.classList.add('hide-new-tag');
-                    }
-                }
+            //         if (localStorage.latest_discord_leaked_categories_version === data.version.toString()) {
+            //             leaksTab.classList.add('hide-new-tag');
+            //         }
+            //     }
 
-                discordLeakedCategoriesCache = data;
-            }
+            //     discordLeakedCategoriesCache = data;
+            // }
+            discordLeakedCategoriesCache = {"version":0,"categories":[]};
         }
     }
     window.setDiscordLeakedCategoriesCache = setDiscordLeakedCategoriesCache;
@@ -7654,11 +8247,12 @@ async function loadSite() {
             searchInput.classList.add('hidden');   
             const output = document.getElementById('categories-container');
             if (!discordCollectiblesShopHomeCache || discordCollectiblesShopHomeCache && reFetch) {
-                let url = redneredAPI + endpoints.DISCORD_COLLECTIBLES_HOME;
+                let url = APIV4 + endpnts.CATEGORIES + endpnts.CATEGORIES_HOME;
                 const res = await fetch(url);
+                const data = await res.json();
 
                 if (!res.ok) {
-                    renderShopLoadingError(res.status, output);
+                    renderShopLoadingError(data, output);
                     noticeBlock({
                         type: 1,
                         message: `Failed to fetch '${url}': ${res.status}, ${res.statusText}`,
@@ -7666,11 +8260,8 @@ async function loadSite() {
                         removeTime: 5000
                     });
                 } else {
-                    const data = await res.json();
-
                     discordCollectiblesShopHomeCache = data;
-
-                    renderShopBrowseData(data, output);
+                    if (currentPageCache === "home") renderShopBrowseData(data, output);
                 }
             } else {
                 renderShopBrowseData(discordCollectiblesShopHomeCache, output);
@@ -7685,16 +8276,12 @@ async function loadSite() {
 
             renderShopData(discordLeakedCategoriesCache.categories, output);
         } else if (currentPageCache === "catalog") {
-            searchInput.classList.remove('hidden');   
+            searchInput.classList.remove('hidden');
             const output = document.getElementById('categories-container');
             if (!discordCollectiblesCategoriesCache || discordCollectiblesCategoriesCache && reFetch) {
 
-                let url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_CATALOG;
+                let url = APIV4 + endpnts.CATEGORIES + endpnts.CATEGORIES_CATALOG;
                 apiUrl = new URL(url);
-
-                if (settingsStore.api_type_change_catalog === 1) {
-                    apiUrl.searchParams.append("static_api", "true");
-                }
 
                 const res = await fetch(apiUrl, {
                     method: "GET",
@@ -7702,9 +8289,10 @@ async function loadSite() {
                         "Authorization": localStorage.token
                     }
                 });
+                const data = await res.json();
 
                 if (!res.ok) {
-                    renderShopLoadingError(res.status, output);
+                    renderShopLoadingError(data, output);
                     noticeBlock({
                         type: 1,
                         message: `Failed to fetch '${url}': ${res.status}, ${res.statusText}`,
@@ -7712,11 +8300,8 @@ async function loadSite() {
                         removeTime: 5000
                     });
                 } else {
-                    const data = await res.json();
-
                     discordCollectiblesCategoriesCache = data;
-
-                    renderShopData(data, output);
+                    if (currentPageCache === "catalog") renderShopData(data, output);
                 }
             } else {
                 renderShopData(discordCollectiblesCategoriesCache, output);
@@ -7726,11 +8311,41 @@ async function loadSite() {
             const output = document.getElementById('categories-container');
             if (!discordOrbsCategoriesCache || discordOrbsCategoriesCache && reFetch) {
                 
-                let url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_ORBS;
+                let url = APIV4 + endpnts.CATEGORIES + endpnts.CATEGORIES_ORBS;
                 apiUrl = new URL(url);
 
-                if (settingsStore.api_type_change_orbs === 1) {
-                    apiUrl.searchParams.append("static_api", "true");
+                const res = await fetch(apiUrl, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": localStorage.token
+                    }
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    renderShopLoadingError(data, output);
+                    noticeBlock({
+                        type: 1,
+                        message: `Failed to fetch '${url}': ${res.status}, ${res.statusText}`,
+                        autoRemove: true,
+                        removeTime: 5000
+                    });
+                } else {
+                    discordOrbsCategoriesCache = data;
+                    if (currentPageCache === "orbs") renderShopData(data, output);
+                }
+            } else {
+                renderShopData(discordOrbsCategoriesCache, output);
+            }
+        } else if (currentPageCache === "miscellaneous") {
+            searchInput.classList.remove('hidden');
+            const output = document.getElementById('categories-container');
+            if (!discordMiscellaneousCategoriesCache || discordMiscellaneousCategoriesCache && reFetch) {
+
+                let url = APIV4 + endpnts.CATEGORIES + endpnts.CATEGORIES_MISC;
+                apiUrl = new URL(url);
+                if (settingsStore.staff_show_test_categories_on_misc_page === 1) {
+                    apiUrl.searchParams.append("include_unpublished", "true");
                 }
 
                 const res = await fetch(apiUrl, {
@@ -7739,86 +8354,32 @@ async function loadSite() {
                         "Authorization": localStorage.token
                     }
                 });
+                const data = await res.json();
 
                 if (!res.ok) {
-                    renderShopLoadingError(res.status, output);
+                    renderShopLoadingError(data, output);
                     noticeBlock({
                         type: 1,
-                        message: `Failed to fetch '${url}': ${res.status}, ${res.statusText}`,
+                        message: `Failed to fetch '${apiUrl}': ${res.status}, ${res.statusText}`,
                         autoRemove: true,
                         removeTime: 5000
                     });
                 } else {
-                    const data = await res.json();
-
-                    discordOrbsCategoriesCache = data;
-
-                    renderShopData(data, output);
+                    discordMiscellaneousCategoriesCache = data;
+                    if (currentPageCache === "miscellaneous") renderShopData(data, output);
                 }
             } else {
-                renderShopData(discordOrbsCategoriesCache, output);
-            }
-        } else if (currentPageCache === "miscellaneous") {
-            if (settingsStore.api_type_change_misc === 1) {
-                const output = document.getElementById('categories-container');
-                output.innerHTML = `
-                    <div class="shop-loading-error-container">
-                        <img src="https://cdn.yapper.shop/assets/207.png">
-                        <h2>This page has been disabled.</h2>
-                        <p>Please turn off Static API Mode in Advanced settings to view this page.</p>
-                    </div>
-                `;
-                searchInput.classList.add('hidden');
-            } else {
-                searchInput.classList.remove('hidden');
-                const output = document.getElementById('categories-container');
-                if (!discordMiscellaneousCategoriesCache || discordMiscellaneousCategoriesCache && reFetch) {
-
-                    let url = redneredAPI + endpoints.CATEGORY_PAGES + endpoints.CATEGORY_MISCELLANEOUS;
-                    apiUrl = new URL(url);
-
-                    if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'published_items_category')?.treatment === 1) {
-                        apiUrl.searchParams.append("include_published_items_category", "true");
-                    }
-                    if (settingsStore.staff_show_test_categories_on_misc_page === 1) {
-                        apiUrl.searchParams.append("include_unpublished", "true");
-                    }
-
-                    const res = await fetch(apiUrl, {
-                        method: "GET",
-                        headers: {
-                            "Authorization": localStorage.token
-                        }
-                    });
-
-                    if (!res.ok) {
-                        renderShopLoadingError(res.status, output);
-                        noticeBlock({
-                            type: 1,
-                            message: `Failed to fetch '${apiUrl}': ${res.status}, ${res.statusText}`,
-                            autoRemove: true,
-                            removeTime: 5000
-                        });
-                    } else {
-                        const data = await res.json();
-
-                        discordMiscellaneousCategoriesCache = data;
-
-                        renderShopData(data, output);
-                    }
-                } else {
-                    renderShopData(discordMiscellaneousCategoriesCache, output);
-                }
+                renderShopData(discordMiscellaneousCategoriesCache, output);
             }
         } else if (currentPageCache === "quests") {
             searchInput.classList.add('hidden');   
             const output = document.getElementById('quests-wrapper');
             if (!discordQuestsCache || discordQuestsCache && reFetch) {
-                let api = redneredAPI + endpoints.DISCORD_QUESTS;
+                let api = APIV4 + endpnts.DISCORD_QUESTS;
                 const res = await fetch(api);
-
+                const data = await res.json();
                 if (!res.ok) {
-                    renderShopLoadingError(res.status, output);
+                    renderShopLoadingError(data, output);
                     noticeBlock({
                         type: 1,
                         message: `Failed to fetch '${api}': ${res.status}, ${res.statusText}`,
@@ -7826,11 +8387,8 @@ async function loadSite() {
                         removeTime: 5000
                     });
                 } else {
-                    const data = await res.json();
-
                     discordQuestsCache = data;
-
-                    renderQuest(data, output);
+                    if (currentPageCache === "quests") renderQuest(data, output);
                 }
             } else {
                 renderQuest(discordQuestsCache, output);
@@ -7844,10 +8402,12 @@ async function loadSite() {
                 renderShopData(data, output);
             } else {
                 output.innerHTML = `
-                    <div class="shop-loading-error-container">
-                        <img src="https://cdn.yapper.shop/assets/208.png">
-                        <h2>You have no favorites.</h2>
-                        <p>Favorite an item and it will show up here.</p>
+                    <div  style="padding-top: 200px;" class="shop-loading-error-container">
+                        <img style="right: -20px; height: 200px;" src="https://cdn.yapper.shop/assets/208.png">
+                        <div class="error-block">
+                            <h2>You have no favorites.</h2>
+                            <p>Favorite an item and it will show up here.</p>
+                        </div>
                     </div>
                 `;
                 searchInput.classList.add('hidden');
@@ -7887,6 +8447,27 @@ async function loadSite() {
         } else {
             loadPage('0')
         }
+
+        const element = document.querySelector('.content');
+        const sourceDiv = document.querySelector('.disc-laimer');
+
+        element.addEventListener('scroll', () => {
+            const isAtBottom = element.scrollHeight - element.scrollTop <= element.clientHeight + 1;
+        
+            if (isAtBottom) {
+                element.classList.add('at-bottom');
+            } else {
+                element.classList.remove('at-bottom');
+            }
+        });
+
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                const height = entry.contentRect.height;
+                element.style.paddingBottom = `${height + 20}px`;
+            }
+        });
+        resizeObserver.observe(sourceDiv);
     }
     window.loadPage = loadPage;
 
@@ -7908,8 +8489,6 @@ async function loadSite() {
     } else {
         document.getElementById('logo-link').textContent = 'yapper.shop'
     }
-
-    // createNotice('You are currently using an experimental version of Shop Archives. By using this version you have a very high chance to encounter bugs or glitches. Expect things to change before the full release.', 2);
 
     async function setModalv3InnerContent(tab) {
         if (!document.getElementById("modalv3-right-content-container-inner")) {
@@ -7937,14 +8516,14 @@ async function loadSite() {
                             <p>The Discord account linked to Shop Archives.</p>
                         </div>
                         <div class="buttons">
-                            <button class="button has-tooltip" data-tooltip="Open your public user profile" id="profile">
+                            <button class="button has-tooltip hidden" data-tooltip="Open your public user profile" id="profile">
                                 <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M14.0833 10.8334C15.2326 10.8334 16.3348 10.3769 17.1475 9.56421C17.9601 8.75155 18.4167 7.64935 18.4167 6.50008C18.4167 5.35081 17.9601 4.24861 17.1475 3.43595C16.3348 2.62329 15.2326 2.16675 14.0833 2.16675C12.9341 2.16675 11.8319 2.62329 11.0192 3.43595C10.2065 4.24861 9.75 5.35081 9.75 6.50008C9.75 7.64935 10.2065 8.75155 11.0192 9.56421C11.8319 10.3769 12.9341 10.8334 14.0833 10.8334Z" fill="currentColor"/>
                                     <path d="M3.25 5.41667V4.60417C3.25 3.85667 3.85667 3.25 4.60417 3.25C5.35167 3.25 5.9475 3.85667 6.045 4.60417C6.63 9.37083 10.2483 13 14.0833 13H15.1667C17.4652 13 19.6696 13.9131 21.2949 15.5384C22.9202 17.1637 23.8333 19.3681 23.8333 21.6667C23.8333 22.2413 23.6051 22.7924 23.1987 23.1987C22.7924 23.6051 22.2413 23.8333 21.6667 23.8333C21.6179 23.833 21.5705 23.8171 21.5315 23.7878C21.4925 23.7586 21.4639 23.7176 21.45 23.6708C21.122 22.7634 20.6381 21.9201 20.02 21.1792C19.8575 20.9625 19.565 21.1142 19.5975 21.3633L19.8683 23.53C19.89 23.6925 19.76 23.8333 19.5975 23.8333H9.75C9.17536 23.8333 8.62426 23.6051 8.21793 23.1987C7.81161 22.7924 7.58333 22.2413 7.58333 21.6667V19.2617C7.58333 17.5608 6.8575 15.9575 5.92583 14.5275C4.1952 11.8025 3.26779 8.64476 3.25 5.41667Z" fill="currentColor"/>
                                 </svg>
                                 <p>View Profile</p>
                             </button>
-                            <button class="button blue has-tooltip" data-tooltip="Re-sync your Discord profile with Shop Archives" id="resync">
+                            <button class="button blue has-tooltip hidden" data-tooltip="Re-sync your Discord profile with Shop Archives" id="resync">
                                 <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M22.7501 2.16668C23.0374 2.16668 23.313 2.28082 23.5161 2.48398C23.7193 2.68715 23.8334 2.9627 23.8334 3.25001V9.75001C23.8334 10.0373 23.7193 10.3129 23.5161 10.516C23.313 10.7192 23.0374 10.8333 22.7501 10.8333H16.2501C15.9628 10.8333 15.6872 10.7192 15.484 10.516C15.2809 10.3129 15.1667 10.0373 15.1667 9.75001C15.1667 9.4627 15.2809 9.18715 15.484 8.98398C15.6872 8.78082 15.9628 8.66668 16.2501 8.66668H20.5076C19.8814 7.58197 19.0276 6.64587 18.0049 5.92284C16.9822 5.19981 15.8149 4.70704 14.5835 4.47846C13.352 4.24988 12.0857 4.29093 10.8716 4.59877C9.65756 4.90662 8.52465 5.47394 7.55091 6.26168C7.32681 6.44269 7.03997 6.52726 6.75351 6.49679C6.46705 6.46631 6.20443 6.32329 6.02341 6.09918C5.8424 5.87507 5.75783 5.58824 5.78831 5.30178C5.81878 5.01531 5.96181 4.75269 6.18591 4.57168C7.31713 3.65318 8.62233 2.97283 10.0231 2.57149C11.4239 2.17016 12.8914 2.05612 14.3373 2.23623C15.7833 2.41635 17.178 2.8869 18.4375 3.61961C19.697 4.35232 20.7954 5.33208 21.6667 6.50001V3.25001C21.6667 2.9627 21.7809 2.68715 21.984 2.48398C22.1872 2.28082 22.4628 2.16668 22.7501 2.16668ZM3.25008 23.8333C2.96276 23.8333 2.68721 23.7192 2.48405 23.516C2.28088 23.3129 2.16675 23.0373 2.16675 22.75V16.25C2.16675 15.9627 2.28088 15.6871 2.48405 15.484C2.68721 15.2808 2.96276 15.1667 3.25008 15.1667H9.75008C10.0374 15.1667 10.3129 15.2808 10.5161 15.484C10.7193 15.6871 10.8334 15.9627 10.8334 16.25C10.8334 16.5373 10.7193 16.8129 10.5161 17.016C10.3129 17.2192 10.0374 17.3333 9.75008 17.3333H5.49258C6.11876 18.4181 6.9726 19.3542 7.9953 20.0772C9.018 20.8002 10.1853 21.293 11.4167 21.5216C12.6481 21.7501 13.9145 21.7091 15.1286 21.4013C16.3426 21.0934 17.4755 20.5261 18.4492 19.7383C18.5602 19.6487 18.6878 19.5818 18.8246 19.5415C18.9614 19.5012 19.1048 19.4882 19.2467 19.5032C19.3885 19.5183 19.526 19.5612 19.6512 19.6294C19.7765 19.6977 19.8871 19.7899 19.9767 19.9008C20.0664 20.0118 20.1333 20.1393 20.1736 20.2762C20.2139 20.413 20.2269 20.5564 20.2119 20.6983C20.1968 20.8401 20.1539 20.9776 20.0857 21.1028C20.0174 21.2281 19.9252 21.3387 19.8142 21.4283C18.6824 22.3454 17.3771 23.0245 15.9765 23.425C14.576 23.8255 13.109 23.9391 11.6634 23.759C10.2179 23.579 8.82357 23.1089 7.56404 22.3771C6.30451 21.6453 5.20569 20.6667 4.33341 19.5V22.75C4.33341 23.0373 4.21928 23.3129 4.01611 23.516C3.81295 23.7192 3.5374 23.8333 3.25008 23.8333Z" fill="currentColor"/>
                                 </svg>
@@ -7990,7 +8569,7 @@ async function loadSite() {
                 else displayName.textContent = currentUserData.username;
                 username.textContent = currentUserData.username;
 
-                if (currentUserData.display_name_styles && JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_render')?.treatment === 1) {
+                if (experimentIs('display_name_style_render', 1)) {
                     const dns = renderDisplayNameStyle(currentUserData.display_name_styles);
                     displayName.classList.add(dns.class);
                     Object.assign(displayName.style, dns.style);
@@ -8072,7 +8651,7 @@ async function loadSite() {
                     }
                 });
 
-                if (currentUserData.ban_config.ban_type != 0) {
+                if (currentUserData.banned != 0) {
                     let syncError = document.createElement("div");
                     syncError.classList.add('enhanced-account-block');
                     syncError.classList.add('error-card');
@@ -8110,35 +8689,39 @@ async function loadSite() {
                 <hr>
 
                 <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Theme</h2>
-                    <p class="modalv3-content-card-summary">Adjust the color of the interface for better visibility.</p>
-
-                    <div class="modalv3-theme-selection-container" id="modalv3-theme-selection-container">
+                    <div class="top">
+                        <h2 class="modalv3-content-card-header">Theme</h2>
+                        <p class="modalv3-content-card-summary">Adjust the color of the interface for better visibility.</p>
+                    </div>
+                    <div class="bottom">
+                        <div class="modalv3-theme-selection-container" id="modalv3-theme-selection-container"></div>
                     </div>
                 </div>
 
                 <hr>
 
                 <div class="modalv3-content-card-1">
-                    <div class="setting">
-                        <div class="setting-info">
-                            <p class="setting-title">US Date Format</p>
-                            <p class="setting-description">Changes date formats to MM/DD/YY.</p>
-                        </div>
-                        <div class="toggle-container">
-                            <div class="toggle" id="us_time_format_toggle">
-                                <div class="toggle-circle"></div>
+                    <div class="bottom">
+                        <div class="setting">
+                            <div class="setting-info">
+                                <p class="setting-title">US Date Format</p>
+                                <p class="setting-description">Changes date formats to MM/DD/YY.</p>
+                            </div>
+                            <div class="toggle-container">
+                                <div class="toggle" id="us_time_format_toggle">
+                                    <div class="toggle-circle"></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="setting">
-                        <div class="setting-info">
-                            <p class="setting-title">Profile Effects Cut Fix.</p>
-                            <p class="setting-description">Fixes some profile effects being cut off at the bottom</p>
-                        </div>
-                        <div class="toggle-container">
-                            <div class="toggle" id="profile_effect_tweaks_fix_toggle">
-                                <div class="toggle-circle"></div>
+                        <div class="setting">
+                            <div class="setting-info">
+                                <p class="setting-title">Profile Effects Cut Fix.</p>
+                                <p class="setting-description">Fixes some profile effects being cut off at the bottom</p>
+                            </div>
+                            <div class="toggle-container">
+                                <div class="toggle" id="profile_effect_tweaks_fix_toggle">
+                                    <div class="toggle-circle"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -8147,24 +8730,11 @@ async function loadSite() {
 
             defaultThemes.forEach((theme) => {
                 let themeCard = document.createElement("div");
-                if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'advanced_theme_picker')?.treatment === 1) {
-                    themeCard.classList.add('theme-selection-card');
-                    themeCard.innerHTML = `
-                        <div class="theme-preview" style="background-image: url(${theme.src})">
-                        </div>
-                        <div class="theme-card-bottom">
-                            <h3>${theme.name}</h3>
-                            <p>${theme.summary}</p>
-                        </div>
-                    `;
-                    themeCard.id = 'theme-'+theme.codename+'-button';
-                } else {
-                    themeCard.innerHTML = `
-                        <div class="theme-selection-box has-tooltip" id="theme-${theme.codename}-button" style="background-color: ${theme.color};" data-tooltip="${theme.name}"></div>
-                        <svg class="checkmarkCircle" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" class=""></circle><path fill="currentColor" fill-rule="evenodd" d="M12 23a11 11 0 1 0 0-22 11 11 0 0 0 0 22Zm5.7-13.3a1 1 0 0 0-1.4-1.4L10 14.58l-2.3-2.3a1 1 0 0 0-1.4 1.42l3 3a1 1 0 0 0 1.4 0l7-7Z" clip-rule="evenodd" class="checkmark"></path></svg>
-                    `;
-                    themeCard.classList.add('theme-box-container');
-                }
+                themeCard.innerHTML = `
+                    <div class="theme-selection-box has-tooltip" id="theme-${theme.codename}-button" style="background-color: ${theme.color};" data-tooltip="${theme.name}"></div>
+                    <svg class="checkmarkCircle" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor" class=""></circle><path fill="currentColor" fill-rule="evenodd" d="M12 23a11 11 0 1 0 0-22 11 11 0 0 0 0 22Zm5.7-13.3a1 1 0 0 0-1.4-1.4L10 14.58l-2.3-2.3a1 1 0 0 0-1.4 1.42l3 3a1 1 0 0 0 1.4 0l7-7Z" clip-rule="evenodd" class="checkmark"></path></svg>
+                `;
+                themeCard.classList.add('theme-box-container');
                 themeCard.addEventListener("click", function () {
                     updateThemeStore(theme.codename, 'true');
                 });
@@ -8193,25 +8763,12 @@ async function loadSite() {
                 }
             });
 
-            // Function to toggle a setting (0 or 1)
-            function toggleSetting(key) {
-                if (key in settingsStore) {
-                    const newValue = settingsStore[key] === 0 ? 1 : 0;
-                    changeSetting(key, newValue);
-                }
-            }
+            const selectEl = document.querySelector('#currency_select');
 
-            // Update toggle visual states
-            function updateToggleStates() {
-                for (let key in settingsStore) {
-                    const toggle = document.getElementById(key + '_toggle');
-                    if (toggle) {
-                        if (settingsStore[key] === 1) {
-                            toggle.classList.add('active');
-                        } else {
-                            toggle.classList.remove('active');
-                        }
-                    }
+            for (const option of selectEl.options) {
+                if (option.value === String(settingsStore.currency)) {
+                    option.selected = true;
+                    break;
                 }
             }
 
@@ -8222,38 +8779,41 @@ async function loadSite() {
                 <hr>
 
                 <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Static API Mode</h2>
-                    <p class="modalv3-content-card-summary">Fetches from a static api, avoiding long loading times (Removes Leaks and Miscellaneous collectibles).</p>
-
-                    <div class="setting">
-                        <div class="setting-info">
-                            <p class="setting-title">Catalog Tab</p>
-                        </div>
-                        <div class="toggle-container">
-                            <div class="toggle" id="api_type_change_catalog_toggle">
-                                <div class="toggle-circle"></div>
+                    <div class="top">
+                        <h2 class="modalv3-content-card-header">Static API Mode</h2>
+                        <p class="modalv3-content-card-summary">Fetches from a static api, avoiding long loading times (Removes Leaks and Miscellaneous collectibles).</p>
+                    </div>
+                    <div class="bottom">
+                        <div class="setting">
+                            <div class="setting-info">
+                                <p class="setting-title">Catalog Tab</p>
+                            </div>
+                            <div class="toggle-container">
+                                <div class="toggle" id="api_type_change_catalog_toggle">
+                                    <div class="toggle-circle"></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="setting">
-                        <div class="setting-info">
-                            <p class="setting-title">Orbs Tab</p>
-                        </div>
-                        <div class="toggle-container">
-                            <div class="toggle" id="api_type_change_orbs_toggle">
-                                <div class="toggle-circle"></div>
+                        <div class="setting">
+                            <div class="setting-info">
+                                <p class="setting-title">Orbs Tab</p>
+                            </div>
+                            <div class="toggle-container">
+                                <div class="toggle" id="api_type_change_orbs_toggle">
+                                    <div class="toggle-circle"></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="setting">
-                        <div class="setting-info">
-                            <p class="setting-title">Miscellaneous Tab</p>
-                        </div>
-                        <div class="toggle-container">
-                            <div class="toggle" id="api_type_change_misc_toggle">
-                                <div class="toggle-circle"></div>
+                        <div class="setting">
+                            <div class="setting-info">
+                                <p class="setting-title">Miscellaneous Tab</p>
+                            </div>
+                            <div class="toggle-container">
+                                <div class="toggle" id="api_type_change_misc_toggle">
+                                    <div class="toggle-circle"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -8287,28 +8847,6 @@ async function loadSite() {
                 loadPage(currentPageCache, true, true);
             });
 
-            // Function to toggle a setting (0 or 1)
-            function toggleSetting(key) {
-                if (key in settingsStore) {
-                    const newValue = settingsStore[key] === 0 ? 1 : 0;
-                    changeSetting(key, newValue);
-                }
-            }
-
-            // Update toggle visual states
-            function updateToggleStates() {
-                for (let key in settingsStore) {
-                    const toggle = document.getElementById(key + '_toggle');
-                    if (toggle) {
-                        if (settingsStore[key] === 1) {
-                            toggle.classList.add('active');
-                        } else {
-                            toggle.classList.remove('active');
-                        }
-                    }
-                }
-            }
-
         } else if (tab === "xp_events") {
             tabPageOutput.innerHTML = `
                 <h2>Events</h2>
@@ -8335,7 +8873,7 @@ async function loadSite() {
                 </div>
             `;
 
-            if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'xp_system_v2')?.treatment === 1) {
+            if (experimentIs('xp_system_v2', 1)) {
                 const stats = calculateCardStats(tradingConfigCache);
                 tabPageOutput.querySelector('#trading-cards-banner-container').innerHTML = `
                     <div class="trading-card-banner">
@@ -8653,7 +9191,7 @@ async function loadSite() {
                         promoCard.querySelector('.xp-level-card-perks').appendChild(xpLevelPerk);
                     }
                     else if (level.level === 3) {
-                        if (JSON.parse(localStorage.getItem(overridesKey)).find(exp => exp.codename === 'display_name_style_xp_level_perk')?.treatment === 1) {
+                        if (experimentIs('display_name_style_xp_level_perk', 1)) {
                             let xpLevelPerk = document.createElement("div");
                             xpLevelPerk.innerHTML = `
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -8764,129 +9302,93 @@ async function loadSite() {
 
                 <hr>
 
-                <div class="modalv3-content-card-1" id="modalv3-experiment-output">
+                <div class="modalv3-content-card-1">
+                    <div class="bottom" id="modalv3-experiment-output">
+                    </div>
                 </div>
             `;
 
-            function loadOverrides() {
-                try {
-                  return JSON.parse(localStorage.getItem(overridesKey)) || [];
-                } catch {
-                  return [];
-                }
-            }
-          
-            function saveOverrides(overrides) {
-                localStorage.setItem(overridesKey, JSON.stringify(overrides));
-            }
-          
-            function loadServerExperiments() {
-                try {
-                  return JSON.parse(localStorage.getItem(serverKey)) || [];
-                } catch {
-                  return [];
-                }
-            }
-
-            function saveOverride(codename, release_config, treatmentIndex) {
+            function saveOverride(codename, treatmentIndex) {
                 let overrides = loadOverrides();
-                const serverExperiments = loadServerExperiments();
-                const index = overrides.findIndex(o => o.codename === codename);
-          
+
                 if (treatmentIndex === null) {
-                  const serverMatch = serverExperiments.find(s => s.codename === codename);
-                  if (serverMatch) {
-                    // Restore from server rollout and mark as auto
-                    if (index > -1) {
-                      overrides[index].treatment = serverMatch.rollout;
-                      overrides[index].release_config = release_config;
-                      overrides[index].auto = true;
-                    } else {
-                      overrides.push({
-                        codename,
-                        release_config,
-                        treatment: serverMatch.rollout,
-                        auto: true
-                      });
-                    }
-                  } else {
-                    // Remove override entirely
-                    if (index > -1) overrides.splice(index, 1);
-                  }
+                    // User chose "Reset to Server"
+                    overrides[codename] = -1; 
                 } else {
-                  // Manual override — remove auto if it was present
-                  if (index > -1) {
-                    overrides[index].treatment = treatmentIndex;
-                    overrides[index].release_config = release_config;
-                    delete overrides[index].auto;
-                  } else {
-                    overrides.push({
-                      codename,
-                      release_config,
-                      treatment: treatmentIndex
-                    });
-                  }
+                    // User chose a specific treatment manually
+                    overrides[codename] = treatmentIndex;
                 }
-          
+            
                 saveOverrides(overrides);
                 renderExperiments();
             }
-          
+
             function renderExperiments() {
                 const container = document.getElementById('modalv3-experiment-output');
                 container.innerHTML = '';
-                const overrides = loadOverrides();
-          
+
+                const overrides = loadOverrides(); 
+                const serverData = loadServerExperiments();
+
                 experiments.forEach(exp => {
-                    if (JSON.parse(localStorage.getItem(overridesKey)).find(e => e.codename === exp.codename)) {
+                    const localValue = overrides[exp.codename];
+
+                    // Render if it exists in overrides (even if -1)
+                    if (localValue !== undefined) {
                         const wrapper = document.createElement('div');
                         wrapper.className = 'modalv3-experiment-container';
-                        
+
+                        // "Overridden" label logic: only show if NOT -1
                         const isOverriden = document.createElement('p');
-                        isOverriden.textContent = JSON.parse(localStorage.getItem(overridesKey)).find(e => e.codename === exp.codename).auto ? isOverriden.classList.add('hidden') : 'Overriden';
-                        isOverriden.classList.add('modalv3-experiment-overriden');
-                        isOverriden.classList.add('has-tooltip');
-                        isOverriden.setAttribute('data-tooltip', 'This experiment has been overriden locally');
-                        
+                        isOverriden.className = 'modalv3-experiment-overriden';
+                        if (localValue !== -1) {
+                            isOverriden.textContent = 'Overridden';
+                            isOverriden.classList.add('has-tooltip');
+                            isOverriden.setAttribute('data-tooltip', 'This experiment has been overridden locally');
+                        } else {
+                            isOverriden.classList.add('hidden');
+                        }
+
                         const label = document.createElement('p');
                         label.textContent = exp.title;
                         label.className = 'modalv3-experiment-title';
-                        
-                        const summary = document.createElement('p');
-                        summary.textContent = exp.release_config.year+'-'+exp.release_config.month+'_'+exp.codename;
-                        summary.className = 'modalv3-experiment-id';
-                        
-                        const serverRollout = document.createElement('p');
-                        serverRollout.textContent = 'Server Rollout: '+JSON.parse(localStorage.getItem(serverKey)).find(e => e.codename === exp.codename).rollout;
-                        serverRollout.className = 'modalv3-experiment-id';
-                        
-                        const select = document.createElement('select');
-                        const defaultOption = document.createElement('option');
-                        defaultOption.value = '';
-                        defaultOption.textContent = 'Reset';
-                        select.className = 'modalv3-experiment-treatment-container';
-                        select.appendChild(defaultOption);
-                        
-                        exp.treatments.forEach((treatment, i) => {
-                          const option = document.createElement('option');
-                          option.value = i;
-                          option.textContent = 'Treatment '+i+': '+treatment.title;
-                          select.appendChild(option);
-                        });
-                  
-                        const saved = overrides.find(o => o.codename === exp.codename);
-                        if (saved) select.value = saved.treatment;
-                  
-                        select.addEventListener('change', () => {
-                          const treatmentIndex = select.value === '' ? null : parseInt(select.value);
-                          saveOverride(exp.codename, exp.release_config, treatmentIndex);
-                        });
 
-                        wrapper.appendChild(isOverriden);
-                        wrapper.appendChild(label);
-                        wrapper.appendChild(summary);
-                        wrapper.appendChild(serverRollout);
-                        wrapper.appendChild(select);
+                        const summary = document.createElement('p');
+                        summary.textContent = exp.codename;
+                        summary.className = 'modalv3-experiment-id';
+
+                        const serverRollout = document.createElement('p');
+                        const sValue = serverData[exp.codename] !== undefined ? serverData[exp.codename] : 'N/A';
+                        serverRollout.textContent = 'Server Rollout: ' + sValue;
+                        serverRollout.className = 'modalv3-experiment-id';
+                    
+                        const select = document.createElement('select');
+                        select.className = 'modalv3-experiment-treatment-container';
+
+                        const defaultOption = document.createElement('option');
+                        defaultOption.value = 'reset'; // Using 'reset' string to distinguish
+                        defaultOption.textContent = 'Reset to Server';
+                        select.appendChild(defaultOption);
+
+                        exp.treatments.forEach((treatment, i) => {
+                            const option = document.createElement('option');
+                            option.value = i;
+                            option.textContent = 'Treatment ' + i + ': ' + treatment.title;
+                            select.appendChild(option);
+                        });
+                    
+                        // THE KEY CHANGE:
+                        // If localValue is -1, use the server's value. Otherwise, use the manual value.
+                        const serverValue = serverData[exp.codename];
+                        select.value = (localValue === -1) ? serverValue : localValue;
+                    
+                        select.addEventListener('change', () => {
+                            const treatmentIndex = select.value === 'reset' ? null : parseInt(select.value);
+                            saveOverride(exp.codename, treatmentIndex);
+                        });
+                    
+                        // Append elements...
+                        wrapper.append(isOverriden, label, summary, serverRollout, select);
                         container.appendChild(wrapper);
                     }
                 });
@@ -9093,118 +9595,130 @@ async function loadSite() {
             });
 
         } else if (tab === "database_testing") {
-            const textCategory = JSON.stringify(leaks_dummy_data.categories[0], undefined, 4);
             tabPageOutput.innerHTML = `
                 <h2>Database Testing</h2>
 
                 <hr>
 
                 <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">Open Item Modal By SKU</h2>
-                    <p class="modalv3-content-card-summary">Test modals for items stored on the database</p>
+                    <div class="top">
+                        <h2 class="modalv3-content-card-header">Get item by ID</h2>
+                        <p class="modalv3-content-card-summary">Fetch item data from the database using an SKU ID or Product ID</p>
+                    </div>
+                    <div class="bottom">
+                        <input type="text" class="modalv3-input" autocomplete="off" placeholder="ID" id="fetch-product-v4-input" inputmode="numeric"></input>
 
-                    <input type="text" class="modalv3-input" autocomplete="off" placeholder="SKU ID" id="api-item-input"></input>
-                    <button class="generic-button brand" id="api-item-modal">Fetch Category Data</button>
-                    <button class="generic-button brand" id="api-item-modal2">Fetch Product Data</button>
-                </div>
+                        <div class="setting">
+                            <div class="setting-info">
+                                <p class="setting-title">Fetch with Discord integration</p>
+                                <p class="setting-description">Only works with SKU ID</p>
+                            </div>
+                            <div class="toggle-container">
+                                <div class="toggle" id="fetch_from_discord_toggle">
+                                    <div class="toggle-circle"></div>
+                                </div>
+                            </div>
+                        </div>
 
-                <hr class="inv">
+                        <div class="setting">
+                            <div class="setting-info">
+                                <p class="setting-title">Include External Prices</p>
+                                <p class="setting-description">This does nothing without Discord integration</p>
+                            </div>
+                            <div class="toggle-container">
+                                <div class="toggle" id="include_prices_toggle">
+                                    <div class="toggle-circle"></div>
+                                </div>
+                            </div>
+                        </div>
 
-                <div class="modalv3-content-card-1">
-                    <h2 class="modalv3-content-card-header">POST Data</h2>
-                    <p class="modalv3-content-card-summary">Manually POST api data to the database</p>
+                        <button class="generic-button brand" id="fetch-product-v4-btn">Fetch Product Data</button>
 
-                    <hr class="inv">
+                        <hr class="inv">
 
-                    <p class="modalv3-content-card-summary">SKU ID</p>
-                    <input type="text" class="modalv3-input" autocomplete="off" placeholder="1308169595055771749" id="api-item-push-input"></input>
+                        <p class="modalv3-content-card-summary">Product output:</p>
 
-                    <hr class="inv">
-
-                    <p class="modalv3-content-card-summary">Expires At</p>
-                    <input type="text" class="modalv3-input" autocomplete="off" placeholder="2025-02-05T08:00:00+00:00" id="api-item-push-expires_at"></input>
-
-                    <hr class="inv">
-
-                    <p class="modalv3-content-card-summary">Prices</p>
-                    <textarea class="modalv3-input" placeholder="Prices" id="api-item-push-textarea"></textarea>
-
-                    <hr class="inv">
-
-                    <button class="generic-button brand" id="api-item-push">POST Product Data</button>
-
-                    <hr class="inv">
-
-                    <p class="modalv3-content-card-summary">JSON Output</p>
-                    <textarea class="modalv3-input" placeholder="network response" id="api-item-push-textarea-out" readonly></textarea>
+                        <div class="products-wrapper" id="fetch-product-v4-output"></div>
+                    </div>
                 </div>
             `;
 
-            const placeholderPriceData = {
-                "0": {
-                    "country_prices": {
-                        "prices": [
-                            {
-                                "amount": 599,
-                                "currency": "usd",
-                                "exponent": 2
-                            }
-                        ],
-                        "country_code": "US"
-                    }
-                },
-                "4": {
-                    "country_prices": {
-                        "prices": [
-                            {
-                              "amount": 499,
-                              "currency": "usd",
-                              "exponent": 2
-                            }
-                        ],
-                        "country_code": "US"
-                    }
-                }
+            let cuteStore = {
+                "fetch_from_discord": 0,
+                "include_prices": 0
             };
 
-
-            const input1 = tabPageOutput.querySelector('#api-item-input');
-            tabPageOutput.querySelector('#api-item-modal').addEventListener("click", async () => {
-                if (input1.value.trim().length != 0) {
-                    const data = await fetch(redneredAPI + '/collectibles-categories/' + input1.value.trim());
-                    const json = await data.json()
-                    openModal('modalv2', 'fromCategoryBanner', json);
-                }
+            tabPageOutput.querySelector('#fetch_from_discord_toggle').addEventListener("click", () => {
+                toggleSettingCute('fetch_from_discord');
             });
-            tabPageOutput.querySelector('#api-item-modal2').addEventListener("click", async () => {
-                if (input1.value.trim().length != 0) {
-                    const data = await fetch(redneredAPI + '/collectibles-products/' + input1.value.trim());
-                    const json = await data.json()
-                    openModal('modalv2', 'fromCollectibleCard', JSON.parse(textCategory), json);
-                }
+            tabPageOutput.querySelector('#include_prices_toggle').addEventListener("click", () => {
+                toggleSettingCute('include_prices');
             });
 
-            const input2 = tabPageOutput.querySelector('#api-item-push-input');
-            const input3 = tabPageOutput.querySelector('#api-item-push-textarea');
-            const input_expires_at = tabPageOutput.querySelector('#api-item-push-expires_at');
-            const input4 = tabPageOutput.querySelector('#api-item-push-textarea-out');
-            input3.value = JSON.stringify(placeholderPriceData, undefined, 4);
-            tabPageOutput.querySelector('#api-item-push').addEventListener("click", async () => {
-                input4.value = `fetching...`;
-                if (input2.value.trim().length != 0) {
-                    const res = await fetch(redneredAPI + '/collectibles-products/' + input2.value.trim(), {
-                        method: 'POST',
+            function toggleSettingCute(key) {
+                if (key in cuteStore) {
+                    cuteStore[key] = cuteStore[key] === 0 ? 1 : 0;
+                    updateToggleStatesCute();
+                }
+            }
+            function updateToggleStatesCute() {
+                Object.keys(cuteStore).forEach(key => {
+                    const toggle = document.getElementById(`${key}_toggle`);
+                    if (toggle) {
+                        toggle.classList.toggle('active', cuteStore[key] === 1);
+                    }
+                });
+            }
+
+            const v4input = tabPageOutput.querySelector('#fetch-product-v4-input');
+            const productsWrapper = tabPageOutput.querySelector('#fetch-product-v4-output');
+            tabPageOutput.querySelector('#fetch-product-v4-btn').addEventListener("click", async () => {
+                if (v4input.value.trim().length != 0) {
+                    productsWrapper.innerHTML = ``;
+                    let url = APIV4 + '/product/' + v4input.value.trim();
+                    apiUrl = new URL(url);
+                    if (cuteStore.fetch_from_discord === 1) {
+                        apiUrl.searchParams.append("source", "discord");
+                    }
+                    if (cuteStore.include_prices === 1) {
+                        apiUrl.searchParams.append("include_external_prices", "true");
+                    }
+
+                    const res = await fetch(apiUrl, {
+                        method: 'GET',
                         headers: {
-                            'Content-Type': 'application/json',
                             "Authorization": localStorage.token
-                        },
-                        body: JSON.stringify({
-                            prices: input3.value,
-                            expires_at: input_expires_at.value
-                        })
+                        }
                     });
-                    const json = await res.json();
-                    input4.value = JSON.stringify(json, undefined, 4);
+                    if (!res.ok) {
+                        const json = await res.json();
+                        if (json?.status) {
+                            productsWrapper.innerHTML = `
+                                <div class="errormessagejsonthingidk">
+                                    <h3>${json.status}: ${json.error}</h3>
+                                    <p>${json.message}</p>
+                                </div>
+                            `;
+                        } else {
+                            productsWrapper.innerHTML = `There was an error fetching that product`;
+                        }
+                    } else {
+                        const json = await res.json();
+    
+                        const item = await renderProduct(leaks_dummy_data.categories[0], json);
+                        productsWrapper.appendChild(item);
+                    }
+                }
+            });
+            v4input.addEventListener('input', function(e) {
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+
+                const newValue = this.value.replace(/[^0-9]/g, '');
+                          
+                if (this.value !== newValue) {
+                    this.value = newValue;
+                    this.setSelectionRange(start - 1, end - 1);
                 }
             });
 
@@ -9262,21 +9776,10 @@ async function loadSite() {
                     <div class="setting">
                         <div class="setting-info">
                             <p class="setting-title">Simulate: Lite Ban</p>
-                            <p class="setting-description">Simulate the user having ban_type 1.</p>
+                            <p class="setting-description">Simulate the user being banned.</p>
                         </div>
                         <div class="toggle-container">
-                            <div class="toggle" id="staff_simulate_ban_type_1_toggle">
-                                <div class="toggle-circle"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="setting">
-                        <div class="setting-info">
-                            <p class="setting-title">Simulate: Medium Ban</p>
-                            <p class="setting-description">Simulate the user having ban_type 2.</p>
-                        </div>
-                        <div class="toggle-container">
-                            <div class="toggle" id="staff_simulate_ban_type_2_toggle">
+                            <div class="toggle" id="staff_simulate_banned_toggle">
                                 <div class="toggle-circle"></div>
                             </div>
                         </div>
@@ -9336,6 +9839,17 @@ async function loadSite() {
                             </div>
                         </div>
                     </div>
+                    <div class="setting">
+                        <div class="setting-info">
+                            <p class="setting-title">Force enable reviews</p>
+                            <p class="setting-description">Heleleeelelee!! tf you think this does?</p>
+                        </div>
+                        <div class="toggle-container">
+                            <div class="toggle" id="staff_force_enable_reviews_toggle">
+                                <div class="toggle-circle"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
 
@@ -9358,13 +9872,8 @@ async function loadSite() {
                 loadPage(currentPageCache, true, true);
             });
 
-            devtoolsContainer.querySelector('#staff_simulate_ban_type_1_toggle').addEventListener("click", () => {
-                toggleSetting('staff_simulate_ban_type_1');
-                updateToggleStates();
-            });
-
-            devtoolsContainer.querySelector('#staff_simulate_ban_type_2_toggle').addEventListener("click", () => {
-                toggleSetting('staff_simulate_ban_type_2');
+            devtoolsContainer.querySelector('#staff_simulate_banned_toggle').addEventListener("click", () => {
+                toggleSetting('staff_simulate_banned');
                 updateToggleStates();
             });
 
@@ -9394,27 +9903,11 @@ async function loadSite() {
                 updateToggleStates();
             });
 
-            // Function to toggle a setting (0 or 1)
-            function toggleSetting(key) {
-                if (key in settingsStore) {
-                    const newValue = settingsStore[key] === 0 ? 1 : 0;
-                    changeSetting(key, newValue);
-                }
-            }
+            devtoolsContainer.querySelector('#staff_force_enable_reviews_toggle').addEventListener("click", () => {
+                toggleSetting('staff_force_enable_reviews');
+                updateToggleStates();
+            });
 
-            // Update toggle visual states
-            function updateToggleStates() {
-                for (let key in settingsStore) {
-                    const toggle = document.getElementById(key + '_toggle');
-                    if (toggle) {
-                        if (settingsStore[key] === 1) {
-                            toggle.classList.add('active');
-                        } else {
-                            toggle.classList.remove('active');
-                        }
-                    }
-                }
-            }
         } else if (devtoolsOpenCache != 2 && tab === 2) {
 
             devtoolsOpenCache = 2;
@@ -9454,43 +9947,127 @@ removeonMobileObserver.observe(document.body, {
     subtree: true
 });
 
-function triggerSafetyBlock() {
-    console.warn('%cWarning!', 'color: lightblue; font-weight: bold; font-size: 30px; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;');
-    console.warn('You\'re not visiting Shop Archives on a verified domain, the website "' + window.location.hostname + '" could be trying to hack you, please close the tab immediately!');
-
-    // try {
-    //     document.getElementById("title-brick").textContent = "Warning!";
-    //     document.getElementById("summary-brick").textContent = 'You\'re not visiting Shop Archives on a verified domain, the website "' + window.location.hostname + '" could be trying to hack you, please close the tab immediately!';
-    // } catch {
-        
-    // }
-
+async function triggerSafetyBlock(errmsg) {
     try {
-        document.getElementById("title-brick").textContent = "Error!";
-        document.getElementById("summary-brick").textContent = 'Unable to verify origin';
-        document.querySelector('.spin-logo').src = "https://cdn.yapper.shop/assets/207.png";
-        document.querySelector('.spin-logo').classList.add('no');
+        document.querySelector(".brick-wall-info").innerHTML = `
+            <img class="trixie" src="https://cdn.yapper.shop/assets/207.png">
+            <div class="brick-wall-text">
+                <h2 class="error-text">Oopsie</h2>
+                <p>An unexpected error has occurred on our end, Shop Archives is currently unavailable. We are currently working on fixing the issue, you will be able to use Shop Archives again soon.</p>
+            </div>
+            <div id="put-brick-status">
+            </div>
+        `;
+        // if (errmsg && errmsg === "Failed to fetch") {
+        //     document.querySelector("#put-brick-status").innerHTML = `
+        //         <hr>
+        //         <div class="brick-wall-status">
+        //             <div>
+        //                 <h3>Website</h3>
+        //                 <p>Operational</p>
+        //                 <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+        //                     <path d="M12.5007 22.9173C18.2536 22.9173 22.9173 18.2536 22.9173 12.5007C22.9173 6.74768 18.2536 2.08398 12.5007 2.08398C6.74768 2.08398 2.08398 6.74768 2.08398 12.5007C2.08398 18.2536 6.74768 22.9173 12.5007 22.9173Z" fill="white"/>
+        //                     <path fill-rule="evenodd" clip-rule="evenodd" d="M1 12.5C1 6.14873 6.14873 1 12.5 1C18.8512 1 24 6.14873 24 12.5C24 18.8512 18.8512 24 12.5 24C6.14873 24 1 18.8512 1 12.5ZM18.0203 9.65671C18.3265 9.3505 18.3265 8.85404 18.0203 8.54784C17.7141 8.24163 17.2177 8.24163 16.9115 8.54784L10.6705 14.7888L8.08853 12.207C7.78232 11.9007 7.28586 11.9007 6.97965 12.207C6.67345 12.5132 6.67345 13.0096 6.97965 13.3158L10.116 16.4521C10.4223 16.7583 10.9186 16.7583 11.2249 16.4521L18.0203 9.65671Z" fill="#77B255"/>
+        //                 </svg>
+        //             </div>
+        //             <div>
+        //                 <h3>API</h3>
+        //                 <p>Unresponsive</p>
+        //                 <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+        //                     <path d="M12.5007 22.9173C18.2536 22.9173 22.9173 18.2536 22.9173 12.5007C22.9173 6.74768 18.2536 2.08398 12.5007 2.08398C6.74768 2.08398 2.08398 6.74768 2.08398 12.5007C2.08398 18.2536 6.74768 22.9173 12.5007 22.9173Z" fill="white"/>
+        //                     <path fill-rule="evenodd" clip-rule="evenodd" d="M12.4993 23.9577C15.5383 23.9577 18.4528 22.7505 20.6016 20.6016C22.7505 18.4528 23.9577 15.5383 23.9577 12.4993C23.9577 9.46041 22.7505 6.54594 20.6016 4.39708C18.4528 2.24823 15.5383 1.04102 12.4993 1.04102C9.46041 1.04102 6.54594 2.24823 4.39708 4.39708C2.24823 6.54594 1.04102 9.46041 1.04102 12.4993C1.04102 15.5383 2.24823 18.4528 4.39708 20.6016C6.54594 22.7505 9.46041 23.9577 12.4993 23.9577ZM13.9993 7.35352L13.6035 14.5827C13.6035 14.8755 13.4872 15.1564 13.2801 15.3634C13.073 15.5705 12.7922 15.6869 12.4993 15.6869C12.2065 15.6869 11.9257 15.5705 11.7186 15.3634C11.5115 15.1564 11.3952 14.8755 11.3952 14.5827L10.9994 7.35352C10.9908 7.21156 11.0114 7.06935 11.06 6.93567C11.1085 6.80198 11.1838 6.67965 11.2814 6.5762C11.379 6.47275 11.4968 6.39039 11.6274 6.33417C11.758 6.27796 11.8988 6.24909 12.041 6.24935H12.9577C13.0999 6.24909 13.2407 6.27796 13.3713 6.33417C13.5019 6.39039 13.6197 6.47275 13.7173 6.5762C13.8149 6.67965 13.8902 6.80198 13.9387 6.93567C13.9873 7.06935 14.0079 7.21156 13.9993 7.35352ZM13.8014 18.4889C13.8014 18.8343 13.6642 19.1655 13.4201 19.4096C13.1759 19.6538 12.8447 19.791 12.4993 19.791C12.154 19.791 11.8228 19.6538 11.5786 19.4096C11.3344 19.1655 11.1973 18.8343 11.1973 18.4889C11.1973 18.1436 11.3344 17.8124 11.5786 17.5682C11.8228 17.324 12.154 17.1869 12.4993 17.1869C12.8447 17.1869 13.1759 17.324 13.4201 17.5682C13.6642 17.8124 13.8014 18.1436 13.8014 18.4889Z" fill="#D52E3B"/>
+        //                 </svg>
+        //             </div>
+        //             <div>
+        //                 <h3>Database</h3>
+        //                 <p>Operational</p>
+        //                 <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+        //                     <path d="M12.5007 22.9173C18.2536 22.9173 22.9173 18.2536 22.9173 12.5007C22.9173 6.74768 18.2536 2.08398 12.5007 2.08398C6.74768 2.08398 2.08398 6.74768 2.08398 12.5007C2.08398 18.2536 6.74768 22.9173 12.5007 22.9173Z" fill="white"/>
+        //                     <path fill-rule="evenodd" clip-rule="evenodd" d="M1 12.5C1 6.14873 6.14873 1 12.5 1C18.8512 1 24 6.14873 24 12.5C24 18.8512 18.8512 24 12.5 24C6.14873 24 1 18.8512 1 12.5ZM18.0203 9.65671C18.3265 9.3505 18.3265 8.85404 18.0203 8.54784C17.7141 8.24163 17.2177 8.24163 16.9115 8.54784L10.6705 14.7888L8.08853 12.207C7.78232 11.9007 7.28586 11.9007 6.97965 12.207C6.67345 12.5132 6.67345 13.0096 6.97965 13.3158L10.116 16.4521C10.4223 16.7583 10.9186 16.7583 11.2249 16.4521L18.0203 9.65671Z" fill="#77B255"/>
+        //                 </svg>
+        //             </div>
+        //         </div>
+        //     `;
+        // } else {
+        //     const res = await fetch(APIV4 + '/status');
+        //     const status = await res.json();
+        //     const brickStatus = document.querySelector("#put-brick-status");
+
+        //     document.querySelector("#put-brick-status").innerHTML = `
+        //         <hr>
+        //         <div class="brick-wall-status">
+        //             <div>
+        //                 <h3>Website</h3>
+        //                 <p>Operational</p>
+        //                 <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+        //                     <path d="M12.5007 22.9173C18.2536 22.9173 22.9173 18.2536 22.9173 12.5007C22.9173 6.74768 18.2536 2.08398 12.5007 2.08398C6.74768 2.08398 2.08398 6.74768 2.08398 12.5007C2.08398 18.2536 6.74768 22.9173 12.5007 22.9173Z" fill="white"/>
+        //                     <path fill-rule="evenodd" clip-rule="evenodd" d="M1 12.5C1 6.14873 6.14873 1 12.5 1C18.8512 1 24 6.14873 24 12.5C24 18.8512 18.8512 24 12.5 24C6.14873 24 1 18.8512 1 12.5ZM18.0203 9.65671C18.3265 9.3505 18.3265 8.85404 18.0203 8.54784C17.7141 8.24163 17.2177 8.24163 16.9115 8.54784L10.6705 14.7888L8.08853 12.207C7.78232 11.9007 7.28586 11.9007 6.97965 12.207C6.67345 12.5132 6.67345 13.0096 6.97965 13.3158L10.116 16.4521C10.4223 16.7583 10.9186 16.7583 11.2249 16.4521L18.0203 9.65671Z" fill="#77B255"/>
+        //                 </svg>
+        //             </div>
+        //         </div>
+        //     `;
+
+        //     const container = brickStatus.querySelector(".brick-wall-status");
+            
+        //     const icons = {
+        //         ok: `<svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.5007 22.9173C18.2536 22.9173 22.9173 18.2536 22.9173 12.5007C22.9173 6.74768 18.2536 2.08398 12.5007 2.08398C6.74768 2.08398 2.08398 6.74768 2.08398 12.5007C2.08398 18.2536 6.74768 22.9173 12.5007 22.9173Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M1 12.5C1 6.14873 6.14873 1 12.5 1C18.8512 1 24 6.14873 24 12.5C24 18.8512 18.8512 24 12.5 24C6.14873 24 1 18.8512 1 12.5ZM18.0203 9.65671C18.3265 9.3505 18.3265 8.85404 18.0203 8.54784C17.7141 8.24163 17.2177 8.24163 16.9115 8.54784L10.6705 14.7888L8.08853 12.207C7.78232 11.9007 7.28586 11.9007 6.97965 12.207C6.67345 12.5132 6.67345 13.0096 6.97965 13.3158L10.116 16.4521C10.4223 16.7583 10.9186 16.7583 11.2249 16.4521L18.0203 9.65671Z" fill="#77B255"/></svg>`,
+        //         error: `<svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.5007 22.9173C18.2536 22.9173 22.9173 18.2536 22.9173 12.5007C22.9173 6.74768 18.2536 2.08398 12.5007 2.08398C6.74768 2.08398 2.08398 6.74768 2.08398 12.5007C2.08398 18.2536 6.74768 22.9173 12.5007 22.9173Z" fill="white"/><path fill-rule="evenodd" clip-rule="evenodd" d="M12.4993 23.9577C15.5383 23.9577 18.4528 22.7505 20.6016 20.6016C22.7505 18.4528 23.9577 15.5383 23.9577 12.4993C23.9577 9.46041 22.7505 6.54594 20.6016 4.39708C18.4528 2.24823 15.5383 1.04102 12.4993 1.04102C9.46041 1.04102 6.54594 2.24823 4.39708 4.39708C2.24823 6.54594 1.04102 9.46041 1.04102 12.4993C1.04102 15.5383 2.24823 18.4528 4.39708 20.6016C6.54594 22.7505 9.46041 23.9577 12.4993 23.9577ZM13.9993 7.35352L13.6035 14.5827C13.6035 14.8755 13.4872 15.1564 13.2801 15.3634C13.073 15.5705 12.7922 15.6869 12.4993 15.6869C12.2065 15.6869 11.9257 15.5705 11.7186 15.3634C11.5115 15.1564 11.3952 14.8755 11.3952 14.5827L10.9994 7.35352C10.9908 7.21156 11.0114 7.06935 11.06 6.93567C11.1085 6.80198 11.1838 6.67965 11.2814 6.5762C11.379 6.47275 11.4968 6.39039 11.6274 6.33417C11.758 6.27796 11.8988 6.24909 12.041 6.24935H12.9577C13.0999 6.24909 13.2407 6.27796 13.3713 6.33417C13.5019 6.39039 13.6197 6.47275 13.7173 6.5762C13.8149 6.67965 13.8902 6.80198 13.9387 6.93567C13.9873 7.06935 14.0079 7.21156 13.9993 7.35352ZM13.8014 18.4889C13.8014 18.8343 13.6642 19.1655 13.4201 19.4096C13.1759 19.6538 12.8447 19.791 12.4993 19.791C12.154 19.791 11.8228 19.6538 11.5786 19.4096C11.3344 19.1655 11.1973 18.8343 11.1973 18.4889C11.1973 18.1436 11.3344 17.8124 11.5786 17.5682C11.8228 17.324 12.154 17.1869 12.4993 17.1869C12.8447 17.1869 13.1759 17.324 13.4201 17.5682C13.6642 17.8124 13.8014 18.1436 13.8014 18.4889Z" fill="#D52E3B"/></svg>`
+        //     };
+
+        //     function createStatusItem(title, isOk) {
+        //         const div = document.createElement("div");
+        //         div.innerHTML = `
+        //             <h3>${title}</h3>
+        //             <p>${isOk ? "Operational" : "Unresponsive"}</p>
+        //             ${isOk ? icons.ok : icons.error}
+        //         `;
+        //         return div;
+        //     }
+
+        //     const apiItem = createStatusItem("API", status.checks.server === "ok");
+        //     const dbItem = createStatusItem("Database", status.checks.database === "ok");
+
+        //     container.append(apiItem, dbItem);
+        // }
     } catch {
         
     }
 }
 
+if (appType === "Dev") {
+    document.getElementById('logo-link-brick').textContent = 'dev.yapper.shop'
+} else {
+    document.getElementById('logo-link-brick').textContent = 'yapper.shop'
+}
+
 function triggerSessionExpiredBlock() {
+    const currentLoggedInUser = JSON.parse(localStorage.getItem('currentUser')) || {};
     try {
-        document.getElementById("title-brick").textContent = "Session Expired!";
-        document.getElementById("summary-brick").textContent = 'Please log in again or continue as guest';
-        document.querySelector('.spin-logo').src = "https://cdn.yapper.shop/assets/207.png";
-        document.querySelector('.spin-logo').classList.add('no');
-        document.querySelector('.brick-wall-buttons-container').innerHTML = `
-            <button class="log-in-with-discord-button" onclick="loginWithDiscord();">
-                <svg width="59" height="59" viewBox="0 0 59 59" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M48.7541 12.511C45.2046 10.8416 41.4614 9.66246 37.6149 9C37.0857 9.96719 36.6081 10.9609 36.1822 11.9811C32.0905 11.3451 27.9213 11.3451 23.8167 11.9811C23.3908 10.9609 22.9132 9.96719 22.384 9C18.5376 9.67571 14.7815 10.8549 11.2319 12.5243C4.18435 23.2297 2.27404 33.67 3.2292 43.9647C7.35961 47.0915 11.9805 49.4763 16.8854 51C17.9954 49.4763 18.9764 47.8467 19.8154 46.1508C18.2149 45.5413 16.6789 44.7861 15.2074 43.8984C15.5946 43.6069 15.969 43.3155 16.3433 43.024C24.9913 47.1975 35.0076 47.1975 43.6557 43.024C44.03 43.3287 44.4043 43.6334 44.7915 43.8984C43.3201 44.7861 41.7712 45.5413 40.1706 46.164C41.0096 47.8599 41.9906 49.4763 43.1006 51C48.0184 49.4763 52.6393 47.1047 56.7697 43.9647C57.8927 32.0271 54.8594 21.6927 48.7412 12.511H48.7541ZM21.0416 37.6315C18.3827 37.6315 16.1755 35.1539 16.1755 32.1066C16.1755 29.0593 18.2923 26.5552 21.0287 26.5552C23.7651 26.5552 25.9465 29.0593 25.8949 32.1066C25.8432 35.1539 23.7522 37.6315 21.0416 37.6315ZM38.9831 37.6315C36.3113 37.6315 34.1299 35.1539 34.1299 32.1066C34.1299 29.0593 36.2467 26.5552 38.9831 26.5552C41.7195 26.5552 43.888 29.0593 43.8364 32.1066C43.7847 35.1539 41.6937 37.6315 38.9831 37.6315Z" fill="white"/>
-                </svg>
-                Login with Discord
-            </button>
-            <button class="log-in-with-discord-button" style="background-color: var(--color-primary);" onclick="logoutOfDiscord();">
-                Continue as Guest
-            </button>
+        document.querySelector(".brick-wall-info").innerHTML = `
+            <div class="brick-wall-text">
+                <h2 class="error-text">Session Expired!</h2>
+            </div>
+            <div class="brick-wall-user-container">
+                <div class="brick-wall-user">
+                    <img src="https://cdn.discordapp.com/avatars/${currentLoggedInUser?.id}/${currentLoggedInUser?.avatar}.webp?size=128">
+                    <div>
+                        <h3 class="error-text">${currentLoggedInUser?.global_name ?? currentLoggedInUser?.username}</h3>
+                        <p>${currentLoggedInUser?.username}</p>
+                    </div>
+                    <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12.5007 22.9173C18.2536 22.9173 22.9173 18.2536 22.9173 12.5007C22.9173 6.74768 18.2536 2.08398 12.5007 2.08398C6.74768 2.08398 2.08398 6.74768 2.08398 12.5007C2.08398 18.2536 6.74768 22.9173 12.5007 22.9173Z" fill="white"/>
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12.4993 23.9577C15.5383 23.9577 18.4528 22.7505 20.6016 20.6016C22.7505 18.4528 23.9577 15.5383 23.9577 12.4993C23.9577 9.46041 22.7505 6.54594 20.6016 4.39708C18.4528 2.24823 15.5383 1.04102 12.4993 1.04102C9.46041 1.04102 6.54594 2.24823 4.39708 4.39708C2.24823 6.54594 1.04102 9.46041 1.04102 12.4993C1.04102 15.5383 2.24823 18.4528 4.39708 20.6016C6.54594 22.7505 9.46041 23.9577 12.4993 23.9577ZM13.9993 7.35352L13.6035 14.5827C13.6035 14.8755 13.4872 15.1564 13.2801 15.3634C13.073 15.5705 12.7922 15.6869 12.4993 15.6869C12.2065 15.6869 11.9257 15.5705 11.7186 15.3634C11.5115 15.1564 11.3952 14.8755 11.3952 14.5827L10.9994 7.35352C10.9908 7.21156 11.0114 7.06935 11.06 6.93567C11.1085 6.80198 11.1838 6.67965 11.2814 6.5762C11.379 6.47275 11.4968 6.39039 11.6274 6.33417C11.758 6.27796 11.8988 6.24909 12.041 6.24935H12.9577C13.0999 6.24909 13.2407 6.27796 13.3713 6.33417C13.5019 6.39039 13.6197 6.47275 13.7173 6.5762C13.8149 6.67965 13.8902 6.80198 13.9387 6.93567C13.9873 7.06935 14.0079 7.21156 13.9993 7.35352ZM13.8014 18.4889C13.8014 18.8343 13.6642 19.1655 13.4201 19.4096C13.1759 19.6538 12.8447 19.791 12.4993 19.791C12.154 19.791 11.8228 19.6538 11.5786 19.4096C11.3344 19.1655 11.1973 18.8343 11.1973 18.4889C11.1973 18.1436 11.3344 17.8124 11.5786 17.5682C11.8228 17.324 12.154 17.1869 12.4993 17.1869C12.8447 17.1869 13.1759 17.324 13.4201 17.5682C13.6642 17.8124 13.8014 18.1436 13.8014 18.4889Z" fill="#D52E3B"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="brick-wall-buttons-container">
+                <button class="generic-button brand" onclick="loginWithDiscord();">
+                    Login with Discord
+                </button>
+                <button class="generic-button primary" onclick="logoutOfDiscord();">
+                    Continue as Guest
+                </button>
+            </div>
         `;
     } catch {
         
@@ -9553,13 +10130,19 @@ function redirectToLink(link) {
 }
 
 function loginWithDiscord() {
+    // noticeBlock({
+    //     type: 1,
+    //     message: "You cannot login at this time",
+    //     autoRemove: true,
+    //     removeTime: 5000
+    // })
+    // return;
+
     let redirect;
     if (appType === "Stable") {
-        redirect = redneredAPI + endpoints.STABLE_LOGIN_CALLBACK
+        redirect = APIV4 + endpnts.STABLE + endpnts.CALLBACK;
     } else if (appType === "Dev") {
-        redirect = redneredAPI + endpoints.DEV_LOGIN_CALLBACK
-    } else if (appType === "Pre-Release") {
-        redirect = redneredAPI + endpoints.BETA_LOGIN_CALLBACK
+        redirect = APIV4 + endpnts.DEV + endpnts.CALLBACK;
     }
     let discordUrl = `https://discord.com/api/oauth2/authorize?client_id=1342635740768501886&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&scope=identify&prompt=none`;
     if (settingsStore.staff_auth_remove_none_promt === 1) {
@@ -9585,8 +10168,9 @@ function dev() {
 
 
 async function postReview(categoryId, rating, text, item_sku_id) {
-
-    const response = await fetch(redneredAPI + endpoints.CATEGORY_MODAL_INFO + categoryId + endpoints.CATEGORY_MODAL_REVIEW, {
+    let url = APIV4 + endpnts.CATEGORY + categoryId + endpnts.REVIEWS;
+    apiUrl = new URL(url);
+    const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -9598,27 +10182,31 @@ async function postReview(categoryId, rating, text, item_sku_id) {
             item_sku_id
         })
     });
-
     const result = await response.json();
-
     return result;
-
 };
 
 async function deleteReviewById(reviewId) {
-
-    const response = await fetch(redneredAPI + endpoints.CATEGORY_MODAL_REVIEW_DELETE + reviewId, {
+    const api = APIV4 + endpnts.REVIEWS_DELETED + reviewId;
+    const response = await fetch(api, {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json',
             "Authorization": localStorage.token
         }
     });
-
-    const result = await response.json();
-
-    return result;
-
+    if (!response.ok) {
+        const result = await response.json();
+        noticeBlock({
+            type: 1,
+            message: `Failed to fetch '${api}': ${result.status}, ${result.error}`,
+            autoRemove: true,
+            removeTime: 5000
+        });
+        return {failed:true};
+    } else {
+        return {failed:false};
+    }
 };
 
 
@@ -9697,6 +10285,23 @@ function noticeBlock({
     }
 }
 
+async function postManualCategory(category) {
+
+    let url = APIV4 + '/post-category';
+    apiUrl = new URL(url);
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            "Authorization": localStorage.token
+        },
+        body: JSON.stringify({
+            category
+        })
+    });
+    const result = await response.json();
+    return result;
+};
 
 
 
@@ -9778,71 +10383,16 @@ function animateNumber(element, targetValue, duration = 1000, options = {}) {
 
 
 
-
-// Tooltip Code
+// tooltip code
 
 let tooltip = null;
 let hideTimeout = null;
 let currentTarget = null;
 
-function cleanupTooltip() {
-    if (hideTimeout) {
-        clearTimeout(hideTimeout);
-        hideTimeout = null;
-    }
-    if (tooltip) {
-        tooltip.remove();
-        tooltip = null;
-    }
-    currentTarget = null;
-}
+// --- Helpers ---
 
-function updateTooltipText(text) {
-    if (!tooltip) return false;
-    
-    tooltip.textContent = text;
-    
-    // Reposition tooltip in case the new text changes its size
-    if (currentTarget) {
-        const rect = currentTarget.getBoundingClientRect();
-        const tooltipRect = tooltip.getBoundingClientRect();
-
-        let top = rect.top - tooltipRect.height - 8;
-        let left = rect.left + (rect.width - tooltipRect.width) / 2;
-
-        // Adjust if tooltip would go off screen
-        if (top < 0) {
-            top = rect.bottom + 8;
-        }
-        if (left < 0) {
-            left = 8;
-        } else if (left + tooltipRect.width > window.innerWidth) {
-            left = window.innerWidth - tooltipRect.width - 8;
-        }
-
-        tooltip.style.top = `${top + window.scrollY}px`;
-        tooltip.style.left = `${left + window.scrollX}px`;
-    }
-    
-    return true;
-}
-
-function createTooltip(target, text) {
-    // If tooltip exists and it's for the same target, just update the text
-    if (tooltip && currentTarget === target) {
-        updateTooltipText(text);
-        return;
-    }
-    
-    // Clean up any existing tooltip first
-    cleanupTooltip();
-    
-    currentTarget = target;
-    
-    tooltip = document.createElement('div');
-    tooltip.className = 'tooltip-box';
-    tooltip.textContent = text;
-    document.body.appendChild(tooltip);
+function positionTooltip(target) {
+    if (!tooltip) return;
 
     const rect = target.getBoundingClientRect();
     const tooltipRect = tooltip.getBoundingClientRect();
@@ -9850,94 +10400,286 @@ function createTooltip(target, text) {
     let top = rect.top - tooltipRect.height - 8;
     let left = rect.left + (rect.width - tooltipRect.width) / 2;
 
-    // Adjust if tooltip would go off screen
-    if (top < 0) {
-        top = rect.bottom + 8;
-        // Move arrow to top when tooltip is below
-        tooltip.style.setProperty('--arrow-position', 'top');
-    }
-    if (left < 0) {
-        left = 8;
-    } else if (left + tooltipRect.width > window.innerWidth) {
-        left = window.innerWidth - tooltipRect.width - 8;
-    }
+    // Default arrow to bottom; flip to top if tooltip would go off-screen upward
+    const flipped = top < 0;
+    tooltip.style.setProperty('--arrow-position', flipped ? 'top' : 'bottom');
+    if (flipped) top = rect.bottom + 8;
+
+    left = Math.max(8, Math.min(left, window.innerWidth - tooltipRect.width - 8));
 
     tooltip.style.top = `${top + window.scrollY}px`;
     tooltip.style.left = `${left + window.scrollX}px`;
+}
 
-    // Fade in
+function cleanupTooltip() {
+    clearTimeout(hideTimeout);
+    hideTimeout = null;
+    tooltip?.remove();
+    tooltip = null;
+    currentTarget = null;
+}
+
+// --- Core ---
+
+function createTooltip(target, text) {
+    if (tooltip && currentTarget === target) {
+        tooltip.textContent = text;
+        positionTooltip(target);
+        return;
+    }
+
+    cleanupTooltip();
+    currentTarget = target;
+
+    tooltip = document.createElement('div');
+    tooltip.className = 'tooltip-box';
+    tooltip.textContent = text;
+    document.body.appendChild(tooltip);
+    positionTooltip(target);
+
     requestAnimationFrame(() => {
-        if (tooltip) {
-            tooltip.style.opacity = '1';
-        }
+        if (tooltip) tooltip.style.opacity = '1';
     });
 }
 
 function hideTooltip() {
     if (!tooltip) return;
-    
+
     tooltip.style.opacity = '0';
     hideTimeout = setTimeout(() => {
-        if (tooltip) {
-            tooltip.remove();
-            tooltip = null;
-        }
+        tooltip?.remove();
+        tooltip = null;
         currentTarget = null;
     }, 200);
 }
 
-// Use mouseover/mouseout for more reliable event handling
+// --- Event Listeners ---
+
 document.addEventListener('mouseover', (e) => {
     const target = e.target.closest('.has-tooltip');
-    if (!target) return;
-    
-    // If we're already showing a tooltip for this target, don't recreate
-    if (currentTarget === target) return;
-    
+    if (!target || currentTarget === target) return;
+
     const text = target.getAttribute('data-tooltip');
-    if (text) {
-        createTooltip(target, text);
-    }
+    if (text) createTooltip(target, text);
 });
 
 document.addEventListener('mouseout', (e) => {
     const target = e.target.closest('.has-tooltip');
     if (!target || target !== currentTarget) return;
-    
-    // Check if we're moving to a child element
-    if (target.contains(e.relatedTarget)) return;
-    
-    hideTooltip();
+    if (!target.contains(e.relatedTarget)) hideTooltip();
 });
 
-// Watch for DOM changes to cleanup tooltip if target element is removed
-const observer = new MutationObserver((mutations) => {
-    if (!currentTarget) return;
-    
-    // Check if the current target still exists in the DOM
-    if (!document.contains(currentTarget)) {
-        cleanupTooltip();
+// --- Observers ---
+
+// Update tooltip text live if data-tooltip changes on the active target
+const attributeObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+        if (
+            mutation.type === 'attributes' &&
+            mutation.attributeName === 'data-tooltip' &&
+            mutation.target === currentTarget
+        ) {
+            const newText = currentTarget.getAttribute('data-tooltip');
+            if (tooltip) {
+                tooltip.textContent = newText;
+                positionTooltip(currentTarget);
+            }
+        }
     }
 });
 
-observer.observe(document.body, {
-    childList: true,
-    subtree: true
+attributeObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['data-tooltip'],
+    subtree: true,
 });
 
-// Cleanup on page visibility change or window blur
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        cleanupTooltip();
-    }
+// Clean up if the active target is removed from the DOM
+const removalObserver = new MutationObserver(() => {
+    if (currentTarget && !document.contains(currentTarget)) cleanupTooltip();
 });
 
+removalObserver.observe(document.body, { childList: true, subtree: true });
+
+// Clean up on hide/blur/scroll
+document.addEventListener('visibilitychange', () => { if (document.hidden) cleanupTooltip(); });
 window.addEventListener('blur', cleanupTooltip);
 window.addEventListener('scroll', cleanupTooltip);
 
 
 
 
+
+
+
+// Global variables for clickablePopup management
+let currentclickablePopup = null;
+let clickablePopupBackdrop = null;
+
+// Create backdrop element
+function createBackdrop() {
+    if (!clickablePopupBackdrop) {
+        clickablePopupBackdrop = document.createElement('div');
+        clickablePopupBackdrop.className = 'clickablePopup-backdrop';
+        document.body.appendChild(clickablePopupBackdrop);
+        
+        clickablePopupBackdrop.addEventListener('click', closeclickablePopup);
+    }
+    return clickablePopupBackdrop;
+}
+
+// Main function to create a button with clickablePopup popup
+function createclickablePopupButton(buttonElement, clickablePopupButtons) {
+    buttonElement.addEventListener('click', function(e) {
+        e.stopPropagation();
+        
+        // Close existing clickablePopup if open
+        if (currentclickablePopup) {
+            closeclickablePopup();
+            return;
+        }
+        
+        // Create clickablePopup popup
+        const clickablePopup = document.createElement('div');
+        clickablePopup.className = 'clickablePopup-popup';
+        
+        // Add buttons to clickablePopup
+        clickablePopupButtons.forEach(buttonConfig => {
+            const button = document.createElement('button');
+            button.className = 'clickablePopup-button';
+            
+            // Add icon if provided
+            if (buttonConfig.icon) {
+                button.innerHTML = buttonConfig.icon + '<p>' + buttonConfig.name + '</p>';
+            } else {
+                button.innerHTML = '<p>' + buttonConfig.name + '</p>';
+            }
+            
+            // Add click handler
+            button.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // Execute the function
+                if (typeof buttonConfig.function === 'string') {
+                    // If it's a string, evaluate it
+                    eval(buttonConfig.function);
+                } else if (typeof buttonConfig.function === 'function') {
+                    // If it's already a function, call it
+                    buttonConfig.function();
+                }
+                
+                closeclickablePopup();
+            });
+            
+            clickablePopup.appendChild(button);
+        });
+        
+        // Position clickablePopup
+        document.body.appendChild(clickablePopup);
+        positionclickablePopup(buttonElement, clickablePopup);
+        
+        // Show clickablePopup with animation
+        setTimeout(() => {
+            clickablePopup.classList.add('show');
+        }, 10);
+        
+        // Set up backdrop
+        const backdrop = createBackdrop();
+        backdrop.classList.add('active');
+        
+        currentclickablePopup = clickablePopup;
+    });
+}
+
+// Position clickablePopup relative to button
+function positionclickablePopup(buttonElement, clickablePopup) {
+    const buttonRect = buttonElement.getBoundingClientRect();
+    const clickablePopupRect = clickablePopup.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    let left = buttonRect.right + 10; // Default: right side
+    let top = buttonRect.top;
+    
+    // Check if there's enough space on the right
+    if (left + clickablePopupRect.width > viewportWidth - 20) {
+        // Not enough space on right, position on left
+        left = buttonRect.left - clickablePopupRect.width - 10;
+        
+        // If still not enough space on left, center it
+        if (left < 20) {
+            left = buttonRect.left + (buttonRect.width / 2) - (clickablePopupRect.width / 2);
+            top = buttonRect.bottom + 10; // Position below button
+        }
+    }
+    
+    // Ensure clickablePopup doesn't go off top or bottom of screen
+    if (top + clickablePopupRect.height > viewportHeight - 20) {
+        top = viewportHeight - clickablePopupRect.height - 20;
+    }
+    if (top < 20) {
+        top = 20;
+    }
+    
+    clickablePopup.style.left = Math.max(20, left) + 'px';
+    clickablePopup.style.top = top + 'px';
+}
+
+// Close clickablePopup function
+function closeclickablePopup() {
+    if (currentclickablePopup) {
+        currentclickablePopup.classList.remove('show');
+        setTimeout(() => {
+            if (currentclickablePopup && currentclickablePopup.parentNode) {
+                currentclickablePopup.parentNode.removeChild(currentclickablePopup);
+            }
+            currentclickablePopup = null;
+        }, 150);
+    }
+    
+    if (clickablePopupBackdrop) {
+        clickablePopupBackdrop.classList.remove('active');
+    }
+}
+
+
+
+async function downloadImagesAsZip(imageUrls) {
+    const zip = new JSZip();
+
+    try {
+        for (let i = 0; i < imageUrls.length; i++) {
+            const proxyUrl = APIV4 + '/prox?url=';
+            const imageUrl = imageUrls[i];
+            
+            const response = await fetch(proxyUrl + encodeURIComponent(imageUrl));
+
+            // Check if the fetch was successful (status 200-299)
+            if (!response.ok) {
+                throw new Error(`Failed to fetch image ${i + 1}: ${response.status} ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+            zip.file(`image_${i + 1}.png`, blob);
+        }
+
+        // 2. Only runs if all fetches succeeded
+        const content = await zip.generateAsync({ type: "blob" });
+
+        // 3. Trigger download
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(content);
+        link.download = "images_collection.zip";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        console.log("Download started successfully.");
+
+    } catch (error) {
+        console.error("ZIP creation aborted:", error.message);
+    }
+}
 
 
 
@@ -10227,19 +10969,4 @@ class ProfileEffectsCard {
             this.onMouseEnter();
         }
     }
-}
-
-// Helper function to find profile effect by product ID
-function findProfileEffectByProductId(discordProfileEffectsCache, productId, itemData) {
-    if (!discordProfileEffectsCache || !discordProfileEffectsCache.profile_effect_configs || !itemData) {
-        return null;
-    }
-
-    if (itemData && itemData.thumbnailPreviewSrc) {
-        return itemData;
-    }
-    
-    return discordProfileEffectsCache.profile_effect_configs.find(effect => 
-        effect.id === productId
-    );
 }

@@ -1,11 +1,11 @@
 
-const appVersion = "7.4.22";
+const appVersion = "7.5.0";
 const appType = "Dev";
 
 const endpoints = {
+    APIV4: "https://api.yapper.dev/v4",
     MAIN: "https://api.yapper.shop/",
     VERSION: "v3",
-    NEWS_UPDATES: "/news-updates",
     VERIFY_ORIGIN: "/heartbeat",
     SERVER_EXPERIMENTS: "/experiments",
     USER: "/users/@me",
@@ -17,7 +17,6 @@ const endpoints = {
 
     STABLE_LOGIN_CALLBACK: "/callback",
     DEV_LOGIN_CALLBACK: "/dev/callback",
-    BETA_LOGIN_CALLBACK: "/beta/callback",
 
     USER_LOGIN: "/user-login",
 
@@ -40,16 +39,59 @@ const endpoints = {
     CLAIMABLES_PURCHASE: "/claimables/purchase/"
 };
 
+const endpnts = {
+    V4: "https://api.yapper.dev/v4",
+    HEARTBEAT: "/heartbeat",
+    EXPERIMENTS: "/experiments",
+    USER: "/users/@me",
+    LOGIN: "/login",
+
+    STABLE: "/stable",
+    DEV: "/dev",
+    CALLBACK: "/callback",
+
+    CATEGORY: "/category/",
+    CATEGORIES: "/categories",
+    CATEGORIES_HOME: "/home",
+    CATEGORIES_CATALOG: "/catalog",
+    CATEGORIES_ORBS: "/orbs",
+    CATEGORIES_MISC: "/miscellaneous",
+
+    REVIEWS: "/reviews",
+    REVIEWS_DELETED: "/reviews/",
+
+    PRODUCT: "/product/",
+
+    DISCORD_QUESTS: "/discord-quests",
+}
+
 const redneredAPI = endpoints.MAIN + endpoints.VERSION;
+const APIV4 = endpnts.V4;
 
 const item_types = {
     NONE: 100,
     AVATAR_DECORATION: 0,
     PROFILE_EFFECT: 1,
     NAMEPLATE: 2,
+    PROFILE_FRAME: 3,
     BUNDLE: 1e3,
     VARIANTS_GROUP: 2e3,
     EXTERNAL_SKU: 3e3
+};
+
+const getItemTypeName = (id) => {
+    const item_type_names = {
+        100: "None",
+        0: "Avatar Decoration",
+        1: "Profile Effect",
+        2: "Nameplate",
+        3: "Profile Frame",
+        1e3: "Bundle",
+        2e3: "VARIANTS_GROUP",
+        3e3: "External SKU"
+    };
+
+    return item_type_names[id] || "Unknown";
 };
 
 const category_types = {
@@ -60,7 +102,8 @@ const category_types = {
     SHELF: 4,
     COUNTDOWN_TIMER: 5,
     IMMERSIVE_BANNER: 6,
-    REWARD_HERO: 7
+    REWARD_HERO: 7,
+    MARVEL_RIVALS_PROMOTIONAL_BANNER: 8
 };
 
 const quest_reward_types = {
@@ -159,139 +202,13 @@ const category_client_overrides = [
         addLogo: !0
     },
     {
-        sku_id: discord_categories.FANTASY,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.ANIME,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.BREAKFAST,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.DISXCORE,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.FALL,
-        banner_verification: "1157407583993339935",
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.HALLOWEEN,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.WINTER,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.MONSTERS,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.CYBERPUNK,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.LUNAR_NEW_YEAR,
-        banner_verification: "1202069953306689626",
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.ELEMENTS,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.ANIME_V2,
-        addLogo: !0,
-        addAttributionLogo: !0,
-        showDarkBannerText: !0
-    },
-    {
-        sku_id: discord_categories.SPRINGTOONS,
-        addLogo: !0,
-        addAttributionLogo: !0,
-        showDarkBannerText: !0
-    },
-    {
-        sku_id: discord_categories.SHY,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.LOFI_VIBES,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.GALAXY,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.FEELIN_RETRO,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.PIRATES,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.ARCADE,
-        addLogo: !0
-    },
-    {
-        sku_id: discord_categories.TIDE,
-        addLogo: !0,
-        addAttributionLogo: !0
-    },
-    {
-        sku_id: discord_categories.DARK_FANTASY,
-        addAttributionLogo: !0,
-        modal_hero_banner: "https://cdn.yapper.shop/discord-assets/65.png"
-    },
-    {
         sku_id: discord_categories.ROBERT,
         showDarkBannerText: !0,
         modal_hero_banner: "https://cdn.yapper.shop/discord-assets/64.png"
     },
     {
-        sku_id: discord_categories.STORM,
-        modal_hero_banner: "https://cdn.yapper.shop/discord-assets/63.png"
-    },
-    {
-        sku_id: discord_categories.DOJO,
-        showDarkBannerText: !0,
-        modal_hero_banner: "https://cdn.yapper.shop/discord-assets/62.png"
-    },
-    {
-        sku_id: discord_categories.THE_VAULT,
-        modal_hero_banner: "https://cdn.yapper.shop/discord-assets/1.jpg"
-    },
-    {
-        sku_id: discord_categories.AUTUMN_EQUINOX,
-        modal_hero_banner: "https://cdn.yapper.shop/discord-assets/4.jpg"
-    },
-    {
         sku_id: discord_categories.BAND,
-        animatedBanner: "https://cdn.discordapp.com/assets/content/7e328a07e057745faad2366c9ebdf03e2bd69d22dfe8d41c81a10d29a8de7cf7.png",
-        modal_hero_banner: "https://cdn.yapper.shop/discord-assets/6.jpg"
+        animatedBanner: "https://cdn.discordapp.com/assets/content/7e328a07e057745faad2366c9ebdf03e2bd69d22dfe8d41c81a10d29a8de7cf7.png"
     },
     {
         sku_id: discord_categories.WARRIOR,
@@ -314,18 +231,6 @@ const category_client_overrides = [
             animationSource: "https://cdn.discordapp.com/assets/collectibles/drops/lofi_girl/hero_banner.webm"
         },
         animatedBanner: "https://cdn.discordapp.com/assets/collectibles/drops/lofi_girl/banner_animated.webm"
-    },
-    {
-        sku_id: discord_categories.ORB,
-        modal_hero_banner: "https://cdn.discordapp.com/app-assets/1096190356233670716/1336165352392097853.png?size=4096"
-    },
-    {
-        sku_id: discord_categories.NAMEPLATE,
-        animatedBanner: "https://cdn.discordapp.com/assets/content/6f72be1e45f627e6b43894ca7dcda02c2851a3120a643a85c5132e87af6b50c4.webm"
-    },
-    {
-        sku_id: discord_categories.ITS_SHOWTIME,
-        modal_hero_banner: "https://cdn.yapper.shop/assets/219.png"
     }
 ];
 
@@ -402,15 +307,50 @@ const display_name_styles_colors = {
 
 const experiments = [
     {
-        title: `Daily dose of Collectibles`,
-        codename: `daily_dose_of_collectibles`,
-        release_config: {
-            year: `2026`,
-            month: `01`
-        },
+        title: `Client Side Currency Changer`,
+        codename: `client_side_currency_changer`,
         treatments: [
             {
-                title: `Not Eligible`
+                title: `Disabled`
+            },
+            {
+                title: `Enabled`
+            }
+        ]
+    },
+    {
+        title: `Use Bundle Preview Assets`,
+        codename: `use_bundle_preview_assets`,
+        treatments: [
+            {
+                title: `Disabled`
+            },
+            {
+                title: `Enabled`
+            }
+        ]
+    },
+    {
+        title: `Product Assets Tab`,
+        codename: `product_assets_tab`,
+        treatments: [
+            {
+                title: `Disabled`
+            },
+            {
+                title: `Enabled w/ ZIP Download`
+            },
+            {
+                title: `Enabled w/o ZIP Download`
+            }
+        ]
+    },
+    {
+        title: `Daily dose of Collectibles`,
+        codename: `daily_dose_of_collectibles`,
+        treatments: [
+            {
+                title: `Disabled`
             },
             {
                 title: `Enabled`
@@ -420,13 +360,9 @@ const experiments = [
     {
         title: `Review Specific Item`,
         codename: `review_specific_item`,
-        release_config: {
-            year: `2025`,
-            month: `12`
-        },
         treatments: [
             {
-                title: `Not Eligible`
+                title: `Disabled`
             },
             {
                 title: `Enabled`
@@ -436,13 +372,9 @@ const experiments = [
     {
         title: `XP Revamp`,
         codename: `xp_system_v2`,
-        release_config: {
-            year: `2025`,
-            month: `09`
-        },
         treatments: [
             {
-                title: `Not Eligible`
+                title: `Disabled`
             },
             {
                 title: `Enabled`
@@ -452,13 +384,9 @@ const experiments = [
     {
         title: `Display Name Style Render`,
         codename: `display_name_style_render`,
-        release_config: {
-            year: `2025`,
-            month: `07`
-        },
         treatments: [
             {
-                title: `Not Eligible`
+                title: `Disabled`
             },
             {
                 title: `Enabled`
@@ -468,45 +396,9 @@ const experiments = [
     {
         title: `Display Name Style XP Level Perk`,
         codename: `display_name_style_xp_level_perk`,
-        release_config: {
-            year: `2025`,
-            month: `07`
-        },
         treatments: [
             {
-                title: `Not Eligible`
-            },
-            {
-                title: `Enabled`
-            }
-        ]
-    },
-    {
-        title: `Published Items Category`,
-        codename: `published_items_category`,
-        release_config: {
-            year: `2025`,
-            month: `06`
-        },
-        treatments: [
-            {
-                title: `Not Eligible`
-            },
-            {
-                title: `Show Published Items Category In Misc Tab`
-            }
-        ]
-    },
-    {
-        title: `Advanced Theme Picker`,
-        codename: `advanced_theme_picker`,
-        release_config: {
-            year: `2025`,
-            month: `06`
-        },
-        treatments: [
-            {
-                title: `Not Eligible`
+                title: `Disabled`
             },
             {
                 title: `Enabled`
@@ -522,18 +414,22 @@ const external_skus = {
 
 const defaultThemes = [
     {
+        name: "Legacy Dark",
+        codename: "legacy",
+        summary: "Legacy Dark",
+        color: "#2B2D31"
+    },
+    {
         name: "Dark",
         codename: "dark",
         summary: "Easy on the eyes.",
-        color: "#2B2D31",
-        src: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODg2IiBoZWlnaHQ9IjQ5OSIgdmlld0JveD0iMCAwIDg4NiA0OTkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI4ODUuNDM4IiBoZWlnaHQ9IjQ5OC4wNTkiIGZpbGw9IiMzOTNBNDEiLz4KPHJlY3QgeD0iMTIxLjc0OCIgd2lkdGg9Ijc2My42OSIgaGVpZ2h0PSIyMy45ODA2IiBmaWxsPSIjMzIzMzM5Ii8+CjxyZWN0IHdpZHRoPSIxMjEuNzQ4IiBoZWlnaHQ9IjQ5OC4wNTkiIGZpbGw9IiMzMjMzMzkiLz4KPHJlY3QgeD0iMTIyIiB5PSIyNCIgd2lkdGg9Ijc2MyIgaGVpZ2h0PSI0NzQiIGZpbGw9IiMzOTNBNDEiLz4KPHJlY3QgeD0iMTAiIHk9IjI4IiB3aWR0aD0iMTAyIiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iIzM5M0E0MSIvPgo8cmVjdCB4PSIxMCIgeT0iNTgiIHdpZHRoPSIxMDIiIGhlaWdodD0iMjQiIHJ4PSIzIiBmaWxsPSIjMzkzQTQxIi8+CjxyZWN0IHg9IjEwIiB5PSI4OCIgd2lkdGg9IjEwMiIgaGVpZ2h0PSIyNCIgcng9IjMiIGZpbGw9IiMzOTNBNDEiLz4KPHJlY3QgeD0iMTAiIHk9IjExOCIgd2lkdGg9IjEwMiIgaGVpZ2h0PSIyNCIgcng9IjMiIGZpbGw9IiMzOTNBNDEiLz4KPHJlY3QgeD0iMTAiIHk9IjE0OCIgd2lkdGg9IjEwMiIgaGVpZ2h0PSIyNCIgcng9IjMiIGZpbGw9IiMzOTNBNDEiLz4KPHJlY3QgeD0iMTc3IiB5PSI1MyIgd2lkdGg9IjY1NCIgaGVpZ2h0PSIxNDciIHJ4PSI5IiBmaWxsPSIjMTAxMjEzIiBzdHJva2U9IiMxRTFGMjIiIHN0cm9rZS13aWR0aD0iMiIvPgo8cmVjdCB5PSI0NjQiIHdpZHRoPSIxMjIiIGhlaWdodD0iMzQiIGZpbGw9IiMyQzJEMzIiLz4KPHJlY3QgeD0iMTc3IiB5PSIyMTkiIHdpZHRoPSIxNTIiIGhlaWdodD0iMjM5IiByeD0iOSIgZmlsbD0iIzEwMTIxMyIgc3Ryb2tlPSIjMUUxRjIyIiBzdHJva2Utd2lkdGg9IjIiLz4KPHJlY3QgeD0iNjc5IiB5PSIyMTkiIHdpZHRoPSIxNTIiIGhlaWdodD0iMjM5IiByeD0iOSIgZmlsbD0iIzEwMTIxMyIgc3Ryb2tlPSIjMUUxRjIyIiBzdHJva2Utd2lkdGg9IjIiLz4KPHJlY3QgeD0iMzQ1IiB5PSIyMTkiIHdpZHRoPSIxNTIiIGhlaWdodD0iMjM5IiByeD0iOSIgZmlsbD0iIzEwMTIxMyIgc3Ryb2tlPSIjMUUxRjIyIiBzdHJva2Utd2lkdGg9IjIiLz4KPHJlY3QgeD0iNTEyIiB5PSIyMTkiIHdpZHRoPSIxNTIiIGhlaWdodD0iMjM5IiByeD0iOSIgZmlsbD0iIzEwMTIxMyIgc3Ryb2tlPSIjMUUxRjIyIiBzdHJva2Utd2lkdGg9IjIiLz4KPC9zdmc+Cg=="
+        color: "#202124"
     },
     {
         name: "Midnight",
         codename: "midnight",
         summary: "Perfect for late-night browsing.",
-        color: "#000000",
-        src: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODg2IiBoZWlnaHQ9IjQ5OSIgdmlld0JveD0iMCAwIDg4NiA0OTkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI4ODUuNDM4IiBoZWlnaHQ9IjQ5OC4wNTkiIGZpbGw9IiMzOTNBNDEiLz4KPHJlY3QgeD0iMTIxLjc0OCIgd2lkdGg9Ijc2My42OSIgaGVpZ2h0PSIyMy45ODA2IiBmaWxsPSJibGFjayIvPgo8cmVjdCB3aWR0aD0iMTIxLjc0OCIgaGVpZ2h0PSI0OTguMDU5IiBmaWxsPSJibGFjayIvPgo8cmVjdCB4PSIxMjIiIHk9IjI0IiB3aWR0aD0iNzYzIiBoZWlnaHQ9IjQ3NCIgZmlsbD0iIzBDMEMwQyIvPgo8cmVjdCB4PSIxNzciIHk9IjUzIiB3aWR0aD0iNjU0IiBoZWlnaHQ9IjE0NyIgcng9IjkiIGZpbGw9ImJsYWNrIiBzdHJva2U9IiMxRTFGMjIiIHN0cm9rZS13aWR0aD0iMiIvPgo8cmVjdCB5PSI0NjQiIHdpZHRoPSIxMjIiIGhlaWdodD0iMzQiIGZpbGw9ImJsYWNrIi8+CjxyZWN0IHg9IjE3NyIgeT0iMjE5IiB3aWR0aD0iMTUyIiBoZWlnaHQ9IjIzOSIgcng9IjkiIGZpbGw9ImJsYWNrIiBzdHJva2U9IiMxRTFGMjIiIHN0cm9rZS13aWR0aD0iMiIvPgo8cmVjdCB4PSI2NzkiIHk9IjIxOSIgd2lkdGg9IjE1MiIgaGVpZ2h0PSIyMzkiIHJ4PSI5IiBmaWxsPSJibGFjayIgc3Ryb2tlPSIjMUUxRjIyIiBzdHJva2Utd2lkdGg9IjIiLz4KPHJlY3QgeD0iMzQ1IiB5PSIyMTkiIHdpZHRoPSIxNTIiIGhlaWdodD0iMjM5IiByeD0iOSIgZmlsbD0iYmxhY2siIHN0cm9rZT0iIzFFMUYyMiIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxyZWN0IHg9IjUxMiIgeT0iMjE5IiB3aWR0aD0iMTUyIiBoZWlnaHQ9IjIzOSIgcng9IjkiIGZpbGw9ImJsYWNrIiBzdHJva2U9IiMxRTFGMjIiIHN0cm9rZS13aWR0aD0iMiIvPgo8cmVjdCB4PSIxMCIgeT0iMjgiIHdpZHRoPSIxMDIiIGhlaWdodD0iMjQiIHJ4PSIzIiBmaWxsPSIjMEMwQzBDIi8+CjxyZWN0IHg9IjEwIiB5PSI1OCIgd2lkdGg9IjEwMiIgaGVpZ2h0PSIyNCIgcng9IjMiIGZpbGw9IiMwQzBDMEMiLz4KPHJlY3QgeD0iMTAiIHk9Ijg4IiB3aWR0aD0iMTAyIiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iIzBDMEMwQyIvPgo8cmVjdCB4PSIxMCIgeT0iMTE4IiB3aWR0aD0iMTAyIiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iIzBDMEMwQyIvPgo8cmVjdCB4PSIxMCIgeT0iMTQ4IiB3aWR0aD0iMTAyIiBoZWlnaHQ9IjI0IiByeD0iMyIgZmlsbD0iIzBDMEMwQyIvPgo8L3N2Zz4K"
+        color: "#000000"
     }
 ];
 
@@ -542,6 +438,7 @@ const customCategoryAssets = {
     0: "https://cdn.yapper.shop/assets/217.png",
     1: "https://cdn.yapper.shop/assets/231.png",
     2: "https://cdn.yapper.shop/assets/232.png",
+    // Special Events
     3: {
         sku_id: "1217175518781243583",
         catalog_banner_asset: {
@@ -553,6 +450,7 @@ const customCategoryAssets = {
             credits: "1049207768785100880"
         }
     },
+    // Special Events 2
     4: {
         sku_id: "1309309974266118144",
         catalog_banner_asset: {
@@ -564,39 +462,7 @@ const customCategoryAssets = {
             credits: "1049207768785100880"
         }
     },
-    5: {
-        sku_id: "1344802365307621427",
-        catalog_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/235.png",
-            credits: "1049207768785100880"
-        },
-        hero_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/199.png",
-            credits: "1049207768785100880"
-        }
-    },
-    6: {
-        sku_id: "1349486948942745691",
-        catalog_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/238.png",
-            credits: "1049207768785100880"
-        },
-        hero_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/239.png",
-            credits: "1049207768785100880"
-        }
-    },
-    7: {
-        sku_id: "1382445856384487567",
-        catalog_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/236.png",
-            credits: "1049207768785100880"
-        },
-        hero_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/202.png",
-            credits: "1049207768785100880"
-        }
-    },
+    // Try Before You Buy!
     8: {
         sku_id: "1428539043993358497",
         catalog_banner_asset: {
@@ -628,21 +494,19 @@ const reviews_system_types = [
 const settings = {
     "us_time_format": 0,
     "profile_effect_tweaks_fix": 0,
-    "api_type_change_catalog": 1,
-    "api_type_change_orbs": 1,
-    "api_type_change_misc": 0,
     "dev": 0,
+    "currency": 0,
 
     "staff_force_leaks_dummy": 0,
     "staff_force_viewable_reviews_tab": 0,
-    "staff_simulate_ban_type_1": 0,
-    "staff_simulate_ban_type_2": 0,
+    "staff_simulate_banned": 0,
     "staff_simulate_guidelines_block": 0,
     "staff_simulate_sus_block": 0,
     "staff_show_unpublished_xp_events": 0,
     "staff_allow_category_only_event_claiming_in_events_tab": 0,
     "staff_show_test_categories_on_misc_page": 0,
     "staff_auth_remove_none_promt": 0,
+    "staff_force_enable_reviews": 0,
 
     "dismissible_daily_tab_new": 0
 };
@@ -654,8 +518,7 @@ const leaks_dummy_data = {
             "sku_id": "1",
             "name": "Reviews Test Category",
             "summary": "Reviews Test Category",
-            "store_listing_id": null,
-            "banner": "1336165352392097853",
+            "store_listing_id": "1",
             "unpublished_at": null,
             "styles": {
                 "background_colors": [
@@ -675,16 +538,15 @@ const leaks_dummy_data = {
                     11454463
                 ]
             },
-            "logo": null,
-            "hero_ranking": null,
-            "mobile_bg": null,
-            "pdp_bg": null,
-            "success_modal_bg": null,
-            "mobile_banner": null,
-            "featured_block": null,
-            "hero_banner": null,
-            "wide_banner": null,
-            "hero_logo": null,
+            "assets": {
+                "id": {
+                    "banner": "1336165352392097853"
+                },
+                "json": {},
+                "url": {},
+                "overrides": {}
+            },
+            "text_config": {},
             "products": []
         }
     ]
@@ -769,44 +631,38 @@ const user_preview_usernames = [
 ];
 
 const favorites_category = {
-    "full_src": true,
     "sku_id": "5",
     "name": "My Favorites",
     "summary": " ",
-    "store_listing_id": null,
-    "banner": "https://cdn.yapper.shop/assets/213.png",
-    "unpublished_at": null,
-    "logo": "https://cdn.yapper.shop/assets/210.png",
-    "hero_ranking": null,
-    "mobile_bg": null,
-    "pdp_bg": "https://cdn.yapper.shop/assets/209.png",
-    "success_modal_bg": null,
-    "mobile_banner": null,
-    "featured_block": null,
-    "hero_banner": null,
-    "wide_banner": null,
-    "hero_logo": null,
+    "store_listing_id": "5",
+    "assets": {
+        "id": {},
+        "json": {},
+        "url": {
+            "catalog_banner": "https://cdn.yapper.shop/assets/213.png",
+            "logo": "https://cdn.yapper.shop/assets/210.png",
+            "pdp_bg": "https://cdn.yapper.shop/assets/209.png"
+        },
+        "overrides": {}
+    },
+    "text_config": {},
     "products": []
 };
 
 const daily_dose_of_collectibles = {
-    "full_src": true,
     "sku_id": "6",
     "name": "Daily dose of Collectibles",
     "summary": " ",
-    "store_listing_id": null,
-    "banner": null,
-    "unpublished_at": null,
-    "logo": null,
-    "hero_ranking": null,
-    "mobile_bg": null,
-    "pdp_bg": "https://cdn.yapper.shop/assets/209.png",
-    "success_modal_bg": null,
-    "mobile_banner": null,
-    "featured_block": null,
-    "hero_banner": null,
-    "wide_banner": null,
-    "hero_logo": null,
+    "store_listing_id": "6",
+    "assets": {
+        "id": {},
+        "json": {},
+        "url": {
+            "pdp_bg": "https://cdn.yapper.shop/assets/209.png"
+        },
+        "overrides": {}
+    },
+    "text_config": {},
     "products": []
 };
 
@@ -819,3 +675,573 @@ const claimable_types = {
     CATEGORY_LEAK: 5,
     TRADING_CARD_PACK: 6
 };
+
+const profileEffectBG = `
+    <svg width="383" height="764" viewBox="0 0 383 764" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g clip-path="url(#clip0_628_8)">
+    <rect width="383" height="142" fill="#1F2223"/>
+    <rect y="142" width="383" height="625" fill="#171A1B"/>
+    <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" fill="#1F2223"/>
+    <rect x="21.5" y="90.5" width="99" height="99" rx="49.5" stroke="#171A1B" stroke-width="7"/>
+    <path d="M90.5029 121.958C86.8116 120.235 82.919 119.019 78.919 118.336C78.3686 119.333 77.872 120.358 77.429 121.411C73.174 120.755 68.8384 120.755 64.5699 121.411C64.127 120.358 63.6303 119.333 63.08 118.336C59.08 119.033 55.1739 120.249 51.4826 121.971C44.1538 133.015 42.1672 143.786 43.1605 154.407C47.4558 157.632 52.2612 160.093 57.3619 161.665C58.5162 160.093 59.5363 158.411 60.4088 156.662C58.7444 156.033 57.1471 155.254 55.6169 154.338C56.0196 154.038 56.4088 153.737 56.7981 153.436C65.7914 157.742 76.2075 157.742 85.2009 153.436C85.5901 153.751 85.9794 154.065 86.3821 154.338C84.8519 155.254 83.2411 156.033 81.5767 156.676C82.4492 158.425 83.4693 160.093 84.6237 161.665C89.7378 160.093 94.5432 157.646 98.8385 154.407C100.006 142.091 96.8519 131.43 90.4895 121.958H90.5029ZM61.684 147.873C58.9189 147.873 56.6236 145.317 56.6236 142.173C56.6236 139.03 58.8249 136.446 61.6706 136.446C64.5162 136.446 66.7847 139.03 66.731 142.173C66.6773 145.317 64.5028 147.873 61.684 147.873ZM80.3418 147.873C77.5633 147.873 75.2948 145.317 75.2948 142.173C75.2948 139.03 77.4961 136.446 80.3418 136.446C83.1874 136.446 85.4425 139.03 85.3888 142.173C85.3351 145.317 83.1606 147.873 80.3418 147.873Z" fill="#373939"/>
+    <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" fill="#0F3B2B"/>
+    <rect x="90.5" y="159.5" width="23" height="23" rx="11.5" stroke="#171A1B" stroke-width="5"/>
+    <rect x="12" y="208" width="359" height="540" rx="9" fill="#141718"/>
+    <rect x="27" y="222" width="168" height="25" rx="10" fill="#1F2223"/>
+    <rect x="27" y="405" width="106" height="25" rx="10" fill="#1F2223"/>
+    <rect x="120" y="482" width="107" height="29" rx="10" fill="#1F2223"/>
+    <rect x="27" y="476" width="74" height="74" rx="10" fill="#1F2223"/>
+    <rect x="27" y="565" width="329" height="36" rx="4" fill="#171A1B"/>
+    <rect x="27" y="336" width="316" height="25" rx="10" fill="#1F2223"/>
+    <rect x="27" y="252" width="83" height="15" rx="7.5" fill="#1F2223"/>
+    <rect x="27" y="384" width="186" height="15" rx="7.5" fill="#1F2223"/>
+    <rect x="27" y="453" width="118" height="15" rx="7.5" fill="#1F2223"/>
+    <rect x="120" y="517" width="69" height="18" rx="9" fill="#1F2223"/>
+    <rect x="37" y="647" width="18" height="18" rx="9" fill="#1F2223"/>
+    <rect x="69" y="648" width="106" height="16" rx="8" fill="#1F2223"/>
+    <path d="M333.564 652.993C333.259 652.726 333.243 652.257 333.53 651.97C333.793 651.707 334.217 651.695 334.494 651.945L338.174 655.257C338.615 655.654 338.615 656.346 338.174 656.743L334.494 660.055C334.217 660.305 333.793 660.293 333.53 660.03C333.243 659.743 333.259 659.274 333.564 659.007L336.14 656.753C336.595 656.354 336.595 655.646 336.14 655.247L333.564 652.993Z" fill="#1F2223"/>
+    <path d="M333.564 710.493C333.259 710.226 333.243 709.757 333.53 709.47C333.793 709.207 334.217 709.195 334.494 709.445L338.174 712.757C338.615 713.154 338.615 713.846 338.174 714.243L334.494 717.555C334.217 717.805 333.793 717.793 333.53 717.53C333.243 717.243 333.259 716.774 333.564 716.507L336.14 714.253C336.595 713.854 336.595 713.146 336.14 712.747L333.564 710.493Z" fill="#1F2223"/>
+    <rect x="69" y="706" width="106" height="16" rx="8" fill="#1F2223"/>
+    <rect x="37" y="705" width="18" height="18" rx="9" fill="#1F2223"/>
+    <rect x="27" y="315" width="71" height="15" rx="7.5" fill="#1F2223"/>
+    <rect x="27" y="290" width="329" height="1" rx="0.5" fill="#1F2223"/>
+    </g>
+    <defs>
+    <clipPath id="clip0_628_8">
+    <rect width="383" height="764" rx="21" fill="white"/>
+    </clipPath>
+    </defs>
+    </svg>
+    <div class="effectBundleContainerDiv"></div>
+    <div class="frameContainerDiv"></div>
+    <div class="frameContainerDivback"></div>
+`;
+
+const currency_types = {
+    0: "USD",
+    1: "TRY",
+    2: "BRL",
+    4: "PHP",
+    5: "PEN",
+    6: "MXN",
+    7: "VND",
+    8: "COP",
+    9: "EUR",
+    10: "GBP",
+    11: "CAD",
+    12: "AUD",
+    13: "JPY",
+    14: "PLN"
+};
+
+const converted_currencies = {
+    // United States Dollar | USD (US)
+    0: {
+        name: "United States Dollar",
+        currency: "USD",
+        extension: "US$",
+        display_type: "fixed",
+        amounts: {
+            3499: 3499,
+            2899: 2899,
+            2599: 2599,
+            2399: 2399,
+            2299: 2299,
+            2199: 2199,
+            2099: 2099,
+            1999: 1999,
+            1799: 1799,
+            1599: 1599,
+            1499: 1499,
+            1399: 1399,
+            1299: 1299,
+            1199: 1199,
+            1099: 1099,
+            999: 999,
+            899: 899,
+            849: 849,
+            799: 799,
+            699: 699,
+            599: 599,
+            549: 549,
+            499: 499,
+            399: 399,
+            299: 299,
+            199: 199,
+            0: 0
+        }
+    },
+    // Turkish Lira | TRY (TR)
+    1: {
+        name: "Turkish Lira",
+        currency: "TRY",
+        extension: "TRY ",
+        display_type: "fixed",
+        amounts: {
+            3499: 36799,
+            2899: 30499,
+            2599: 27399,
+            2399: 25299,
+            2299: 24199,
+            2199: 23199,
+            2099: 22099,
+            1999: 21099,
+            1799: 18999,
+            1599: 16899,
+            1499: 15799,
+            1399: 14799,
+            1299: 13699,
+            1199: 12699,
+            1099: 11599,
+            999: 10499,
+            899: 9499,
+            849: 8999,
+            799: 8399,
+            699: 7399,
+            599: 6299,
+            549: 5799,
+            499: 5299,
+            399: 4199,
+            299: 3199,
+            199: 2099,
+            0: 0
+        }
+    },
+    // Brazilian Real | BRL (BR)
+    2: {
+        name: "Brazilian Real",
+        currency: "BRL",
+        extension: "R$",
+        display_type: "fixed",
+        amounts: {
+            3499: 8590,
+            2899: 6590,
+            2599: 5590,
+            2399: 4990,
+            2299: 4850,
+            2199: 4700,
+            2099: 4599,
+            1999: 4490,
+            1799: 4200,
+            1599: 3990,
+            1499: 3850,
+            1399: 3700,
+            1299: 3599,
+            1199: 3490,
+            1099: 3350,
+            999: 3200,
+            899: 2899,
+            849: 2700,
+            799: 2590,
+            699: 2250,
+            599: 1900,
+            549: 1750,
+            499: 1599,
+            399: 1290,
+            299: 950,
+            199: 600,
+            0: 0
+        }
+    },
+    // Philippine Peso | PHP (PH)
+    4: {
+        name: "Philippine Peso",
+        currency: "PHP",
+        extension: "&#x20B1;",
+        display_type: "fixed",
+        amounts: {
+            3499: 101000,
+            2899: 86000,
+            2599: 78900,
+            2399: 73900,
+            2299: 71000,
+            2199: 68900,
+            2099: 66000,
+            1999: 63900,
+            1799: 58900,
+            1599: 53900,
+            1499: 51000,
+            1399: 49000,
+            1299: 47500,
+            1199: 45900,
+            1099: 44000,
+            999: 42500,
+            899: 38000,
+            849: 35900,
+            799: 33900,
+            699: 29500,
+            599: 25000,
+            549: 22900,
+            499: 20900,
+            399: 16500,
+            299: 12000,
+            199: 8000,
+            0: 0
+        }
+    },
+    // Peruvian Sol | PEN (PE)
+    5: {
+        name: "Peruvian Sol",
+        currency: "PEN",
+        extension: "PEN ",
+        display_type: "fixed",
+        amounts: {
+            3499: 7490,
+            2899: 6090,
+            2599: 5400,
+            2399: 4990,
+            2299: 4850,
+            2199: 4700,
+            2099: 4599,
+            1999: 4490,
+            1799: 4200,
+            1599: 3990,
+            1499: 3850,
+            1399: 3700,
+            1299: 3599,
+            1199: 3490,
+            1099: 3350,
+            999: 3200,
+            899: 2899,
+            849: 2700,
+            799: 2590,
+            699: 2250,
+            599: 1900,
+            549: 1750,
+            499: 1599,
+            399: 1290,
+            299: 950,
+            199: 600,
+            0: 0
+        }
+    },
+    // Mexican Peso | MXN (MX)
+    6: {
+        name: "Mexican Peso",
+        currency: "MXN",
+        extension: "MX$",
+        display_type: "fixed",
+        amounts: {
+            3499: 38900,
+            2899: 28900,
+            2599: 23900,
+            2399: 20500,
+            2299: 19600,
+            2199: 19100,
+            2099: 18600,
+            1999: 18100,
+            1799: 17100,
+            1599: 16100,
+            1499: 15600,
+            1399: 15100,
+            1299: 14600,
+            1199: 14100,
+            1099: 13600,
+            999: 13100,
+            899: 11800,
+            849: 11100,
+            799: 10500,
+            699: 9200,
+            599: 7900,
+            549: 7200,
+            499: 6600,
+            399: 5300,
+            299: 4000,
+            199: 2700,
+            0: 0
+        }
+    },
+    // Vietnamese Dong | VND (VN)
+    7: {
+        name: "Vietnamese Dong",
+        currency: "VND",
+        extension: "&#x20AB;",
+        display_type: "locale",
+        amounts: {
+            3499: 495000,
+            2899: 399000,
+            2599: 349000,
+            2399: 319000,
+            2299: 300000,
+            2199: 285000,
+            2099: 269000,
+            1999: 250000,
+            1799: 220000,
+            1599: 189000,
+            1499: 170000,
+            1399: 155000,
+            1299: 146000,
+            1199: 141000,
+            1099: 136000,
+            999: 131000,
+            899: 118000,
+            849: 111000,
+            799: 105000,
+            699: 92000,
+            599: 79000,
+            549: 72000,
+            499: 66000,
+            399: 53000,
+            299: 40000,
+            199: 27000,
+            0: 0
+        }
+    },
+    // Colombian Peso | COP (CO)
+    8: {
+        name: "Colombian Peso",
+        currency: "COP",
+        extension: "COP ",
+        display_type: "locale",
+        amounts: {
+            3499: 9500000,
+            2899: 8190000,
+            2599: 7550000,
+            2399: 7090000,
+            2299: 6900000,
+            2199: 6690000,
+            2099: 6490000,
+            1999: 6250000,
+            1799: 5850000,
+            1599: 5390000,
+            1499: 5150000,
+            1399: 4950000,
+            1299: 4790000,
+            1199: 4600000,
+            1099: 4450000,
+            999: 4290000,
+            899: 3850000,
+            849: 3600000,
+            799: 3400000,
+            699: 2990000,
+            599: 2550000,
+            549: 2300000,
+            499: 2100000,
+            399: 1690000,
+            299: 1250000,
+            199: 800000,
+            0: 0
+        }
+    },
+    // Euro | EUR (DE)
+    9: {
+        name: "Euro",
+        currency: "EUR",
+        extension: "&#x20AC;",
+        display_type: "fixed",
+        amounts: {
+            3499: 3499,
+            2899: 2899,
+            2599: 2599,
+            2399: 2399,
+            2299: 2299,
+            2199: 2199,
+            2099: 2099,
+            1999: 1999,
+            1799: 1799,
+            1599: 1599,
+            1499: 1499,
+            1399: 1399,
+            1299: 1299,
+            1199: 1199,
+            1099: 1099,
+            999: 999,
+            899: 899,
+            849: 849,
+            799: 799,
+            699: 699,
+            599: 599,
+            549: 549,
+            499: 499,
+            399: 399,
+            299: 299,
+            199: 199,
+            0: 0
+        }
+    },
+    // British Pound | GBP (GB)
+    10: {
+        name: "British Pound",
+        currency: "GBP",
+        extension: "&#xA3;",
+        display_type: "fixed",
+        amounts: {
+            3499: 3499,
+            2899: 2899,
+            2599: 2599,
+            2399: 2399,
+            2299: 2299,
+            2199: 2199,
+            2099: 2099,
+            1999: 1999,
+            1799: 1799,
+            1599: 1599,
+            1499: 1499,
+            1399: 1399,
+            1299: 1299,
+            1199: 1199,
+            1099: 1099,
+            999: 999,
+            899: 899,
+            849: 849,
+            799: 799,
+            699: 699,
+            599: 599,
+            549: 549,
+            499: 499,
+            399: 399,
+            299: 299,
+            199: 199,
+            0: 0
+        }
+    },
+    // Canadian Dollar | CAD (CA)
+    11: {
+        name: "Canadian Dollar",
+        currency: "CAD",
+        extension: "CA$",
+        display_type: "fixed",
+        amounts: {
+            3499: 3499,
+            2899: 2899,
+            2599: 2599,
+            2399: 2399,
+            2299: 2299,
+            2199: 2199,
+            2099: 2099,
+            1999: 1999,
+            1799: 1799,
+            1599: 1599,
+            1499: 1499,
+            1399: 1399,
+            1299: 1299,
+            1199: 1199,
+            1099: 1099,
+            999: 999,
+            899: 899,
+            849: 849,
+            799: 799,
+            699: 699,
+            599: 599,
+            549: 549,
+            499: 499,
+            399: 399,
+            299: 299,
+            199: 199,
+            0: 0
+        }
+    },
+    // Australian Dollar | AUD (AU)
+    12: {
+        name: "Australian Dollar",
+        currency: "AUD",
+        extension: "A$",
+        display_type: "fixed",
+        amounts: {
+            3499: 3500,
+            2899: 2900,
+            2599: 2600,
+            2399: 2400,
+            2299: 2300,
+            2199: 2200,
+            2099: 2100,
+            1999: 2000,
+            1799: 1800,
+            1599: 1600,
+            1499: 1500,
+            1399: 1400,
+            1299: 1300,
+            1199: 1200,
+            1099: 1100,
+            999: 1000,
+            899: 900,
+            849: 859,
+            799: 800,
+            699: 700,
+            599: 600,
+            549: 559,
+            499: 500,
+            399: 400,
+            299: 300,
+            199: 200,
+            0: 0
+        }
+    },
+    // Japanese Yen | JPY (JP)
+    13: {
+        name: "Japanese Yen",
+        currency: "JPY",
+        extension: "JP&#x00A5;",
+        display_type: "locale",
+        amounts: {
+            3499: 3890,
+            2899: 2890,
+            2599: 2390,
+            2399: 2080,
+            2299: 1960,
+            2199: 1910,
+            2099: 1860,
+            1999: 1810,
+            1799: 1710,
+            1599: 1610,
+            1499: 1560,
+            1399: 1510,
+            1299: 1460,
+            1199: 1410,
+            1099: 1360,
+            999: 1810,
+            899: 1180,
+            849: 1110,
+            799: 1050,
+            699: 920,
+            599: 790,
+            549: 720,
+            499: 660,
+            399: 530,
+            299: 400,
+            199: 270,
+            0: 0
+        }
+    },
+    // Polish złoty | PLN (PL)
+    14: {
+        name: "Polish z&#322;oty",
+        currency: "PLN",
+        extension: "PLN ",
+        display_type: "fixed",
+        amounts: {
+            3499: 9700,
+            2899: 8299,
+            2599: 7599,
+            2399: 7099,
+            2299: 6899,
+            2199: 6600,
+            2099: 6399,
+            1999: 6100,
+            1799: 5699,
+            1599: 5199,
+            1499: 4990,
+            1399: 4800,
+            1299: 4649,
+            1199: 4499,
+            1099: 4300,
+            999: 4149,
+            899: 3749,
+            849: 3500,
+            799: 3300,
+            699: 2900,
+            599: 2499,
+            549: 2249,
+            499: 2049,
+            399: 1649,
+            299: 1200,
+            199: 800,
+            0: 0
+        }
+    }
+};
+
+const discLaimer = `
+    <a>Shop Archives is an independent, unofficial fan resource created for the purpose of exploring Discord shop items and quests. We are not part of, affiliated with, or endorsed by Discord Inc.</a>
+    <a>This website does not sell official Discord products; all links provided for shop items and quests lead directly to Discord's official platform. All Discord logos, trademarks, and intellectual property are the property of Discord Inc.</a>
+`;
