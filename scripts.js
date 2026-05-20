@@ -25,9 +25,7 @@ let discordMiscellaneousCategoriesCache;
 let discordQuestsCache;
 
 let baseYapperURL = 'https://yapper.shop/';
-
 if (appType === 'Dev') baseYapperURL = 'https://dev.yapper.shop/';
-
 
 const tradingCardIconDataUrl = "data:image/png;base64,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";
 
@@ -264,77 +262,40 @@ async function verifyOrigin() {
             // Fetch User data
             const loginToken = params.get("login");
             if (loginToken) {
-                const userLogin = await fetch(APIV4 + endpnts.LOGIN, {
-                    method: 'POST',
-                    headers: {
-                        "Authorization": loginToken,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                if (!userLogin.ok) {
-                    return
+                try {
+                    const data = await fetchAPI.post(endpnts.LOGIN + `?token=` + loginToken);
+
+                    localStorage.token = data.token
+                } catch(err) {
+                    console.error(err);
+                    triggerSafetyBlock();
                 }
-                const data = await userLogin.json();
-                localStorage.token = data.token
             }
 
             if (localStorage.token) {
-                const userRawData = await fetch(APIV4 + endpnts.USER, {
-                    method: "GET",
-                    headers: {
-                        "Authorization": localStorage.token
-                    }
-                });
+                try {
+                    const data = await fetchAPI.get(endpnts.USER);
 
-                if (!userRawData.ok) {
-                    triggerSessionExpiredBlock();
-                    return
+                    localStorage.setItem('currentUser', JSON.stringify(data));
+                    currentUserData = data;
+                } catch(err) {
+                    console.error(err);
+                    triggerSafetyBlock();
                 }
-
-                const userData = await userRawData.json();
-
-                localStorage.setItem('currentUser', JSON.stringify(userData));
-
-                currentUserData = JSON.parse(localStorage.getItem('currentUser'));
             }
             if (currentUserData && currentUserData.admin_level >= 1) {
                 changeSetting('dev', 1);
             }
 
             // Fetch & Sync Server experiments
-            if (localStorage.token) {
-                const expRawData = await fetch(APIV4 + endpnts.EXPERIMENTS, {
-                    method: "GET",
-                    headers: {
-                        "Authorization": localStorage.token
-                    }
-                });
+            try {
+                const data = await fetchAPI.get(endpnts.EXPERIMENTS);
 
-                if (!expRawData.ok) {
-                    triggerSafetyBlock();
-                    return
-                }
-
-                const expData = await expRawData.json();
-
-                localStorage.setItem('serverExperiments', JSON.stringify(expData));
-
+                localStorage.setItem('serverExperiments', JSON.stringify(data));
                 syncOverridesWithServer();
-            } else {
-                const expRawData = await fetch(APIV4 + endpnts.EXPERIMENTS, {
-                    method: "GET"
-                });
-
-                if (!expRawData.ok) {
-                    triggerSafetyBlock();
-                    return
-                }
-
-                const expData = await expRawData.json();
-
-                localStorage.setItem('serverExperiments', JSON.stringify(expData));
-
-                syncOverridesWithServer();
+            } catch(err) {
+                console.error(err);
+                triggerSafetyBlock();
             }
 
 
@@ -413,45 +374,26 @@ async function fetchAndUpdateXpLevels() {
 
 async function fetchAndUpdateUserInfo() {
     try {
-        const userRawData = await fetch(APIV4 + endpnts.USER, {
-            method: "GET",
-            headers: {
-                "Authorization": localStorage.token
-            }
-        });
-
-        if (!userRawData.ok) {
-        } else {
-            const userData = await userRawData.json();
-
-            localStorage.setItem('currentUser', JSON.stringify(userData));
-
-            currentUserData = JSON.parse(localStorage.getItem('currentUser'));
-        }
-    } catch {}
+        const data = await fetchAPI.get(endpnts.USER);
+        
+        localStorage.setItem('currentUser', JSON.stringify(data));
+        currentUserData = data;
+    } catch(err) {
+        console.error(err);
+    }
 }
 
 async function fetchAndSyncUserInfo() {
     try {
-        let success = true;
-        const userRawData = await fetch(APIV4 + endpnts.USER, {
-            method: "POST",
-            headers: {
-                "Authorization": localStorage.token
-            }
-        });
+        const data = await fetchAPI.post(endpnts.USER);
 
-        if (!userRawData.ok) {
-            success = false;
-        } else {
-            const userData = await userRawData.json();
-
-            localStorage.setItem('currentUser', JSON.stringify(userData));
-
-            currentUserData = JSON.parse(localStorage.getItem('currentUser'));
-        }
-        return success
-    } catch {}
+        localStorage.setItem('currentUser', JSON.stringify(data));
+        currentUserData = data;
+        return true;
+    } catch(err) {
+        console.error(err);
+        return false;
+    }
 }
 
 async function fetchAndUpdateTradingCache() {
@@ -3465,28 +3407,28 @@ async function loadSite() {
                                         reviewDiv.querySelector('.review-system-tag-container').remove();
                                     }
     
-                                    if (review.user.avatar_decoration_data?.asset) {
+                                    if (review.user.avatar_decoration?.asset) {
     
                                         const decoPreview = reviewDiv.querySelector('.review-avatar-decoration');
     
-                                        decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration_data.asset}.png?size=4096&passthrough=false`;
+                                        decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration.asset}.png?size=4096&passthrough=false`;
     
                                         reviewDiv.addEventListener("mouseenter", () => {
-                                            decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration_data.asset}.png?size=4096&passthrough=true`;
+                                            decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration.asset}.png?size=4096&passthrough=true`;
                                         });
                                         reviewDiv.addEventListener("mouseleave", () => {
-                                            decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration_data.asset}.png?size=4096&passthrough=false`;
+                                            decoPreview.src = `https://cdn.discordapp.com/avatar-decoration-presets/${review.user.avatar_decoration.asset}.png?size=4096&passthrough=false`;
                                         });
     
                                     }
     
                                     const serverTagAsset = reviewDiv.querySelector('.review-server-tag-container');
     
-                                    if (review.user.primary_guild) {
+                                    if (review.user.guild_tag) {
     
-                                        serverTagAsset.querySelector('.server-tag-img').src = `https://cdn.discordapp.com/clan-badges/${review.user.primary_guild.identity_guild_id}/${review.user.primary_guild.badge}.png?size=24`;
+                                        serverTagAsset.querySelector('.server-tag-img').src = `https://cdn.discordapp.com/clan-badges/${review.user.guild_tag.id}/${review.user.guild_tag.badge}.png?size=24`;
     
-                                        serverTagAsset.querySelector('.server-tag-title').textContent = review.user.primary_guild.tag;
+                                        serverTagAsset.querySelector('.server-tag-title').textContent = review.user.guild_tag.tag;
     
                                     } else {
                                         serverTagAsset.remove();
@@ -3518,17 +3460,17 @@ async function loadSite() {
                                         userBadgesElement.remove();
                                     }
     
-                                    if (review.user.collectibles?.nameplate) {
-                                        if (review.user.collectibles.nameplate.sa_override_src) {
+                                    if (review.user.nameplate) {
+                                        if (review.user.nameplate.sa_override_src) {
                                             let nameplatePreview = document.createElement("img");
 
-                                            nameplatePreview.src = review.user.collectibles.nameplate.sa_override_src;
+                                            nameplatePreview.src = review.user.nameplate.sa_override_src;
     
                                             reviewDiv.querySelector('.review-nameplate-container').appendChild(nameplatePreview);
                                         } else {
                                             let nameplatePreview = document.createElement("video");
 
-                                            nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${review.user.collectibles.nameplate.asset}asset.webm`;
+                                            nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${review.user.nameplate.asset}asset.webm`;
                                             nameplatePreview.disablePictureInPicture = true;
                                             nameplatePreview.muted = true;
                                             nameplatePreview.loop = true;
@@ -3541,7 +3483,7 @@ async function loadSite() {
                                                 nameplatePreview.pause();
                                             });
 
-                                            const bgcolor = nameplate_palettes[review.user.collectibles.nameplate.palette].darkBackground;
+                                            const bgcolor = nameplate_palettes[review.user.nameplate.palette].darkBackground;
     
                                             reviewDiv.querySelector('.review-nameplate-container').style.backgroundImage = `linear-gradient(90deg, #00000000 0%, ${bgcolor} 200%)`;
     
@@ -3627,7 +3569,7 @@ async function loadSite() {
                                         displayName.classList.add(dns.class);
                                         Object.assign(displayName.style, dns.style);
 
-                                        if (review.user.display_name_styles.effect_id === 2) {
+                                        if (review.user.display_name_styles.id === 2) {
                                             displayName.classList.add('dns-gradient-type-2');
                                         }
                                     }
@@ -4517,10 +4459,10 @@ async function loadSite() {
                 };
             }
 
-            apiUrl = new URL(redneredAPI + endpoints.USERS + userID);
-            // if (currentUserData && currentUserData.admin_level > 0) {
-            //     apiUrl.searchParams.append("include-debug-info", "true");
-            // }
+            apiUrl = new URL(APIV4 + endpnts.USERS + userID);
+            if (currentUserData && currentUserData.admin_level > 0) {
+                apiUrl.searchParams.append("include-debug-info", "true");
+            }
             const rawUserData = await fetch(apiUrl,
                 methodAndHeaders
             );
@@ -4654,26 +4596,13 @@ async function loadSite() {
                                     </div>
                                 </div>
                             </div>
-                            <div class="user-modal-part2 xp-exp-only">
-                                <div class="user-modal-xp-progress-left">
-                                    <div class="user-modal-xp-progress">
-                                        <div class="bar"></div>
-                                        <div class="text">
-                                            <p id="animate-level-xp">0</p>
-                                            <p>/${cacheUserData.profile_information.xp_to_level}</p>
-                                        </div>
-                                    </div>
-                                    <p id="user-level-rank">User Rank #${cacheUserData.profile_information.rank}</p>
-                                </div>
-                                <div class="user-modal-xp-level">
-                                    <p>Level</p>
-                                    <h1>${cacheUserData.profile_information.level}</h1>
-                                </div>
+                            <div class="user-modal-part2 xp-exp-only hidden">
+                                
                             </div>
                             <div class="user-modal-part3">
                                 <div>
                                     <h3>Reviews</h3>
-                                    <p>${cacheUserData.profile_information.reviews}</p>
+                                    <p>${cacheUserData.total_reviews}</p>
                                 </div>
                                 <div>
                                     <h3>Joined Shop Archives</h3>
@@ -4683,23 +4612,23 @@ async function loadSite() {
                         </div>
                     `;
 
-                    if (cacheUserData.collectibles?.nameplate.sa_override_src) {
+                    if (cacheUserData.nameplate.sa_override_src) {
                         let nameplatePreview = document.createElement("img");
 
-                        nameplatePreview.src = cacheUserData.collectibles.nameplate.sa_override_src;
+                        nameplatePreview.src = cacheUserData.nameplate.sa_override_src;
     
                         modalInner.querySelector('.xp-card-nameplate-container').appendChild(nameplatePreview);
-                    } else if (cacheUserData.collectibles?.nameplate) {
+                    } else if (cacheUserData.nameplate) {
                         let nameplatePreview = document.createElement("video");
 
-                        nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${cacheUserData.collectibles.nameplate.asset}asset.webm`;
+                        nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${cacheUserData.nameplate.asset}asset.webm`;
                         nameplatePreview.disablePictureInPicture = true;
                         nameplatePreview.muted = true;
                         nameplatePreview.loop = true;
                         nameplatePreview.autoplay = true;
                         nameplatePreview.playsInline = true;
 
-                        const bgcolor = nameplate_palettes[cacheUserData.collectibles.nameplate.palette].darkBackground;
+                        const bgcolor = nameplate_palettes[cacheUserData.nameplate.palette].darkBackground;
     
                         modalInner.querySelector('.xp-card-nameplate-container').style.backgroundImage = `linear-gradient(90deg, #00000000 0%, ${bgcolor} 200%)`;
     
@@ -4707,7 +4636,7 @@ async function loadSite() {
                     }
 
 
-                    const date = new Date(cacheUserData.profile_information.join_date);
+                    const date = new Date(cacheUserData.join_date);
 
                     const day = String(date.getDate()).padStart(2, '0');
                     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -4715,31 +4644,51 @@ async function loadSite() {
 
                     const dateContainer = modalInner.querySelector(".sa-join-date");
 
-                    let formatted = `${month}/${day}/${year}`;
+                    let formatted = `${day}/${month}/${year}`;
 
                     if (settingsStore.us_time_format === 1) {
                         formatted = `${month}/${day}/${year}`;
                     }
                     dateContainer.textContent = `${formatted}`;
 
+                    if (experimentIs('disable_xp', 0)) {
+                        const xpshiIDK = modalInner.querySelector('.xp-exp-only');
+                        xpshiIDK.classList.remove('hidden');
+                        xpshiIDK.innerHTML = `
+                            <div class="user-modal-xp-progress-left">
+                                <div class="user-modal-xp-progress">
+                                    <div class="bar"></div>
+                                    <div class="text">
+                                        <p id="animate-level-xp">0</p>
+                                        <p>/${cacheUserData.profile_information.xp_to_level}</p>
+                                    </div>
+                                </div>
+                                <p id="user-level-rank">User Rank #${cacheUserData.profile_information.rank}</p>
+                            </div>
+                            <div class="user-modal-xp-level">
+                                <p>Level</p>
+                                <h1>${cacheUserData.profile_information.level}</h1>
+                            </div>
+                        `;
 
-                    if (firstTimeOpeningModal) {
-                        animateNumber(modalInner.querySelector('#animate-level-xp'), cacheUserData.profile_information.xp_into_level, 2000, {
-                            useCommas: false
-                        });
-
-                        requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                                modalInner.querySelector('.bar').style.width = cacheUserData.profile_information.level_percentage+'%';
+                        if (firstTimeOpeningModal) {
+                            animateNumber(modalInner.querySelector('#animate-level-xp'), cacheUserData.profile_information.xp_into_level, 2000, {
+                                useCommas: false
                             });
-                        });
-                    } else {
-                        modalInner.querySelector('#animate-level-xp').textContent = cacheUserData.profile_information.xp_into_level;
-                        modalInner.querySelector('.bar').style.width = cacheUserData.profile_information.level_percentage+'%';
-                    }
 
-                    if (cacheUserData.profile_information.xp_balance === 0) {
-                        modalInner.querySelector('#user-level-rank').remove();
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                    modalInner.querySelector('.bar').style.width = cacheUserData.profile_information.level_percentage+'%';
+                                });
+                            });
+                        } else {
+                            modalInner.querySelector('#animate-level-xp').textContent = cacheUserData.profile_information.xp_into_level;
+                            modalInner.querySelector('.bar').style.width = cacheUserData.profile_information.level_percentage+'%';
+                        }
+
+                        if (cacheUserData.profile_information.xp_balance === 0) {
+                            modalInner.querySelector('#user-level-rank').remove();
+                        }
                     }
 
                     const displayName = modalInner.querySelector('#users-displayname');
@@ -4750,7 +4699,7 @@ async function loadSite() {
                         displayName.classList.add(dns.class);
                         Object.assign(displayName.style, dns.style);
 
-                        if (cacheUserData.display_name_styles.effect_id === 2) {
+                        if (cacheUserData.display_name_styles.id === 2) {
                             displayName.classList.add('dns-gradient-type-2');
                         }
                     }
@@ -4762,11 +4711,11 @@ async function loadSite() {
 
                     const serverTagAsset = modalInner.querySelector('.review-server-tag-container');
     
-                    if (cacheUserData.primary_guild) {
+                    if (cacheUserData.guild_tag) {
     
-                        serverTagAsset.querySelector('.server-tag-img').src = `https://cdn.discordapp.com/clan-badges/${cacheUserData.primary_guild.identity_guild_id}/${cacheUserData.primary_guild.badge}.png?size=24`;
+                        serverTagAsset.querySelector('.server-tag-img').src = `https://cdn.discordapp.com/clan-badges/${cacheUserData.guild_tag.id}/${cacheUserData.guild_tag.badge}.png?size=24`;
     
-                        serverTagAsset.querySelector('.server-tag-title').textContent = cacheUserData.primary_guild.tag;
+                        serverTagAsset.querySelector('.server-tag-title').textContent = cacheUserData.guild_tag.tag;
     
                     } else {
                         serverTagAsset.remove();
@@ -4789,7 +4738,7 @@ async function loadSite() {
 
                     
                     const deco = modalInner.querySelector('.deco');
-                    if (cacheUserData.avatar_decoration_data) deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${cacheUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=true`;
+                    if (cacheUserData.avatar_decoration) deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${cacheUserData.avatar_decoration.asset}.png?size=4096&passthrough=true`;
                     else deco.remove();
 
 
@@ -8516,14 +8465,14 @@ async function loadSite() {
                             <p>The Discord account linked to Shop Archives.</p>
                         </div>
                         <div class="buttons">
-                            <button class="button has-tooltip hidden" data-tooltip="Open your public user profile" id="profile">
+                            <button class="button has-tooltip" data-tooltip="Open your public user profile" id="profile">
                                 <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M14.0833 10.8334C15.2326 10.8334 16.3348 10.3769 17.1475 9.56421C17.9601 8.75155 18.4167 7.64935 18.4167 6.50008C18.4167 5.35081 17.9601 4.24861 17.1475 3.43595C16.3348 2.62329 15.2326 2.16675 14.0833 2.16675C12.9341 2.16675 11.8319 2.62329 11.0192 3.43595C10.2065 4.24861 9.75 5.35081 9.75 6.50008C9.75 7.64935 10.2065 8.75155 11.0192 9.56421C11.8319 10.3769 12.9341 10.8334 14.0833 10.8334Z" fill="currentColor"/>
                                     <path d="M3.25 5.41667V4.60417C3.25 3.85667 3.85667 3.25 4.60417 3.25C5.35167 3.25 5.9475 3.85667 6.045 4.60417C6.63 9.37083 10.2483 13 14.0833 13H15.1667C17.4652 13 19.6696 13.9131 21.2949 15.5384C22.9202 17.1637 23.8333 19.3681 23.8333 21.6667C23.8333 22.2413 23.6051 22.7924 23.1987 23.1987C22.7924 23.6051 22.2413 23.8333 21.6667 23.8333C21.6179 23.833 21.5705 23.8171 21.5315 23.7878C21.4925 23.7586 21.4639 23.7176 21.45 23.6708C21.122 22.7634 20.6381 21.9201 20.02 21.1792C19.8575 20.9625 19.565 21.1142 19.5975 21.3633L19.8683 23.53C19.89 23.6925 19.76 23.8333 19.5975 23.8333H9.75C9.17536 23.8333 8.62426 23.6051 8.21793 23.1987C7.81161 22.7924 7.58333 22.2413 7.58333 21.6667V19.2617C7.58333 17.5608 6.8575 15.9575 5.92583 14.5275C4.1952 11.8025 3.26779 8.64476 3.25 5.41667Z" fill="currentColor"/>
                                 </svg>
                                 <p>View Profile</p>
                             </button>
-                            <button class="button blue has-tooltip hidden" data-tooltip="Re-sync your Discord profile with Shop Archives" id="resync">
+                            <button class="button blue has-tooltip" data-tooltip="Re-sync your Discord profile with Shop Archives" id="resync">
                                 <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M22.7501 2.16668C23.0374 2.16668 23.313 2.28082 23.5161 2.48398C23.7193 2.68715 23.8334 2.9627 23.8334 3.25001V9.75001C23.8334 10.0373 23.7193 10.3129 23.5161 10.516C23.313 10.7192 23.0374 10.8333 22.7501 10.8333H16.2501C15.9628 10.8333 15.6872 10.7192 15.484 10.516C15.2809 10.3129 15.1667 10.0373 15.1667 9.75001C15.1667 9.4627 15.2809 9.18715 15.484 8.98398C15.6872 8.78082 15.9628 8.66668 16.2501 8.66668H20.5076C19.8814 7.58197 19.0276 6.64587 18.0049 5.92284C16.9822 5.19981 15.8149 4.70704 14.5835 4.47846C13.352 4.24988 12.0857 4.29093 10.8716 4.59877C9.65756 4.90662 8.52465 5.47394 7.55091 6.26168C7.32681 6.44269 7.03997 6.52726 6.75351 6.49679C6.46705 6.46631 6.20443 6.32329 6.02341 6.09918C5.8424 5.87507 5.75783 5.58824 5.78831 5.30178C5.81878 5.01531 5.96181 4.75269 6.18591 4.57168C7.31713 3.65318 8.62233 2.97283 10.0231 2.57149C11.4239 2.17016 12.8914 2.05612 14.3373 2.23623C15.7833 2.41635 17.178 2.8869 18.4375 3.61961C19.697 4.35232 20.7954 5.33208 21.6667 6.50001V3.25001C21.6667 2.9627 21.7809 2.68715 21.984 2.48398C22.1872 2.28082 22.4628 2.16668 22.7501 2.16668ZM3.25008 23.8333C2.96276 23.8333 2.68721 23.7192 2.48405 23.516C2.28088 23.3129 2.16675 23.0373 2.16675 22.75V16.25C2.16675 15.9627 2.28088 15.6871 2.48405 15.484C2.68721 15.2808 2.96276 15.1667 3.25008 15.1667H9.75008C10.0374 15.1667 10.3129 15.2808 10.5161 15.484C10.7193 15.6871 10.8334 15.9627 10.8334 16.25C10.8334 16.5373 10.7193 16.8129 10.5161 17.016C10.3129 17.2192 10.0374 17.3333 9.75008 17.3333H5.49258C6.11876 18.4181 6.9726 19.3542 7.9953 20.0772C9.018 20.8002 10.1853 21.293 11.4167 21.5216C12.6481 21.7501 13.9145 21.7091 15.1286 21.4013C16.3426 21.0934 17.4755 20.5261 18.4492 19.7383C18.5602 19.6487 18.6878 19.5818 18.8246 19.5415C18.9614 19.5012 19.1048 19.4882 19.2467 19.5032C19.3885 19.5183 19.526 19.5612 19.6512 19.6294C19.7765 19.6977 19.8871 19.7899 19.9767 19.9008C20.0664 20.0118 20.1333 20.1393 20.1736 20.2762C20.2139 20.413 20.2269 20.5564 20.2119 20.6983C20.1968 20.8401 20.1539 20.9776 20.0857 21.1028C20.0174 21.2281 19.9252 21.3387 19.8142 21.4283C18.6824 22.3454 17.3771 23.0245 15.9765 23.425C14.576 23.8255 13.109 23.9391 11.6634 23.759C10.2179 23.579 8.82357 23.1089 7.56404 22.3771C6.30451 21.6453 5.20569 20.6667 4.33341 19.5V22.75C4.33341 23.0373 4.21928 23.3129 4.01611 23.516C3.81295 23.7192 3.5374 23.8333 3.25008 23.8333Z" fill="currentColor"/>
                                 </svg>
@@ -8574,7 +8523,7 @@ async function loadSite() {
                     displayName.classList.add(dns.class);
                     Object.assign(displayName.style, dns.style);
 
-                    if (currentUserData.display_name_styles.effect_id === 2) {
+                    if (currentUserData.display_name_styles.id === 2) {
                         displayName.classList.add('dns-gradient-type-2');
                     }
                 }
@@ -8584,29 +8533,29 @@ async function loadSite() {
                 if (currentUserData.avatar) avatar.src = userAvatar;
                 else avatar.remove();
 
-                if (currentUserData.avatar_decoration_data) deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${currentUserData.avatar_decoration_data.asset}.png?size=4096&passthrough=true`;
+                if (currentUserData.avatar_decoration) deco.src = `https://cdn.discordapp.com/avatar-decoration-presets/${currentUserData.avatar_decoration.asset}.png?size=4096&passthrough=true`;
                 else deco.remove();
 
                 if (currentUserData.banner) tabPageOutput.querySelector(".banner").style.backgroundImage = `url(https://cdn.discordapp.com/banners/${currentUserData.id}/${currentUserData.banner}.png?size=480)`;
 
-                if (currentUserData.collectibles?.nameplate) {
-                    if (currentUserData.collectibles.nameplate.sa_override_src) {
+                if (currentUserData.nameplate) {
+                    if (currentUserData.nameplate.sa_override_src) {
                         let nameplatePreview = document.createElement("img");
 
-                        nameplatePreview.src = currentUserData.collectibles.nameplate.sa_override_src;
+                        nameplatePreview.src = currentUserData.nameplate.sa_override_src;
     
                         nameplate.appendChild(nameplatePreview);
                     } else {
                         let nameplatePreview = document.createElement("video");
 
-                        nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${currentUserData.collectibles.nameplate.asset}asset.webm`;
+                        nameplatePreview.src = `https://cdn.discordapp.com/assets/collectibles/${currentUserData.nameplate.asset}asset.webm`;
                         nameplatePreview.disablePictureInPicture = true;
                         nameplatePreview.muted = true;
                         nameplatePreview.loop = true;
                         nameplatePreview.playsInline = true;
                         nameplatePreview.autoplay = true;
 
-                        const bgcolor = nameplate_palettes[currentUserData.collectibles.nameplate.palette].darkBackground;
+                        const bgcolor = nameplate_palettes[currentUserData.nameplate.palette].darkBackground;
     
                         nameplate.style.backgroundImage = `linear-gradient(90deg, #00000000 0%, ${bgcolor} 200%)`;
     
@@ -8762,15 +8711,6 @@ async function loadSite() {
                     document.body.classList.remove('profile-effect-bug-fix-thumbnails');
                 }
             });
-
-            const selectEl = document.querySelector('#currency_select');
-
-            for (const option of selectEl.options) {
-                if (option.value === String(settingsStore.currency)) {
-                    option.selected = true;
-                    break;
-                }
-            }
 
         } else if (tab === "advanced") {
             tabPageOutput.innerHTML = `
@@ -9143,7 +9083,7 @@ async function loadSite() {
                                 <p class="sub">Show off your Discord avatar decoration on your profile and reviews.</p>
                             </div>
                         `;
-                        if (!currentUserData.avatar_decoration_data) {
+                        if (!currentUserData.avatar_decoration) {
                             let cardError = document.createElement("div");
                             cardError.classList.add('main-err');
                             cardError.innerHTML = `
@@ -9172,7 +9112,7 @@ async function loadSite() {
                                 <p class="sub">Show off your Discord server tag on your profile and reviews.</p>
                             </div>
                         `;
-                        if (!currentUserData.primary_guild) {
+                        if (!currentUserData.guild_tag) {
                             let cardError = document.createElement("div");
                             cardError.classList.add('main-err');
                             cardError.innerHTML = `
@@ -9251,7 +9191,7 @@ async function loadSite() {
                                 <p class="sub">Show off your Discord nameplate on your profile and reviews.</p>
                             </div>
                         `;
-                        if (!currentUserData.collectibles?.nameplate) {
+                        if (!currentUserData.nameplate) {
                             let cardError = document.createElement("div");
                             cardError.classList.add('main-err');
                             cardError.innerHTML = `
@@ -10236,53 +10176,6 @@ function copyNotice(type) {
     setTimeout(() => {
         copyNotice.remove();
     }, 5000);
-}
-
-
-function noticeBlock({
-    type = 1,
-    message = "",
-    autoRemove = true,
-    removeTime = 5000
-} = {}) {
-    let noticeBlock = document.createElement("div");
-
-    noticeBlock.classList.add('notice-block-container');
-
-    if (type === 1) {
-        noticeBlock.innerHTML = `
-            <svg class="notice-block-close-svg" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path>
-            </svg>
-            <h3>Error</h3>
-            <p>${message}</p>
-        `;
-    }
-
-    noticeBlock.querySelector('.notice-block-close-svg').addEventListener("click", () => {
-        removeNoticeBlock();
-    });
-                 
-    document.querySelector('.notice-block-container-container').appendChild(noticeBlock);
-
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            noticeBlock.classList.add('show');
-        });
-    });
-
-    if (autoRemove) {
-        noticeBlock.querySelector('.notice-block-close-svg').remove()
-        setTimeout(() => {
-            removeNoticeBlock();
-        }, removeTime);
-    }
-    function removeNoticeBlock() {
-        noticeBlock.classList.remove('show');
-        setTimeout(() => {
-            noticeBlock.remove();
-        }, 500);
-    }
 }
 
 async function postManualCategory(category) {

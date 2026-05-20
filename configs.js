@@ -1,9 +1,8 @@
 
-const appVersion = "7.5.0";
+const appVersion = "7.5.01";
 const appType = "Dev";
 
 const endpoints = {
-    APIV4: "https://api.yapper.dev/v4",
     MAIN: "https://api.yapper.shop/",
     VERSION: "v3",
     VERIFY_ORIGIN: "/heartbeat",
@@ -44,6 +43,7 @@ const endpnts = {
     HEARTBEAT: "/heartbeat",
     EXPERIMENTS: "/experiments",
     USER: "/users/@me",
+    USERS: "/users/",
     LOGIN: "/login",
 
     STABLE: "/stable",
@@ -103,7 +103,10 @@ const category_types = {
     COUNTDOWN_TIMER: 5,
     IMMERSIVE_BANNER: 6,
     REWARD_HERO: 7,
-    MARVEL_RIVALS_PROMOTIONAL_BANNER: 8
+    MARVEL_RIVALS_PROMOTIONAL_BANNER: 8,
+    SOCIAL_LAYER_STOREFRONT_PROMOTIONAL_BANNER: 9,
+    FRAMES_BANNER: 10,
+    FRAMES_PRODUCT_SHELF: 11
 };
 
 const quest_reward_types = {
@@ -307,6 +310,18 @@ const display_name_styles_colors = {
 
 const experiments = [
     {
+        title: `Disable XP`,
+        codename: `disable_xp`,
+        treatments: [
+            {
+                title: `Disabled`
+            },
+            {
+                title: `Enabled`
+            }
+        ]
+    },
+    {
         title: `Client Side Currency Changer`,
         codename: `client_side_currency_changer`,
         treatments: [
@@ -438,30 +453,6 @@ const customCategoryAssets = {
     0: "https://cdn.yapper.shop/assets/217.png",
     1: "https://cdn.yapper.shop/assets/231.png",
     2: "https://cdn.yapper.shop/assets/232.png",
-    // Special Events
-    3: {
-        sku_id: "1217175518781243583",
-        catalog_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/233.png",
-            credits: "1049207768785100880"
-        },
-        hero_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/202.png",
-            credits: "1049207768785100880"
-        }
-    },
-    // Special Events 2
-    4: {
-        sku_id: "1309309974266118144",
-        catalog_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/234.png",
-            credits: "1049207768785100880"
-        },
-        hero_banner_asset: {
-            static: "https://cdn.yapper.shop/assets/202.png",
-            credits: "1049207768785100880"
-        }
-    },
     // Try Before You Buy!
     8: {
         sku_id: "1428539043993358497",
@@ -1245,3 +1236,95 @@ const discLaimer = `
     <a>Shop Archives is an independent, unofficial fan resource created for the purpose of exploring Discord shop items and quests. We are not part of, affiliated with, or endorsed by Discord Inc.</a>
     <a>This website does not sell official Discord products; all links provided for shop items and quests lead directly to Discord's official platform. All Discord logos, trademarks, and intellectual property are the property of Discord Inc.</a>
 `;
+
+function noticeBlock({
+    type = 1,
+    message = "",
+    autoRemove = true,
+    removeTime = 5000
+} = {}) {
+    let noticeBlock = document.createElement("div");
+
+    noticeBlock.classList.add('notice-block-container');
+
+    if (type === 1) {
+        noticeBlock.innerHTML = `
+            <svg class="notice-block-close-svg" aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path>
+            </svg>
+            <h3>Error</h3>
+            <p>${message}</p>
+        `;
+    }
+
+    noticeBlock.querySelector('.notice-block-close-svg').addEventListener("click", () => {
+        removeNoticeBlock();
+    });
+                 
+    document.querySelector('.notice-block-container-container').appendChild(noticeBlock);
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            noticeBlock.classList.add('show');
+        });
+    });
+
+    if (autoRemove) {
+        noticeBlock.querySelector('.notice-block-close-svg').remove()
+        setTimeout(() => {
+            removeNoticeBlock();
+        }, removeTime);
+    }
+    function removeNoticeBlock() {
+        noticeBlock.classList.remove('show');
+        setTimeout(() => {
+            noticeBlock.remove();
+        }, 500);
+    }
+}
+
+const fetchAPI = {
+    async request(endpoint, options = {}) {
+        const baseUrl = "https://api.yapper.dev/v4";
+        const url = `${baseUrl}${endpoint}`;
+        
+        const headers = {
+            "Content-Type": "application/json",
+            "Authorization": localStorage.token ?? "bazinga",
+            ...options.headers,
+        };
+
+        try {
+            const response = await fetch(url, { ...options, headers });
+            
+            if (!response.ok) {
+                noticeBlock({
+                    type: 1,
+                    message: `Failed to fetch '${url}': ${response.status}, ${response.statusText}`,
+                    autoRemove: true,
+                    removeTime: 5000
+                });
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error("API call failed:", error);
+            throw error;
+        }
+    },
+
+    get(endpoint, options = {}) {
+        return this.request(endpoint, { ...options, method: "GET" });
+    },
+
+    post(endpoint, body, options = {}) {
+        const postOptions = { ...options, method: "POST" };
+        
+        if (body !== undefined) {
+            postOptions.body = JSON.stringify(body);
+        }
+        
+        return this.request(endpoint, postOptions);
+    }
+};
