@@ -1721,10 +1721,6 @@ hr {
     height: 290px;
 }
 
-:not(.modalv2-preview-container).type-2000-preview-container svg {
-    opacity: 0.3;
-}
-
 
 
 
@@ -3287,6 +3283,8 @@ hr {
     padding: 10px;
     box-sizing: border-box;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .category-modal-review-container .shop-modal-review-moderation-buttons {

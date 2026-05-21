@@ -1,5 +1,5 @@
 
-const appVersion = "7.5.01";
+const appVersion = "7.5.02";
 const appType = "Dev";
 
 const endpoints = {
@@ -424,7 +424,8 @@ const experiments = [
 
 const external_skus = {
     ORB_PROFILE_BADGE: "1342211853484429445",
-    NITRO_CREDITS_3_DAYS: "1333912750274904064"
+    NITRO_CREDITS_3_DAYS: "1333912750274904064",
+    NITRO_CREDITS_1_DAY: "1298745361602449479"
 };
 
 const defaultThemes = [
@@ -1300,11 +1301,11 @@ const fetchAPI = {
             if (!response.ok) {
                 noticeBlock({
                     type: 1,
-                    message: `Failed to fetch '${url}': ${response.status}, ${response.statusText}`,
+                    message: `Failed to fetch '${url}': ${response.status}`,
                     autoRemove: true,
                     removeTime: 5000
                 });
-                throw new Error(`HTTP error! Status: ${response.status}`);
+                throw JSON.stringify(await response.json());
             }
             
             return await response.json();

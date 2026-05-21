@@ -320,7 +320,7 @@ async function fetchAndUpdateXpEvents() {
         url = redneredAPI + endpoints.USER + endpoints.XP_EVENTS;
         apiUrl = new URL(url);
         if (settingsStore.staff_show_unpublished_xp_events === 1) {
-            apiUrl.searchParams.append("include-unpublished", "true");
+            apiUrl.searchParams.append("include_unpublished", "true");
         }
 
         const res = await fetch(apiUrl, {
@@ -401,7 +401,7 @@ async function fetchAndUpdateTradingCache() {
         url = redneredAPI + endpoints.TRADING_CONFIG;
         apiUrl = new URL(url);
         // if (settingsStore.staff_show_unpublished_xp_events === 1) {
-        //     apiUrl.searchParams.append("include-unpublished", "true");
+        //     apiUrl.searchParams.append("include_unpublished", "true");
         // }
 
         const res = await fetch(apiUrl, {
@@ -881,7 +881,7 @@ async function loadSite() {
         document.getElementById('current-currency').textContent = converted_currencies[currencyKey].currency;
     }
 
-    if (currentUserData && currentUserData.xp_information && currentUserData.banned === 0) {
+    if (currentUserData && currentUserData.xp_information && currentUserData.banned === false) {
         let xpBalance = document.createElement("div");
 
         const xpNeeded = currentUserData.xp_information.xp_to_level - currentUserData.xp_information.xp_into_level;
@@ -1818,6 +1818,23 @@ async function loadSite() {
 
                                     modalInner.querySelector('.avatar2').style.backgroundImage = `url(${userAvatar})`;
                                 }
+                            } else if (selectedVariant.type === item_types.PROFILE_FRAME) {
+
+                                const frameContainerDiv = modalInner.querySelector('.modal2-profile-preview').querySelector('.frame-front');
+                                const frameContainerDivback = modalInner.querySelector('.modal2-profile-preview').querySelector('.frame-back');
+                                frameContainerDiv.innerHTML = ``;
+                                frameContainerDivback.innerHTML = ``;
+                                const layers = selectedVariant.items[0].layers;
+                                layers.forEach(layer => {
+                                    const src = `https://cdn.discordapp.com/media/v1/collectibles-shop/${selectedVariant.sku_id}/${layer.id}/static`;
+                                    let img = document.createElement("img");
+                                    img.src = src;
+                                    img.classList.add(`a-${layer.anchor}`);
+                                    img.classList.add(`t-${layer.type}`);
+                                    if (layer.order === "front") frameContainerDiv.appendChild(img);
+                                    if (layer.order === "back") frameContainerDivback.appendChild(img);
+                                });
+
                             }
                         }
                     
@@ -1910,12 +1927,11 @@ async function loadSite() {
                         const btn = saDiv.querySelector("#sync-product");
                         btn.addEventListener("click", async function () {
                             btn.disabled = true;
-                            await fetch(APIV4 + endpnts.PRODUCT + product.sku_id, {
-                                method: "POST",
-                                headers: {
-                                    "Authorization": localStorage.token
-                                }
-                            });
+                            try {
+                                const data = await fetchAPI.post(endpnts.PRODUCT + product.sku_id);
+                            } catch(err) {
+                                console.error(err);
+                            }
                             changeModalTab('3');
                         });
                         unsynced = true;
@@ -1944,12 +1960,11 @@ async function loadSite() {
                         const btn = saDiv.querySelector("#sync-product");
                         if (btn) btn.addEventListener("click", async function () {
                             btn.disabled = true;
-                            await fetch(APIV4 + endpnts.PRODUCT + product.sku_id, {
-                                method: "POST",
-                                headers: {
-                                    "Authorization": localStorage.token
-                                }
-                            });
+                            try {
+                                const data = await fetchAPI.post(endpnts.PRODUCT + product.sku_id);
+                            } catch(err) {
+                                console.error(err);
+                            }
                             changeModalTab('3');
                         });
                     }
@@ -2955,7 +2970,7 @@ async function loadSite() {
                                 }
                             });
 
-                            if (currentUserData.banned >= 1 || settingsStore.staff_simulate_banned === 1 || currentUserData.types?.guidelines_block === true || settingsStore.staff_simulate_guidelines_block === 1 || currentUserData.types?.suspicious_account === true || settingsStore.staff_simulate_sus_block === 1) {
+                            if (currentUserData.banned === true || settingsStore.staff_simulate_banned === 1 || currentUserData.types?.guidelines_block === true || settingsStore.staff_simulate_guidelines_block === 1 || currentUserData.types?.suspicious_account === true || settingsStore.staff_simulate_sus_block === 1) {
 
                                 let banTitle = 'You have been suspended from submitting reviews.';
                                 let banDisclaimer = `
@@ -2966,7 +2981,7 @@ async function loadSite() {
                                 `;
                                 let appealable = true;
 
-                                if (currentUserData.banned === 1 || settingsStore.staff_simulate_banned === 1) {
+                                if (currentUserData.banned === true || settingsStore.staff_simulate_banned === 1) {
                                     banTitle = 'You have been permanently banned from submitting reviews.';
                                     banDisclaimer = `
                                         <p>You have violated our</p>
@@ -3056,7 +3071,7 @@ async function loadSite() {
                                     </svg>
 
                                     <p class="specific-item-name hidden">Reviewing Item</p>
-                                    <input class="hidden" autocomplete="off" id="specific-item-sku" placeholder="specific-item-sku">
+                                    <input class="hidden" autocomplete="off" id="specific-item-id" placeholder="specific-item-id">
 
                                     <input autocomplete="off" id="write-review-post-input" placeholder="Write a review for ${categoryData.name}...">
                                     <p class="write-review-text-limit">200</p>
@@ -3068,7 +3083,7 @@ async function loadSite() {
                             }
                         
                             const reviewInput = modalInner.querySelector('#write-review-post-input');
-                            const specificItemSku = modalInner.querySelector('#specific-item-sku');
+                            const specificItemID = modalInner.querySelector('#specific-item-id');
                             const specificItemChoose = modalInner.querySelector('.review-specific-item-button');
                             const reviewSendIcon = modalInner.querySelector('.review-send-icon');
                             const errorOutput = modalInner.querySelector('.write-review-disclaimer-error');
@@ -3156,17 +3171,15 @@ async function loadSite() {
                                 errorOutput.textContent = '';
                                 const domainRegex = /\b[a-zA-Z0-9-]+\.[a-zA-Z]{2,}\b/;
 
-                                if (reviewInput.value.trim().length === 0) {
-                                    errorOutput.textContent = 'Reviews cannot be blank';
-                                } else if (selectedRating === 0) {
+                                if (selectedRating === 0) {
                                     errorOutput.textContent = 'Rating must be 1-5 stars';
                                 } else if (domainRegex.test(reviewInput.value)) {
                                     errorOutput.textContent = 'Reviews cannot contain Links or Domains';
                                 } else {
-                                    const status = await postReview(categoryData.sku_id, selectedRating, reviewInput.value, specificItemSku.value);
+                                    const status = await postReview(categoryData.sku_id, selectedRating, reviewInput.value.trim(), specificItemID.value);
 
-                                    if (status.error && status.message) {
-                                        errorOutput.textContent = `${status.error}, ${status.message}`;
+                                    if (status.status) {
+                                        errorOutput.textContent = `${status.status}, ${status.error}`;
                                     } else {
                                         await fetchCategoryData();
                                         fetchAndRenderReviews();
@@ -3240,7 +3253,6 @@ async function loadSite() {
                                     reviewDiv.innerHTML = `
                                         <div class="shop-modal-review-moderation-buttons"></div>
                                         <div class="review-nameplate-container"></div>
-                                        <div class="review-banner-container"></div>
                                         <div class="review-user-container">
                                             <div class="review-avatar-container">
                                                 <img class="review-avatar" src="https://cdn.yapper.shop/assets/31.png" onerror="this.parentElement.remove();">
@@ -3509,8 +3521,8 @@ async function loadSite() {
                                         }
                                     }
 
-                                    async function fetchReviewProductData(sku) {
-                                        const res = await fetch(redneredAPI + '/collectibles-products/' + sku);
+                                    async function fetchReviewProductData(id) {
+                                        const res = await fetch(APIV4 + endpnts.PRODUCT + id);
                                         if (!res.ok) return;
                                         const data = await res.json();
 
@@ -3521,17 +3533,14 @@ async function loadSite() {
                                         }
                                     }
 
-                                    reviewDiv.querySelector('.review-text-content').textContent = `${review.content}`;
+                                    reviewDiv.querySelector('.review-text-content').textContent = review.content;
                                     const rsic = reviewDiv.querySelector('.review-specific-item-container')
-                                    if (review.item_sku_id) {
+                                    if (review.item_id) {
                                         rsic.innerHTML = `
-                                            <p class="sub">Reviewing item:</p>
                                             <p class="name">Loading...</p>
-                                            <p class="sub">Click to Open</p>
                                         `;
-                                        const item = await fetchReviewProductData(review.item_sku_id);
+                                        const item = await fetchReviewProductData(review.item_id);
                                         rsic.innerHTML = `
-                                            <p class="sub">Reviewing item:</p>
                                             <p class="name">${item.name}</p>
                                             <img src="">
                                             <p class="sub">Click to Open</p>
@@ -3542,13 +3551,13 @@ async function loadSite() {
                                                 width: '50px',
                                                 height: '50px'
                                             });
-                                            objImg.src = item.items[0].assets.static_image_url;
+                                            objImg.src = item.items[0].assets ? item.items[0].assets.static_image_url : `https://cdn.discordapp.com/avatar-decoration-presets/${item.items[0].asset}.png?size=4096&passthrough=false`;
                                         }
                                         else if (item.type === item_types.NAMEPLATE) {
                                             Object.assign(objImg.style, {
                                                 height: '50px'
                                             });
-                                            objImg.src = item.items[0].assets.static_image_url;
+                                            objImg.src = item.items[0].assets ? item.items[0].assets.static_image_url : `https://cdn.discordapp.com/assets/collectibles/${item.items[0].asset}static.png`;
                                         }
                                         else {
                                             objImg.remove();
@@ -3591,9 +3600,9 @@ async function loadSite() {
                             `;
 
                             if (categoryModalInfo.reviews_disabled === true) {
-                            } else if (currentUserData && currentUserData.banned === 0) {
+                            } else if (currentUserData && currentUserData.banned === false) {
                                 reviewDiv.querySelector('.review-text-content').textContent = 'This category currently has no reviews. You could be the first!';
-                            } else if (currentUserData && currentUserData.banned === 1) {
+                            } else if (currentUserData && currentUserData.banned === true) {
                             } else if (isMobileCache) {
                                 reviewDiv.querySelector('.review-text-content').textContent = 'This category currently has no reviews. Open Shop Archives on a desktop device to submit reviews!';
                             } else {
@@ -3927,18 +3936,11 @@ async function loadSite() {
             }
 
             async function fetchCategoryData() {
-                let url = APIV4 + endpnts.CATEGORY + categoryData.sku_id + endpnts.REVIEWS;
-                apiUrl = new URL(url);
-                const rawCategoryData = await fetch(apiUrl);
-                if (!rawCategoryData.ok) {
-                    return
-                }
-                const data = await rawCategoryData.json();
-
-                if (data.message) {
-                    console.error(data);
-                } else {
+                try {
+                    const data = await fetchAPI.get(endpnts.CATEGORY + categoryData.sku_id + endpnts.REVIEWS);
                     categoryModalInfo = data;
+                } catch(err) {
+                    console.error(err);
                 }
             }
 
@@ -4826,7 +4828,7 @@ async function loadSite() {
                         target.dataset.overridden = "true";
 
                         const banButton = target.querySelector('#drove-user-edit-ban');
-                        if (cacheUserData.banned >= 1) {
+                        if (cacheUserData.banned === true) {
                             banButton.classList.add('brand');
                             banButton.textContent = `Unban`;
                         } else {
@@ -4838,7 +4840,7 @@ async function loadSite() {
                             banButton.setAttribute('data-tooltip', 'You cannot ban a user if their Admin Level is equal to or greater than yours');
                             banButton.disabled = true;
                         }
-                        else if (cacheUserData.banned >= 1) {
+                        else if (cacheUserData.banned === true) {
                             banButton.addEventListener("click", async () => {
                                 banButton.disabled = true;
                                 banButton.textContent = `...`;
@@ -4857,7 +4859,7 @@ async function loadSite() {
                                 } catch {}
                             });
                         }
-                        else if (cacheUserData.banned === 0) {
+                        else if (cacheUserData.banned === false) {
                             banButton.addEventListener("click", async () => {
                                 banButton.disabled = true;
                                 banButton.textContent = `...`;
@@ -5963,7 +5965,7 @@ async function loadSite() {
             category = data1;
 
             modal.querySelector('.items-output').querySelector('.card').addEventListener('click', () => {
-                document.querySelector('#specific-item-sku').value = '';
+                document.querySelector('#specific-item-id').value = '';
                 closeModal();
                 document.querySelector('.specific-item-name').textContent = '';
                 document.querySelector('.specific-item-name').classList.add('hidden');
@@ -6006,7 +6008,7 @@ async function loadSite() {
                     card.classList.add('hidden')
                 }
                 card.addEventListener('click', () => {
-                    document.querySelector('#specific-item-sku').value = item.sku_id;
+                    document.querySelector('#specific-item-id').value = item.product_id;
                     closeModal();
                     document.querySelector('.specific-item-name').textContent = `Reviewing "${item.name}"`;
                     document.querySelector('.specific-item-name').classList.remove('hidden');
@@ -6460,7 +6462,7 @@ async function loadSite() {
             }
         });
 
-        let itemsPerPage = 12;
+        let itemsPerPage = 18;
         const filteredData = quests.sort((a, b) => {
             const dateA = new Date(a.expires_at);
             const dateB = new Date(b.expires_at);
@@ -7404,6 +7406,31 @@ async function loadSite() {
                     createDudNameplatePreview(2);
                     createDudNameplatePreview(1);
 
+                } else if (selectedVariant.type === item_types.PROFILE_FRAME) {
+                    previewContainer.innerHTML = ``;
+                    previewContainer.classList.add('type-3-preview-container')
+
+                    let frameContainer = document.createElement("div");
+
+                    frameContainer.classList.add('frameContainer');
+    
+                    frameContainer.innerHTML = profileEffectBG;
+
+                    previewContainer.appendChild(frameContainer);
+
+                    const frameContainerDiv = frameContainer.querySelector('.frameContainerDiv');
+                    const frameContainerDivback = frameContainer.querySelector('.frameContainerDivback');
+                    const layers = selectedVariant.items[0].layers;
+                    layers.forEach(layer => {
+                        const src = `https://cdn.discordapp.com/media/v1/collectibles-shop/${selectedVariant.sku_id}/${layer.id}/static`;
+                        let img = document.createElement("img");
+                        img.src = src;
+                        img.classList.add(`a-${layer.anchor}`);
+                        img.classList.add(`t-${layer.type}`);
+                        if (layer.order === "front") frameContainerDiv.appendChild(img);
+                        if (layer.order === "back") frameContainerDivback.appendChild(img);
+                    });
+
                 }
             }
         
@@ -7427,7 +7454,7 @@ async function loadSite() {
                     card.querySelector("#orb-profile-badge-card-video").pause();
                     card.querySelector("#orb-profile-badge-card-video").currentTime = 0;
                 });
-            } else if (product.sku_id === external_skus.NITRO_CREDITS_3_DAYS) {
+            } else if (product.sku_id === external_skus.NITRO_CREDITS_3_DAYS || product.sku_id === external_skus.NITRO_CREDITS_1_DAY) {
                 previewContainer.classList.add('type-3000-card-preview-container');
                     
                 previewContainer.innerHTML = `
@@ -8196,21 +8223,14 @@ async function loadSite() {
             searchInput.classList.add('hidden');   
             const output = document.getElementById('categories-container');
             if (!discordCollectiblesShopHomeCache || discordCollectiblesShopHomeCache && reFetch) {
-                let url = APIV4 + endpnts.CATEGORIES + endpnts.CATEGORIES_HOME;
-                const res = await fetch(url);
-                const data = await res.json();
+                try {
+                    const data = await fetchAPI.get(endpnts.CATEGORIES + endpnts.CATEGORIES_HOME);
 
-                if (!res.ok) {
-                    renderShopLoadingError(data, output);
-                    noticeBlock({
-                        type: 1,
-                        message: `Failed to fetch '${url}': ${res.status}, ${res.statusText}`,
-                        autoRemove: true,
-                        removeTime: 5000
-                    });
-                } else {
                     discordCollectiblesShopHomeCache = data;
                     if (currentPageCache === "home") renderShopBrowseData(data, output);
+                } catch(err) {
+                    console.error(err);
+                    renderShopLoadingError(JSON.parse(err), output);
                 }
             } else {
                 renderShopBrowseData(discordCollectiblesShopHomeCache, output);
@@ -8229,28 +8249,14 @@ async function loadSite() {
             const output = document.getElementById('categories-container');
             if (!discordCollectiblesCategoriesCache || discordCollectiblesCategoriesCache && reFetch) {
 
-                let url = APIV4 + endpnts.CATEGORIES + endpnts.CATEGORIES_CATALOG;
-                apiUrl = new URL(url);
+                try {
+                    const data = await fetchAPI.get(endpnts.CATEGORIES + endpnts.CATEGORIES_CATALOG);
 
-                const res = await fetch(apiUrl, {
-                    method: "GET",
-                    headers: {
-                        "Authorization": localStorage.token
-                    }
-                });
-                const data = await res.json();
-
-                if (!res.ok) {
-                    renderShopLoadingError(data, output);
-                    noticeBlock({
-                        type: 1,
-                        message: `Failed to fetch '${url}': ${res.status}, ${res.statusText}`,
-                        autoRemove: true,
-                        removeTime: 5000
-                    });
-                } else {
                     discordCollectiblesCategoriesCache = data;
                     if (currentPageCache === "catalog") renderShopData(data, output);
+                } catch(err) {
+                    console.error(err);
+                    renderShopLoadingError(JSON.parse(err), output);
                 }
             } else {
                 renderShopData(discordCollectiblesCategoriesCache, output);
@@ -8259,29 +8265,15 @@ async function loadSite() {
             searchInput.classList.remove('hidden');   
             const output = document.getElementById('categories-container');
             if (!discordOrbsCategoriesCache || discordOrbsCategoriesCache && reFetch) {
-                
-                let url = APIV4 + endpnts.CATEGORIES + endpnts.CATEGORIES_ORBS;
-                apiUrl = new URL(url);
 
-                const res = await fetch(apiUrl, {
-                    method: "GET",
-                    headers: {
-                        "Authorization": localStorage.token
-                    }
-                });
-                const data = await res.json();
+                try {
+                    const data = await fetchAPI.get(endpnts.CATEGORIES + endpnts.CATEGORIES_ORBS);
 
-                if (!res.ok) {
-                    renderShopLoadingError(data, output);
-                    noticeBlock({
-                        type: 1,
-                        message: `Failed to fetch '${url}': ${res.status}, ${res.statusText}`,
-                        autoRemove: true,
-                        removeTime: 5000
-                    });
-                } else {
                     discordOrbsCategoriesCache = data;
                     if (currentPageCache === "orbs") renderShopData(data, output);
+                } catch(err) {
+                    console.error(err);
+                    renderShopLoadingError(JSON.parse(err), output);
                 }
             } else {
                 renderShopData(discordOrbsCategoriesCache, output);
@@ -8291,31 +8283,20 @@ async function loadSite() {
             const output = document.getElementById('categories-container');
             if (!discordMiscellaneousCategoriesCache || discordMiscellaneousCategoriesCache && reFetch) {
 
-                let url = APIV4 + endpnts.CATEGORIES + endpnts.CATEGORIES_MISC;
-                apiUrl = new URL(url);
+                const URLParams = new URLSearchParams();
                 if (settingsStore.staff_show_test_categories_on_misc_page === 1) {
-                    apiUrl.searchParams.append("include_unpublished", "true");
+                    URLParams.append("include_unpublished", "true");
                 }
 
-                const res = await fetch(apiUrl, {
-                    method: "GET",
-                    headers: {
-                        "Authorization": localStorage.token
-                    }
-                });
-                const data = await res.json();
+                try {
+                    const queryString = URLParams.size > 0 ? `?${URLParams.toString()}` : '';
+                    const data = await fetchAPI.get(endpnts.CATEGORIES + endpnts.CATEGORIES_MISC + queryString);
 
-                if (!res.ok) {
-                    renderShopLoadingError(data, output);
-                    noticeBlock({
-                        type: 1,
-                        message: `Failed to fetch '${apiUrl}': ${res.status}, ${res.statusText}`,
-                        autoRemove: true,
-                        removeTime: 5000
-                    });
-                } else {
                     discordMiscellaneousCategoriesCache = data;
                     if (currentPageCache === "miscellaneous") renderShopData(data, output);
+                } catch(err) {
+                    console.error(err);
+                    renderShopLoadingError(JSON.parse(err), output);
                 }
             } else {
                 renderShopData(discordMiscellaneousCategoriesCache, output);
@@ -8324,20 +8305,14 @@ async function loadSite() {
             searchInput.classList.add('hidden');   
             const output = document.getElementById('quests-wrapper');
             if (!discordQuestsCache || discordQuestsCache && reFetch) {
-                let api = APIV4 + endpnts.DISCORD_QUESTS;
-                const res = await fetch(api);
-                const data = await res.json();
-                if (!res.ok) {
-                    renderShopLoadingError(data, output);
-                    noticeBlock({
-                        type: 1,
-                        message: `Failed to fetch '${api}': ${res.status}, ${res.statusText}`,
-                        autoRemove: true,
-                        removeTime: 5000
-                    });
-                } else {
+                try {
+                    const data = await fetchAPI.get(endpnts.DISCORD_QUESTS);
+
                     discordQuestsCache = data;
                     if (currentPageCache === "quests") renderQuest(data, output);
+                } catch(err) {
+                    console.error(err);
+                    renderShopLoadingError(JSON.parse(err), output);
                 }
             } else {
                 renderQuest(discordQuestsCache, output);
@@ -8600,7 +8575,7 @@ async function loadSite() {
                     }
                 });
 
-                if (currentUserData.banned != 0) {
+                if (currentUserData.banned === true) {
                     let syncError = document.createElement("div");
                     syncError.classList.add('enhanced-account-block');
                     syncError.classList.add('error-card');
@@ -9560,18 +9535,6 @@ async function loadSite() {
                             </div>
                         </div>
 
-                        <div class="setting">
-                            <div class="setting-info">
-                                <p class="setting-title">Include External Prices</p>
-                                <p class="setting-description">This does nothing without Discord integration</p>
-                            </div>
-                            <div class="toggle-container">
-                                <div class="toggle" id="include_prices_toggle">
-                                    <div class="toggle-circle"></div>
-                                </div>
-                            </div>
-                        </div>
-
                         <button class="generic-button brand" id="fetch-product-v4-btn">Fetch Product Data</button>
 
                         <hr class="inv">
@@ -9584,15 +9547,11 @@ async function loadSite() {
             `;
 
             let cuteStore = {
-                "fetch_from_discord": 0,
-                "include_prices": 0
+                "fetch_from_discord": 0
             };
 
             tabPageOutput.querySelector('#fetch_from_discord_toggle').addEventListener("click", () => {
                 toggleSettingCute('fetch_from_discord');
-            });
-            tabPageOutput.querySelector('#include_prices_toggle').addEventListener("click", () => {
-                toggleSettingCute('include_prices');
             });
 
             function toggleSettingCute(key) {
@@ -9615,38 +9574,31 @@ async function loadSite() {
             tabPageOutput.querySelector('#fetch-product-v4-btn').addEventListener("click", async () => {
                 if (v4input.value.trim().length != 0) {
                     productsWrapper.innerHTML = ``;
-                    let url = APIV4 + '/product/' + v4input.value.trim();
-                    apiUrl = new URL(url);
+
+                    const URLParams = new URLSearchParams();
                     if (cuteStore.fetch_from_discord === 1) {
-                        apiUrl.searchParams.append("source", "discord");
-                    }
-                    if (cuteStore.include_prices === 1) {
-                        apiUrl.searchParams.append("include_external_prices", "true");
+                        URLParams.append("source", "discord");
                     }
 
-                    const res = await fetch(apiUrl, {
-                        method: 'GET',
-                        headers: {
-                            "Authorization": localStorage.token
-                        }
-                    });
-                    if (!res.ok) {
-                        const json = await res.json();
-                        if (json?.status) {
+                    try {
+                        const queryString = URLParams.size > 0 ? `?${URLParams.toString()}` : '';
+                        const data = await fetchAPI.get(endpnts.PRODUCT + v4input.value.trim() + queryString);
+
+                        const item = await renderProduct(leaks_dummy_data.categories[0], data);
+                        productsWrapper.appendChild(item);
+                    } catch(err) {
+                        console.error(err);
+                        if (err) {
+                            const error = JSON.parse(err)
                             productsWrapper.innerHTML = `
                                 <div class="errormessagejsonthingidk">
-                                    <h3>${json.status}: ${json.error}</h3>
-                                    <p>${json.message}</p>
+                                    <h3>${error.status}: ${error.error}</h3>
+                                    <p>${error.message}</p>
                                 </div>
                             `;
                         } else {
                             productsWrapper.innerHTML = `There was an error fetching that product`;
                         }
-                    } else {
-                        const json = await res.json();
-    
-                        const item = await renderProduct(leaks_dummy_data.categories[0], json);
-                        productsWrapper.appendChild(item);
                     }
                 }
             });
@@ -10107,23 +10059,18 @@ function dev() {
 }
 
 
-async function postReview(categoryId, rating, text, item_sku_id) {
-    let url = APIV4 + endpnts.CATEGORY + categoryId + endpnts.REVIEWS;
-    apiUrl = new URL(url);
-    const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            "Authorization": localStorage.token
-        },
-        body: JSON.stringify({
+async function postReview(categoryId, rating, text, item_id) {
+    try {
+        const data = await fetchAPI.post(endpnts.CATEGORY + categoryId + endpnts.REVIEWS, {
             rating,
             text,
-            item_sku_id
-        })
-    });
-    const result = await response.json();
-    return result;
+            item_id
+        });
+        return data;
+    } catch(err) {
+        console.error(err);
+        return JSON.parse(err);
+    }
 };
 
 async function deleteReviewById(reviewId) {
