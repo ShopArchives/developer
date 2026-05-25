@@ -1592,11 +1592,11 @@ hr {
 .type-3-preview-container .frameContainer {
     position: relative;
     display: flex;
-    justify-self: center;
+    margin-left: auto;
+    margin-right: auto;
     width: 200px;
     height: 430px;
     top: 70px;
-    border-radius: 10px;
 }
 
 .type-3-preview-container svg {
@@ -2446,11 +2446,12 @@ hr {
 
 .modal2-profile-preview {
     position: relative;
-    justify-self: center;
-    align-self: center;
+    margin-left: auto;
+    margin-right: auto;
     top: 50%;
     transform: translateY(-50%);
     overflow: visible;
+    width: 300px;
 }
 
 

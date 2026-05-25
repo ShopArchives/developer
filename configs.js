@@ -1,5 +1,5 @@
 
-const appVersion = "7.5.02";
+const appVersion = "7.5.03";
 const appType = "Dev";
 
 const endpoints = {
@@ -488,6 +488,7 @@ const settings = {
     "profile_effect_tweaks_fix": 0,
     "dev": 0,
     "currency": 0,
+    "show_product_id": 0,
 
     "staff_force_leaks_dummy": 0,
     "staff_force_viewable_reviews_tab": 0,
@@ -1310,7 +1311,7 @@ const fetchAPI = {
             
             return await response.json();
         } catch (error) {
-            console.error("API call failed:", error);
+            console.error("fetchAPI failed:", error);
             throw error;
         }
     },

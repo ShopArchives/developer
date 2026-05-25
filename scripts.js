@@ -16,7 +16,6 @@ let openModalsCache = 0;
 let xpLevelStatsCache;
 let tradingConfigCache;
 
-let discordProfileEffectsCache;
 let discordLeakedCategoriesCache;
 let discordCollectiblesShopHomeCache;
 let discordCollectiblesCategoriesCache;
@@ -1153,10 +1152,10 @@ async function loadSite() {
                                 </div>
                                 <hr class="inv">
                                 <div class="id-container sku-id-container">
-                                    <p>SKU:</p>
+                                    <p class="hideifonlyid">SKU:</p>
                                     <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${product.sku_id}')">${product.sku_id}</p>
                                 </div>
-                                <div class="id-container">
+                                <div class="id-container hideifonlyid">
                                     <p>ID:</p>
                                     <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${product.product_id}')">${product.product_id}</p>
                                 </div>
@@ -1208,6 +1207,12 @@ async function loadSite() {
 
                         </div>
                     `;
+
+                    if (settingsStore.show_product_id === 0) {
+                        modalInner.querySelectorAll('.hideifonlyid').forEach((el) => {
+                            el.classList.add("hidden");
+                        });
+                    }
 
                     const date = new Date(product.updated_at ?? null);
                     const now = new Date();
@@ -1736,9 +1741,14 @@ async function loadSite() {
 
                         function applyVariant(selectedVariant) {
                             SKUIDContainer.innerHTML = `
-                                <p>SKU:</p>
+                                <p class="hideifonlyid">SKU:</p>
                                 <p class="sku_id has-tooltip" data-tooltip="Click To Copy" onclick="copyValue('${selectedVariant.sku_id}')">${selectedVariant.sku_id}</p>
                             `;
+                            if (settingsStore.show_product_id === 0) {
+                                modalInner.querySelectorAll('.hideifonlyid').forEach((el) => {
+                                    el.classList.add("hidden");
+                                });
+                            }
                             modalInner.querySelector("[data-shop-card-var-title]").textContent = `(${selectedVariant.variant_label})`;
 
                             modalInner.querySelector(".modal-item-name").textContent = selectedVariant.base_variant_name;
@@ -2170,7 +2180,7 @@ async function loadSite() {
                             <p>${categoryData.summary ? categoryData.summary : ''}</p>
                             <div class="misc-info">
                                 <p class="updated-date">Last Updated: </p>
-                                <p class="${categoryData.limited ? '' : 'hidden'}">We have limited data on this category</p>
+                                <p${categoryData.limited ? '' : ' class="hidden"'}>We have limited information on this category</p>
                             </div>
                             <div class="category-modal-quick-info-container">
                                 <div class="outer-block">
@@ -8124,16 +8134,7 @@ async function loadSite() {
         `;
     }
     
-    
-    
-    
 
-    async function setDiscordProfileEffectsCache() {
-        discordProfileEffectsCache = {
-            "profile_effect_configs": []
-        };
-    }
-    window.setDiscordProfileEffectsCache = setDiscordProfileEffectsCache;
 
     async function setDiscordLeakedCategoriesCache() {
         if (settingsStore.staff_force_leaks_dummy === 1) {
@@ -8210,9 +8211,6 @@ async function loadSite() {
         }
         console.log('Current page is: ' + currentPageCache);
 
-        if (!discordProfileEffectsCache) {
-            await setDiscordProfileEffectsCache();
-        }
         if (!discordLeakedCategoriesCache) {
             await setDiscordLeakedCategoriesCache();
         }
@@ -8648,6 +8646,17 @@ async function loadSite() {
                                 </div>
                             </div>
                         </div>
+                        <div class="setting">
+                            <div class="setting-info">
+                                <p class="setting-title">Show Product ID</p>
+                                <p class="setting-description">Adds the Product ID under the SKU ID on product modsals</p>
+                            </div>
+                            <div class="toggle-container">
+                                <div class="toggle" id="show_product_id_toggle">
+                                    <div class="toggle-circle"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -8685,6 +8694,11 @@ async function loadSite() {
                 } else {
                     document.body.classList.remove('profile-effect-bug-fix-thumbnails');
                 }
+            });
+
+            tabPageOutput.querySelector('#show_product_id_toggle').addEventListener("click", () => {
+                toggleSetting('show_product_id');
+                updateToggleStates();
             });
 
         } else if (tab === "advanced") {
