@@ -249,7 +249,7 @@ async function verifyOrigin() {
     try {
         const rawData = await fetch(APIV4 + endpnts.HEARTBEAT);
         if (!rawData.ok) {
-            triggerSafetyBlock();
+            return triggerSafetyBlock();
         } else {
             const data = await rawData.json();
             originData = data;
@@ -265,7 +265,7 @@ async function verifyOrigin() {
                     localStorage.token = data.token
                 } catch(err) {
                     console.error(err);
-                    triggerSafetyBlock();
+                    return triggerSafetyBlock();
                 }
             }
 
@@ -277,7 +277,7 @@ async function verifyOrigin() {
                     currentUserData = data;
                 } catch(err) {
                     console.error(err);
-                    triggerSafetyBlock();
+                    return triggerSafetyBlock();
                 }
             }
             if (currentUserData && currentUserData.admin_level >= 1) {
@@ -292,7 +292,7 @@ async function verifyOrigin() {
                 syncOverridesWithServer();
             } catch(err) {
                 console.error(err);
-                triggerSafetyBlock();
+                return triggerSafetyBlock();
             }
 
 
