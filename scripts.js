@@ -1,5 +1,3 @@
-createNotice('Shop Archives is currently being updated for the dev build, expect bugs and downtime. In the meantime, please use the stable build at \'https://yapper.shop/\'', 2);
-
 document.getElementById('logo-container').setAttribute('data-tooltip', appType+' '+appVersion);
 
 // Cache
