@@ -569,7 +569,7 @@ body:has(.notice) .container {
     color: white;
 }
 .brick-wall .logo-container:hover svg {
-    transform: translateY(-50%) !important;
+    transform: unset !important;
 }
 
 .brick-wall-info {
@@ -633,7 +633,17 @@ body:has(.notice) .container {
     border-top: 2px solid var(--modalv3-hr-color);
     padding: 20px;
 }
+.brick-wall-buttons-container1 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 5px;
+    border-top: 2px solid var(--modalv3-hr-color);
+    padding: 20px;
+}
 .brick-wall-buttons-container button {
+    width: 100%;
+}
+.brick-wall-buttons-container1 button {
     width: 100%;
 }
 

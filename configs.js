@@ -1,5 +1,5 @@
 
-const appVersion = "7.5.06";
+const appVersion = "7.5.07";
 const appType = "Dev";
 
 const endpoints = {
@@ -499,7 +499,6 @@ const settings = {
     "staff_allow_category_only_event_claiming_in_events_tab": 0,
     "staff_show_test_categories_on_misc_page": 0,
     "staff_auth_remove_none_promt": 0,
-    "staff_force_enable_reviews": 0,
 
     "dismissible_daily_tab_new": 0
 };
@@ -735,6 +734,7 @@ const converted_currencies = {
         extension: "US$",
         display_type: "fixed",
         amounts: {
+            39999: 39999,
             3499: 3499,
             2899: 2899,
             2599: 2599,
@@ -771,6 +771,7 @@ const converted_currencies = {
         extension: "TRY ",
         display_type: "fixed",
         amounts: {
+            39999: 600000,
             3499: 36799,
             2899: 30499,
             2599: 27399,
@@ -807,6 +808,7 @@ const converted_currencies = {
         extension: "R$",
         display_type: "fixed",
         amounts: {
+            39999: 150990,
             3499: 8590,
             2899: 6590,
             2599: 5590,
@@ -843,6 +845,7 @@ const converted_currencies = {
         extension: "&#x20B1;",
         display_type: "fixed",
         amounts: {
+            39999: 1469000,
             3499: 101000,
             2899: 86000,
             2599: 78900,
@@ -879,6 +882,7 @@ const converted_currencies = {
         extension: "PEN ",
         display_type: "fixed",
         amounts: {
+            39999: 128990,
             3499: 7490,
             2899: 6090,
             2599: 5400,
@@ -915,6 +919,7 @@ const converted_currencies = {
         extension: "MX$",
         display_type: "fixed",
         amounts: {
+            39999: 419900,
             3499: 38900,
             2899: 28900,
             2599: 23900,
@@ -951,6 +956,7 @@ const converted_currencies = {
         extension: "&#x20AB;",
         display_type: "locale",
         amounts: {
+            39999: 8199000,
             3499: 495000,
             2899: 399000,
             2599: 349000,
@@ -987,6 +993,7 @@ const converted_currencies = {
         extension: "COP ",
         display_type: "locale",
         amounts: {
+            39999: 150990000,
             3499: 9500000,
             2899: 8190000,
             2599: 7550000,
@@ -1023,6 +1030,7 @@ const converted_currencies = {
         extension: "&#x20AC;",
         display_type: "fixed",
         amounts: {
+            39999: 40000,
             3499: 3499,
             2899: 2899,
             2599: 2599,
@@ -1059,6 +1067,7 @@ const converted_currencies = {
         extension: "&#xA3;",
         display_type: "fixed",
         amounts: {
+            39999: 40000,
             3499: 3499,
             2899: 2899,
             2599: 2599,
@@ -1095,6 +1104,7 @@ const converted_currencies = {
         extension: "CA$",
         display_type: "fixed",
         amounts: {
+            39999: 40900,
             3499: 3499,
             2899: 2899,
             2599: 2599,
@@ -1131,6 +1141,7 @@ const converted_currencies = {
         extension: "A$",
         display_type: "fixed",
         amounts: {
+            39999: 43999,
             3499: 3500,
             2899: 2900,
             2599: 2600,
@@ -1167,6 +1178,7 @@ const converted_currencies = {
         extension: "JP&#x00A5;",
         display_type: "locale",
         amounts: {
+            39999: 58000,
             3499: 3890,
             2899: 2890,
             2599: 2390,
@@ -1203,6 +1215,7 @@ const converted_currencies = {
         extension: "PLN ",
         display_type: "fixed",
         amounts: {
+            39999: 118999,
             3499: 9700,
             2899: 8299,
             2599: 7599,

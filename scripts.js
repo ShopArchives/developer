@@ -277,7 +277,7 @@ async function verifyOrigin() {
                     currentUserData = data;
                 } catch(err) {
                     console.error(err);
-                    return triggerSessionExpiredBlock();
+                    return triggerSessionExpiredBlock(err);
                 }
             }
             if (currentUserData && currentUserData.admin_level >= 1) {
@@ -976,8 +976,8 @@ async function loadSite() {
             const category = data1;
             const product = data2;
 
-            const ia = category.assets.id;
-            const ua = category.assets.url;
+            const ia = category.assets?.id ?? {};
+            const ua = category.assets?.url ?? {};
 
             if (type === "fromCollectibleCard") {
                 modal.setAttribute('data-clear-param', 'itemSkuId');
@@ -2506,10 +2506,6 @@ async function loadSite() {
                     });
                     
                     const reviewsTab = modal.querySelector('#category-modal-tab-4');
-                    if (settingsStore.staff_force_enable_reviews === 0) {
-                        reviewsTab.classList.add('has-tooltip');
-                        reviewsTab.setAttribute('data-tooltip', 'Reviews have been temporarily disabled');
-                    } else
                     if (categoryModalInfo.reviews_disabled != true || settingsStore.staff_force_viewable_reviews_tab === 1) {
                         reviewsTab.classList.remove('disabled');
                         reviewsTab.addEventListener("click", function () {
@@ -2552,7 +2548,7 @@ async function loadSite() {
                     const catalogBannerAssetEntry = Object.values(customCategoryAssets).find(entry =>
                         typeof entry === "object" && entry.sku_id === categoryData.sku_id
                     );
-                    if (Object.keys(categoryData.assets.id).length !== 0 || catalogBannerAssetEntry) {
+                    if (Object.keys(categoryData.assets?.id ?? {}).length !== 0 || catalogBannerAssetEntry) {
                         tab3.classList.remove('hidden');
                         tab3.addEventListener("click", function () {
                             changeModalTab('3');
@@ -2560,7 +2556,7 @@ async function loadSite() {
                     }
 
                     const tab6 = modal.querySelector('#category-modal-tab-6');
-                    if (Object.keys(categoryData.assets.url).length !== 0) {
+                    if (Object.keys(categoryData.assets?.url ?? {}).length !== 0) {
                         tab6.classList.remove('hidden');
                         tab6.addEventListener("click", function () {
                             changeModalTab('6');
@@ -2568,7 +2564,7 @@ async function loadSite() {
                     }
 
                     const tab8 = modal.querySelector('#category-modal-tab-8');
-                    if (Object.keys(categoryData.assets.overrides).length !== 0) {
+                    if (Object.keys(categoryData.assets?.overrides ?? {}).length !== 0) {
                         tab8.classList.remove('hidden');
                         tab8.addEventListener("click", function () {
                             changeModalTab('8');
@@ -2594,8 +2590,8 @@ async function loadSite() {
 
                     const assetsContainer = modalInner.querySelector('.category-modal-assets-container');
 
-                    const ia = categoryData.assets.id;
-                    const ja = categoryData.assets.json;
+                    const ia = categoryData.assets?.id ?? {};
+                    const ja = categoryData.assets?.json ?? {};
 
                     const allAssets = {
                         "Banner": ia.banner,
@@ -6404,10 +6400,10 @@ async function loadSite() {
         const categoryAssetEntry = Object.values(customCategoryAssets).find(entry =>
             typeof entry === "object" && entry.sku_id === categoryData.sku_id
         );
-        const ia = categoryData.assets.id;
-        const ja = categoryData.assets.json;
-        const ua = categoryData.assets.url;
-        const oa = categoryData.assets.overrides;
+        const ia = categoryData.assets?.id ?? {};
+        const ja = categoryData.assets?.json ?? {};
+        const ua = categoryData.assets?.url ?? {};
+        const oa = categoryData.assets?.overrides ?? {};
 
         let categoryBanner = customCategoryAssets[0];
         if (category_client_overrides[categoryClientDataId]?.banner_override) categoryBanner = category_client_overrides[categoryClientDataId]?.banner_override;
@@ -9743,17 +9739,6 @@ async function loadSite() {
                             </div>
                         </div>
                     </div>
-                    <div class="setting">
-                        <div class="setting-info">
-                            <p class="setting-title">Force enable reviews</p>
-                            <p class="setting-description">Heleleeelelee!! tf you think this does?</p>
-                        </div>
-                        <div class="toggle-container">
-                            <div class="toggle" id="staff_force_enable_reviews_toggle">
-                                <div class="toggle-circle"></div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             `;
 
@@ -9804,11 +9789,6 @@ async function loadSite() {
 
             devtoolsContainer.querySelector('#staff_auth_remove_none_promt_toggle').addEventListener("click", () => {
                 toggleSetting('staff_auth_remove_none_promt');
-                updateToggleStates();
-            });
-
-            devtoolsContainer.querySelector('#staff_force_enable_reviews_toggle').addEventListener("click", () => {
-                toggleSetting('staff_force_enable_reviews');
                 updateToggleStates();
             });
 
@@ -9944,35 +9924,65 @@ if (appType === "Dev") {
     document.getElementById('logo-link-brick').textContent = 'yapper.shop'
 }
 
-function triggerSessionExpiredBlock() {
+function triggerSessionExpiredBlock(err) {
     const currentLoggedInUser = JSON.parse(localStorage.getItem('currentUser')) || {};
+    const status = JSON.parse(err).status;
+    let isHidden = " hidden";
+    if (currentLoggedInUser.username) isHidden = "";
     try {
-        document.querySelector(".brick-wall-info").innerHTML = `
-            <div class="brick-wall-text">
-                <h2 class="error-text">Session Expired!</h2>
-            </div>
-            <div class="brick-wall-user-container">
-                <div class="brick-wall-user">
-                    <img src="https://cdn.discordapp.com/avatars/${currentLoggedInUser?.id}/${currentLoggedInUser?.avatar}.webp?size=128">
-                    <div>
-                        <h3 class="error-text">${currentLoggedInUser?.global_name ?? currentLoggedInUser?.username}</h3>
-                        <p>${currentLoggedInUser?.username}</p>
-                    </div>
-                    <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12.5007 22.9173C18.2536 22.9173 22.9173 18.2536 22.9173 12.5007C22.9173 6.74768 18.2536 2.08398 12.5007 2.08398C6.74768 2.08398 2.08398 6.74768 2.08398 12.5007C2.08398 18.2536 6.74768 22.9173 12.5007 22.9173Z" fill="white"/>
-                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12.4993 23.9577C15.5383 23.9577 18.4528 22.7505 20.6016 20.6016C22.7505 18.4528 23.9577 15.5383 23.9577 12.4993C23.9577 9.46041 22.7505 6.54594 20.6016 4.39708C18.4528 2.24823 15.5383 1.04102 12.4993 1.04102C9.46041 1.04102 6.54594 2.24823 4.39708 4.39708C2.24823 6.54594 1.04102 9.46041 1.04102 12.4993C1.04102 15.5383 2.24823 18.4528 4.39708 20.6016C6.54594 22.7505 9.46041 23.9577 12.4993 23.9577ZM13.9993 7.35352L13.6035 14.5827C13.6035 14.8755 13.4872 15.1564 13.2801 15.3634C13.073 15.5705 12.7922 15.6869 12.4993 15.6869C12.2065 15.6869 11.9257 15.5705 11.7186 15.3634C11.5115 15.1564 11.3952 14.8755 11.3952 14.5827L10.9994 7.35352C10.9908 7.21156 11.0114 7.06935 11.06 6.93567C11.1085 6.80198 11.1838 6.67965 11.2814 6.5762C11.379 6.47275 11.4968 6.39039 11.6274 6.33417C11.758 6.27796 11.8988 6.24909 12.041 6.24935H12.9577C13.0999 6.24909 13.2407 6.27796 13.3713 6.33417C13.5019 6.39039 13.6197 6.47275 13.7173 6.5762C13.8149 6.67965 13.8902 6.80198 13.9387 6.93567C13.9873 7.06935 14.0079 7.21156 13.9993 7.35352ZM13.8014 18.4889C13.8014 18.8343 13.6642 19.1655 13.4201 19.4096C13.1759 19.6538 12.8447 19.791 12.4993 19.791C12.154 19.791 11.8228 19.6538 11.5786 19.4096C11.3344 19.1655 11.1973 18.8343 11.1973 18.4889C11.1973 18.1436 11.3344 17.8124 11.5786 17.5682C11.8228 17.324 12.154 17.1869 12.4993 17.1869C12.8447 17.1869 13.1759 17.324 13.4201 17.5682C13.6642 17.8124 13.8014 18.1436 13.8014 18.4889Z" fill="#D52E3B"/>
-                    </svg>
+        if (status === 403) {
+            document.querySelector(".brick-wall-info").innerHTML = `
+                <div class="brick-wall-text">
+                    <h2 class="error-text">Banned</h2>
+                    <p>This account has been blacklisted from being used on Shop Archives, please continue as guest</p>
                 </div>
-            </div>
-            <div class="brick-wall-buttons-container">
-                <button class="generic-button brand" onclick="loginWithDiscord();">
-                    Login with Discord
-                </button>
-                <button class="generic-button primary" onclick="logoutOfDiscord();">
-                    Continue as Guest
-                </button>
-            </div>
-        `;
+                <div class="brick-wall-user-container${isHidden}">
+                    <div class="brick-wall-user">
+                        <img src="https://cdn.discordapp.com/avatars/${currentLoggedInUser?.id}/${currentLoggedInUser?.avatar}.webp?size=128">
+                        <div>
+                            <h3 class="error-text">${currentLoggedInUser?.global_name ?? currentLoggedInUser?.username}</h3>
+                            <p>${currentLoggedInUser?.username}</p>
+                        </div>
+                        <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12.5007 22.9173C18.2536 22.9173 22.9173 18.2536 22.9173 12.5007C22.9173 6.74768 18.2536 2.08398 12.5007 2.08398C6.74768 2.08398 2.08398 6.74768 2.08398 12.5007C2.08398 18.2536 6.74768 22.9173 12.5007 22.9173Z" fill="white"/>
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M12.4993 23.9577C15.5383 23.9577 18.4528 22.7505 20.6016 20.6016C22.7505 18.4528 23.9577 15.5383 23.9577 12.4993C23.9577 9.46041 22.7505 6.54594 20.6016 4.39708C18.4528 2.24823 15.5383 1.04102 12.4993 1.04102C9.46041 1.04102 6.54594 2.24823 4.39708 4.39708C2.24823 6.54594 1.04102 9.46041 1.04102 12.4993C1.04102 15.5383 2.24823 18.4528 4.39708 20.6016C6.54594 22.7505 9.46041 23.9577 12.4993 23.9577ZM13.9993 7.35352L13.6035 14.5827C13.6035 14.8755 13.4872 15.1564 13.2801 15.3634C13.073 15.5705 12.7922 15.6869 12.4993 15.6869C12.2065 15.6869 11.9257 15.5705 11.7186 15.3634C11.5115 15.1564 11.3952 14.8755 11.3952 14.5827L10.9994 7.35352C10.9908 7.21156 11.0114 7.06935 11.06 6.93567C11.1085 6.80198 11.1838 6.67965 11.2814 6.5762C11.379 6.47275 11.4968 6.39039 11.6274 6.33417C11.758 6.27796 11.8988 6.24909 12.041 6.24935H12.9577C13.0999 6.24909 13.2407 6.27796 13.3713 6.33417C13.5019 6.39039 13.6197 6.47275 13.7173 6.5762C13.8149 6.67965 13.8902 6.80198 13.9387 6.93567C13.9873 7.06935 14.0079 7.21156 13.9993 7.35352ZM13.8014 18.4889C13.8014 18.8343 13.6642 19.1655 13.4201 19.4096C13.1759 19.6538 12.8447 19.791 12.4993 19.791C12.154 19.791 11.8228 19.6538 11.5786 19.4096C11.3344 19.1655 11.1973 18.8343 11.1973 18.4889C11.1973 18.1436 11.3344 17.8124 11.5786 17.5682C11.8228 17.324 12.154 17.1869 12.4993 17.1869C12.8447 17.1869 13.1759 17.324 13.4201 17.5682C13.6642 17.8124 13.8014 18.1436 13.8014 18.4889Z" fill="#D52E3B"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="brick-wall-buttons-container1">
+                    <button class="generic-button primary" onclick="logoutOfDiscord();">
+                        Continue as Guest
+                    </button>
+                </div>
+            `;
+        } else {
+            document.querySelector(".brick-wall-info").innerHTML = `
+                <div class="brick-wall-text">
+                    <h2 class="error-text">Session Expired!</h2>
+                </div>
+                <div class="brick-wall-user-container">
+                    <div class="brick-wall-user">
+                        <img src="https://cdn.discordapp.com/avatars/${currentLoggedInUser?.id}/${currentLoggedInUser?.avatar}.webp?size=128">
+                        <div>
+                            <h3 class="error-text">${currentLoggedInUser?.global_name ?? currentLoggedInUser?.username}</h3>
+                            <p>${currentLoggedInUser?.username}</p>
+                        </div>
+                        <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12.5007 22.9173C18.2536 22.9173 22.9173 18.2536 22.9173 12.5007C22.9173 6.74768 18.2536 2.08398 12.5007 2.08398C6.74768 2.08398 2.08398 6.74768 2.08398 12.5007C2.08398 18.2536 6.74768 22.9173 12.5007 22.9173Z" fill="white"/>
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M12.4993 23.9577C15.5383 23.9577 18.4528 22.7505 20.6016 20.6016C22.7505 18.4528 23.9577 15.5383 23.9577 12.4993C23.9577 9.46041 22.7505 6.54594 20.6016 4.39708C18.4528 2.24823 15.5383 1.04102 12.4993 1.04102C9.46041 1.04102 6.54594 2.24823 4.39708 4.39708C2.24823 6.54594 1.04102 9.46041 1.04102 12.4993C1.04102 15.5383 2.24823 18.4528 4.39708 20.6016C6.54594 22.7505 9.46041 23.9577 12.4993 23.9577ZM13.9993 7.35352L13.6035 14.5827C13.6035 14.8755 13.4872 15.1564 13.2801 15.3634C13.073 15.5705 12.7922 15.6869 12.4993 15.6869C12.2065 15.6869 11.9257 15.5705 11.7186 15.3634C11.5115 15.1564 11.3952 14.8755 11.3952 14.5827L10.9994 7.35352C10.9908 7.21156 11.0114 7.06935 11.06 6.93567C11.1085 6.80198 11.1838 6.67965 11.2814 6.5762C11.379 6.47275 11.4968 6.39039 11.6274 6.33417C11.758 6.27796 11.8988 6.24909 12.041 6.24935H12.9577C13.0999 6.24909 13.2407 6.27796 13.3713 6.33417C13.5019 6.39039 13.6197 6.47275 13.7173 6.5762C13.8149 6.67965 13.8902 6.80198 13.9387 6.93567C13.9873 7.06935 14.0079 7.21156 13.9993 7.35352ZM13.8014 18.4889C13.8014 18.8343 13.6642 19.1655 13.4201 19.4096C13.1759 19.6538 12.8447 19.791 12.4993 19.791C12.154 19.791 11.8228 19.6538 11.5786 19.4096C11.3344 19.1655 11.1973 18.8343 11.1973 18.4889C11.1973 18.1436 11.3344 17.8124 11.5786 17.5682C11.8228 17.324 12.154 17.1869 12.4993 17.1869C12.8447 17.1869 13.1759 17.324 13.4201 17.5682C13.6642 17.8124 13.8014 18.1436 13.8014 18.4889Z" fill="#D52E3B"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="brick-wall-buttons-container">
+                    <button class="generic-button brand" onclick="loginWithDiscord();">
+                        Login with Discord
+                    </button>
+                    <button class="generic-button primary" onclick="logoutOfDiscord();">
+                        Continue as Guest
+                    </button>
+                </div>
+            `;
+        }
     } catch {
         
     }
