@@ -277,7 +277,7 @@ async function verifyOrigin() {
                     currentUserData = data;
                 } catch(err) {
                     console.error(err);
-                    return triggerSafetyBlock();
+                    return triggerSessionExpiredBlock();
                 }
             }
             if (currentUserData && currentUserData.admin_level >= 1) {
