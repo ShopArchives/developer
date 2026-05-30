@@ -5356,13 +5356,15 @@ async function loadSite() {
                     else if (quest?.task_config_v2?.tasks?.WATCH_VIDEO_ON_MOBILE?.assets?.video?.url) {
                         asset = quest.task_config_v2.tasks.WATCH_VIDEO_ON_MOBILE.assets.video.url;
                     }
+                    let videourl = `https://cdn.discordapp.com/quests/${quest.id}/${asset}`;
+                    if (asset.includes("quests")) videourl = `https://cdn.discordapp.com/${asset}`;
                     modalInner.innerHTML = `
                         <div class="category-modal-bottom-container">
                             <div class="video-quest-disclaimer">
                                 <p>Watching this video here will not grant you the quest reward.</p>
                                 <p>Watch the video on Discord to claim the quest reward.</p>
                             </div>
-                            <video controls src="https://cdn.discordapp.com/quests/${quest.id}/${asset}"></video>
+                            <video controls src="${videourl}"></video>
                         </div>
                     `;
                     const video = modalInner.querySelector('video');
@@ -6426,6 +6428,8 @@ async function loadSite() {
 
         let catalogBannerAsset = customCategoryAssets[1];
         if (categoryAssetEntry?.catalog_banner_asset) catalogBannerAsset = categoryAssetEntry?.catalog_banner_asset?.static;
+        else if (oa.mobile_banner && isMobileCache) catalogBannerAsset = oa.mobile_banner;
+        else if (ua.mobile_banner && isMobileCache) catalogBannerAsset = ua.mobile_banner;
         else if (oa.catalog_banner) catalogBannerAsset = oa.catalog_banner;
         else if (ua.catalog_banner) catalogBannerAsset = ua.catalog_banner;
 
@@ -7462,31 +7466,20 @@ async function loadSite() {
                 previewContainer.classList.add('type-3000-card-preview-container');
                     
                 previewContainer.innerHTML = `
-                    <svg class="type-3000-card-preview nitro-3-days-orb-preview" width="187" height="187" viewBox="0 0 187 187" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M161.164 3.17212H30.5663C16.8601 3.17212 5.74902 14.3031 5.74902 28.0339V158.866C5.74902 172.597 16.8601 183.728 30.5663 183.728H161.164C174.87 183.728 185.982 172.597 185.982 158.866V28.0339C185.982 14.3031 174.87 3.17212 161.164 3.17212Z" fill="url(#paint0_linear_170_2)"/>
-                    <g filter="url(#filter0_d_170_2)">
-                    <path d="M100.125 107.318C106.339 107.318 111.376 102.266 111.376 96.0332C111.376 89.8007 106.339 84.7483 100.125 84.7483C93.9113 84.7483 88.874 89.8007 88.874 96.0332C88.874 102.266 93.9113 107.318 100.125 107.318Z" fill="white"/>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M55.1214 50.8938C52.0146 50.8938 49.496 53.42 49.496 56.5362C49.496 59.6525 52.0146 62.1787 55.1214 62.1787H71.9979C75.1048 62.1787 77.6235 64.7049 77.6235 67.8211C77.6235 70.9373 75.1048 73.4635 71.9979 73.4635H46.6832C43.5763 73.4635 41.0576 75.9897 41.0576 79.106C41.0576 82.2222 43.5763 84.7484 46.6832 84.7484H60.7469C63.8539 84.7484 66.3724 87.2746 66.3724 90.3908C66.3724 93.5071 63.8539 96.0333 60.7469 96.0333H49.496C46.389 96.0333 43.8704 98.5595 43.8704 101.676C43.8704 104.792 46.389 107.318 49.496 107.318H56.5393C61.5352 126.787 79.1553 141.173 100.125 141.173C124.981 141.173 145.13 120.963 145.13 96.0333C145.13 71.1035 124.981 50.8938 100.125 50.8938H55.1214ZM100.125 118.603C112.553 118.603 122.627 108.498 122.627 96.0333C122.627 83.5683 112.553 73.4635 100.125 73.4635C87.6979 73.4635 77.6235 83.5683 77.6235 96.0333C77.6235 108.498 87.6979 118.603 100.125 118.603Z" fill="white"/>
-                    <path d="M29.8064 84.7485C32.9133 84.7485 35.4319 82.2223 35.4319 79.1061C35.4319 75.9898 32.9133 73.4636 29.8064 73.4636H26.9936C23.8868 73.4636 21.3682 75.9898 21.3682 79.1061C21.3682 82.2223 23.8868 84.7485 26.9936 84.7485H29.8064Z" fill="white"/>
-                    </g>
-                    <defs>
-                    <filter id="filter0_d_170_2" x="7.48094" y="42.5615" width="151.536" height="118.053" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-                    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
-                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
-                    <feOffset dy="5.55489"/>
-                    <feGaussianBlur stdDeviation="6.94361"/>
-                    <feComposite in2="hardAlpha" operator="out"/>
-                    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
-                    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_170_2"/>
-                    <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_170_2" result="shape"/>
-                    </filter>
-                    <linearGradient id="paint0_linear_170_2" x1="160.748" y1="183.303" x2="46.3474" y2="36.4729" gradientUnits="userSpaceOnUse">
-                    <stop stop-color="#E978E6"/>
-                    <stop offset="1" stop-color="#2F3EBB"/>
-                    </linearGradient>
-                    </defs>
-                    </svg>
+                    <canvas id="rive-canvas"></canvas>
                 `;
+                const runtime = new rive.Rive({
+                    src: "https://cdn.yapper.shop/discord-assets/67.riv", 
+                    canvas: previewContainer.querySelector("#rive-canvas"),
+                    autoplay: true,
+                    stateMachines: "State Machine 1", 
+
+                    onLoad: () => {
+                        // Fires immediately when the asset successfully loads
+                        console.log("Rive animation loaded successfully!");
+                        runtime.resizeDrawingSurfaceToCanvas();
+                    }
+                });
             } else {
                 cardTag.innerHTML = `
                     <p class="shop-card-tag">UPDATE REQUIRED</p>
@@ -9529,25 +9522,54 @@ async function loadSite() {
                         <p class="modalv3-content-card-summary">Fetch item data from the database using an SKU ID or Product ID</p>
                     </div>
                     <div class="bottom">
-                        <input type="text" class="modalv3-input" autocomplete="off" placeholder="ID" id="fetch-product-v4-input" inputmode="numeric"></input>
 
+                        <h2 class="modalv3-content-card-header">From</h2>
+                        <hr class="inv">
+                        <div class="options-picker">
+                            <div class="option selected" id="method-option-1">
+                                <h3>Shop Archives</h3>
+                                <p>SKU ID or Product ID</p>
+                            </div>
+                            <div class="option" id="method-option-2">
+                                <h3>Discord</h3>
+                                <p>SKU ID</p>
+                            </div>
+                            <div class="option" id="method-option-3">
+                                <h3>Discord</h3>
+                                <p>Product ID</p>
+                            </div>
+                        </div>
+
+                        <hr class="inv">
+
+                        <h2 class="modalv3-content-card-header">Method</h2>
                         <div class="setting">
                             <div class="setting-info">
-                                <p class="setting-title">Fetch with Discord integration</p>
-                                <p class="setting-description">Only works with SKU ID</p>
+                                <p class="setting-title">Primary Endpoint</p>
                             </div>
-                            <div class="toggle-container">
-                                <div class="toggle" id="fetch_from_discord_toggle">
+                            <div class="toggle-container disabled">
+                                <div class="toggle" id="primary_endpoint_toggle">
+                                    <div class="toggle-circle"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="setting">
+                            <div class="setting-info">
+                                <p class="setting-title">Not So Popular Endpoint</p>
+                            </div>
+                            <div class="toggle-container disabled">
+                                <div class="toggle" id="not_primary_endpoint_toggle">
                                     <div class="toggle-circle"></div>
                                 </div>
                             </div>
                         </div>
 
-                        <button class="generic-button brand" id="fetch-product-v4-btn">Fetch Product Data</button>
+                        <div class="fetch-products-fields-fill">
+                        </div>
 
                         <hr class="inv">
 
-                        <p class="modalv3-content-card-summary">Product output:</p>
+                        <p class="modalv3-content-card-summary">Output:</p>
 
                         <div class="products-wrapper" id="fetch-product-v4-output"></div>
                     </div>
@@ -9555,16 +9577,215 @@ async function loadSite() {
             `;
 
             let cuteStore = {
-                "fetch_from_discord": 0
+                "method": 0,
+                "primary_endpoint": 0,
+                "not_primary_endpoint": 0,
             };
 
-            tabPageOutput.querySelector('#fetch_from_discord_toggle').addEventListener("click", () => {
-                toggleSettingCute('fetch_from_discord');
+            const mthdbtn1 = tabPageOutput.querySelector('#method-option-1');
+            const mthdbtn2 = tabPageOutput.querySelector('#method-option-2');
+            const mthdbtn3 = tabPageOutput.querySelector('#method-option-3');
+            const primary_endpoint_toggle = tabPageOutput.querySelector('#primary_endpoint_toggle');
+            const productsWrapper = tabPageOutput.querySelector('#fetch-product-v4-output');
+
+            function changeMethod(method) {
+                setSettingCute('method', method);
+                tabPageOutput.querySelector('.options-picker').querySelectorAll(".selected").forEach(e => {
+                    e.classList.remove('selected')
+                });
+                const mthdpls1 = method + 1;
+                tabPageOutput.querySelector('#method-option-' + mthdpls1).classList.add('selected');
+                if (method === 0) {
+                    primary_endpoint_toggle.parentElement.classList.add('disabled');
+                    setSettingCute('primary_endpoint', 0);
+                    setSettingCute('not_primary_endpoint', 0);
+                } else if (method === 1) {
+                    primary_endpoint_toggle.parentElement.classList.remove('disabled');
+                    setSettingCute('not_primary_endpoint', 1);
+                } else if (method === 2) {
+                    primary_endpoint_toggle.parentElement.classList.add('disabled');
+                    setSettingCute('primary_endpoint', 0);
+                    setSettingCute('not_primary_endpoint', 1);
+                }
+            }
+
+            mthdbtn1.addEventListener("click", () => {
+                changeMethod(0);
             });
+            mthdbtn2.addEventListener("click", () => {
+                changeMethod(1);
+            });
+            mthdbtn3.addEventListener("click", () => {
+                changeMethod(2);
+            });
+
+
+            primary_endpoint_toggle.addEventListener("click", () => {
+                if (primary_endpoint_toggle.parentElement.classList.contains('disabled')) return;
+                toggleSettingCute('primary_endpoint');
+            });
+
+
+
+            const app = tabPageOutput.querySelector(".fetch-products-fields-fill");
+
+            function createSection(title) {
+                const div = document.createElement("div");
+                div.className = "section";
+                div.style.display = "flex";
+                div.style.flexDirection = "column";
+                div.style.gap = "10px";
+            
+                const h = document.createElement("h3");
+                h.textContent = title;
+            
+                div.appendChild(h);
+                return div;
+            }
+            
+            // Products
+            const productSection = createSection("Products");
+            const productList = document.createElement("div");
+            productList.className = "products";
+            productList.style.display = "flex";
+            productList.style.flexDirection = "column";
+            productList.style.gap = "10px";
+
+            const addBtn = document.createElement("button");
+            addBtn.textContent = "+ Add Product";
+            addBtn.className = "generic-button brand";
+
+            addBtn.onclick = () => addProduct("");
+
+            function addProduct(value) {
+                const row = document.createElement("div");
+                row.className = "product-item";
+
+                const input = document.createElement("input");
+                input.classList.add('modalv3-input');
+                input.value = value;
+                input.addEventListener('input', function(e) {
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
+
+                    const newValue = this.value.replace(/[^0-9]/g, '');
+
+                    if (this.value !== newValue) {
+                        this.value = newValue;
+                        this.setSelectionRange(start - 1, end - 1);
+                    }
+                });
+
+                // // Move Up Button
+                // const moveUp = document.createElement("button");
+                // moveUp.textContent = "/\\";
+                // moveUp.className = "generic-button primary";
+                // moveUp.onclick = () => {
+                //     if (row.previousElementSibling) {
+                //         productList.insertBefore(row, row.previousElementSibling);
+                //     }
+                // };
+            
+                // // Move Down Button
+                // const moveDown = document.createElement("button");
+                // moveDown.textContent = "\\/";
+                // moveDown.className = "generic-button primary";
+                // moveDown.onclick = () => {
+                //     if (row.nextElementSibling) {
+                //         productList.insertBefore(row.nextElementSibling, row);
+                //     }
+                // };
+            
+                const remove = document.createElement("button");
+                remove.textContent = "X";
+                remove.className = "generic-button red";
+                remove.onclick = () => row.remove();
+            
+                row.appendChild(input);
+                // row.appendChild(moveUp);
+                // row.appendChild(moveDown);
+                row.appendChild(remove);
+                productList.appendChild(row);
+            }
+
+            productSection.appendChild(productList);
+            productSection.appendChild(addBtn);
+            app.appendChild(productSection);
+
+            const submitBtn = document.createElement("button");
+            submitBtn.textContent = "Fetch Products";
+            submitBtn.className = "generic-button green";
+
+            addProduct("");
+
+            submitBtn.onclick = async () => {
+                productsWrapper.innerHTML = ``;
+                const data = {
+                    products: []
+                };
+            
+                // Products
+                document.querySelectorAll(".product-item input").forEach(i => {
+                    if (i.value.trim()) data.products.push(i.value.trim());
+                });
+                
+                const getSkuUrl = (ids) => {
+                    const params = new URLSearchParams();
+                    ids.forEach(id => params.append('ids', id.trim()));
+                    params.append('method', cuteStore.method);
+                    params.append('primary_endpoint', cuteStore.primary_endpoint ? 'true' : 'false');
+                    params.append('not_primary_endpoint', cuteStore.not_primary_endpoint ? 'true' : 'false');
+
+                    return `${endpnts.PRODUCTS}?${params.toString()}`;
+                };
+
+                const theurl = getSkuUrl(data.products);
+
+                try {
+                    const theurljson = await fetchAPI.get(theurl);
+                    for (const p of theurljson) {
+                        if (p.success) {
+                            const item = await renderProduct(leaks_dummy_data.categories[0], p.data);
+                            productsWrapper.appendChild(item);
+                        } else {
+                            const item = document.createElement("div");
+                            item.innerHTML = `
+                                <div class="errormessagejsonthingidk">
+                                    <h3>Error</h3>
+                                    <p>There was an error getting item '${p.id}'</p>
+                                </div>
+                            `;
+                            productsWrapper.appendChild(item);
+                        }
+                    }
+                } catch(err) {
+                    console.error(err);
+                    if (err) {
+                        const error = JSON.parse(err)
+                        productsWrapper.innerHTML = `
+                            <div class="errormessagejsonthingidk">
+                                <h3>${error.status}: ${error.error}</h3>
+                                <p>${error.message}</p>
+                            </div>
+                        `;
+                    } else {
+                        productsWrapper.innerHTML = `There was an error fetching that product`;
+                    }
+                }
+            };
+
+            app.appendChild(submitBtn);
+
 
             function toggleSettingCute(key) {
                 if (key in cuteStore) {
                     cuteStore[key] = cuteStore[key] === 0 ? 1 : 0;
+                    updateToggleStatesCute();
+                }
+            }
+            function setSettingCute(key, value) {
+                if (key in cuteStore) {
+                    cuteStore[key] = value;
                     updateToggleStatesCute();
                 }
             }
@@ -9576,51 +9797,6 @@ async function loadSite() {
                     }
                 });
             }
-
-            const v4input = tabPageOutput.querySelector('#fetch-product-v4-input');
-            const productsWrapper = tabPageOutput.querySelector('#fetch-product-v4-output');
-            tabPageOutput.querySelector('#fetch-product-v4-btn').addEventListener("click", async () => {
-                if (v4input.value.trim().length != 0) {
-                    productsWrapper.innerHTML = ``;
-
-                    const URLParams = new URLSearchParams();
-                    if (cuteStore.fetch_from_discord === 1) {
-                        URLParams.append("source", "discord");
-                    }
-
-                    try {
-                        const queryString = URLParams.size > 0 ? `?${URLParams.toString()}` : '';
-                        const data = await fetchAPI.get(endpnts.PRODUCT + v4input.value.trim() + queryString);
-
-                        const item = await renderProduct(leaks_dummy_data.categories[0], data);
-                        productsWrapper.appendChild(item);
-                    } catch(err) {
-                        console.error(err);
-                        if (err) {
-                            const error = JSON.parse(err)
-                            productsWrapper.innerHTML = `
-                                <div class="errormessagejsonthingidk">
-                                    <h3>${error.status}: ${error.error}</h3>
-                                    <p>${error.message}</p>
-                                </div>
-                            `;
-                        } else {
-                            productsWrapper.innerHTML = `There was an error fetching that product`;
-                        }
-                    }
-                }
-            });
-            v4input.addEventListener('input', function(e) {
-                const start = this.selectionStart;
-                const end = this.selectionEnd;
-
-                const newValue = this.value.replace(/[^0-9]/g, '');
-                          
-                if (this.value !== newValue) {
-                    this.value = newValue;
-                    this.setSelectionRange(start - 1, end - 1);
-                }
-            });
 
         } else {
             console.error(tab + ' is not a valid tab');

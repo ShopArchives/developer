@@ -378,6 +378,7 @@ p, h1, h2, h3, h4, h5, h6, a {
 .toggle-container.disabled .toggle {
     opacity: 0.75;
     cursor: not-allowed !important;
+    user-select: none !important;
 }
 .toggle {
     width: 60px;
@@ -947,10 +948,20 @@ hr {
     border-radius: 20px;
     cursor: pointer;
 }
+.mobile .catalog-banner-container {
+    position: relative;
+    min-width: 500px;
+    max-width: 1200px;
+    width: 100%;
+    height: 150px;
+    border-radius: 20px;
+    cursor: pointer;
+}
 .catalog-banner-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: left;
 }
 .catalog-banner-container video {
     position: absolute;
@@ -959,6 +970,7 @@ hr {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: left;
 }
 
 .add-category-banner {
@@ -1750,12 +1762,26 @@ hr {
     scale: 70%;
 }
 
-.type-3000-card-preview-container:has(.nitro-3-days-orb-preview) {
-    margin-top: 10px;
+.type-3000-card-preview-container:has(.profile-badge-orb-preview) {
+    margin-top: 20px;
 }
 
-.type-3000-card-preview-container:has(.profile-badge-orb-preview) {
-    margin-top: 10px;
+.type-3000-card-preview-container:has(#rive-canvas) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 284px;
+    transform: unset;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+}
+.type-3000-card-preview-container #rive-canvas {
+    position: absolute;
+    height: 100%;
+    scale: 1.5;
 }
 
 /* Card Variants */
@@ -4677,6 +4703,30 @@ hr {
     max-width: 750px;
 }
 
+.modalv3-content-card-1 .bottom .options-picker {
+    padding: 10px;
+    border-radius: 5px;
+    background-color: var(--background-secondary);
+    display: grid;
+    gap: 10px;
+    grid-template-columns: 1fr 1fr 1fr;
+}
+.modalv3-content-card-1 .bottom .options-picker p {
+    color: var(--text-tertiary);
+    font-size: 14px;
+}
+.modalv3-content-card-1 .bottom .options-picker .option {
+    padding: 5px;
+    border-radius: 5px;
+    background-color: var(--background-primary);
+    border: 2px solid var(--background-primary);
+    cursor: pointer;
+}
+.modalv3-content-card-1 .bottom .options-picker .option.selected {
+    border: 2px solid var(--color-green);
+    cursor: default;
+}
+
 
 
 .modalv3-side-tabs-app-info-container {
@@ -6016,6 +6066,27 @@ hr {
     background-color: var(--input-primary);
 }
 
+
+.fetch-products-fields-fill {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.fetch-products-fields-fill > * {
+    flex-shrink: 0;
+}
+
+.fetch-products-fields-fill .product-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 5px;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: var(--background-primary);
+    width: fit-content;
+}
 
 
 

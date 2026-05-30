@@ -1,37 +1,17 @@
 
-const appVersion = "7.5.07";
+const appVersion = "7.5.1";
 const appType = "Dev";
 
 const endpoints = {
     MAIN: "https://api.yapper.shop/",
     VERSION: "v3",
-    VERIFY_ORIGIN: "/heartbeat",
-    SERVER_EXPERIMENTS: "/experiments",
-    USER: "/users/@me",
     USERS: "/users/",
     XP_EVENTS: "/xp-events",
     XP_LEVELS: "/xp-levels",
     TRADING_CONFIG: "/trading-config",
     TRADING_PACK_CLAIM: "/trading-pack-claim/",
 
-    STABLE_LOGIN_CALLBACK: "/callback",
-    DEV_LOGIN_CALLBACK: "/dev/callback",
-
-    USER_LOGIN: "/user-login",
-
-    CATEGORY_PAGES: "/collectibles-pages",
-    CATEGORY_CATALOG: "/catalog",
-    CATEGORY_ORBS: "/orbs",
-    CATEGORY_MISCELLANEOUS: "/miscellaneous",
-
     DISCORD_LEAKED_CATEGORIES: "/discord-leaked-categories",
-    DISCORD_COLLECTIBLES_HOME: "/discord-collectibles-home",
-    DISCORD_QUESTS: "/discord-quests",
-
-    CATEGORY_MODAL_INFO: "/category/",
-    CATEGORY_MODAL_REVIEW: "/review",
-    CATEGORY_MODAL_REVIEW_DELETE: "/reviews/",
-
 
     CLAIMABLES_PUBLISHED: "/claimables/published/",
     CLAIMABLES_REDEEM: "/claimables/redeem/",
@@ -61,6 +41,7 @@ const endpnts = {
     REVIEWS_DELETED: "/reviews/",
 
     PRODUCT: "/product/",
+    PRODUCTS: "/products",
 
     DISCORD_QUESTS: "/discord-quests",
 }
