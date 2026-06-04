@@ -1616,7 +1616,17 @@ async function loadSite() {
 
                         const frameContainerDiv = modalInner.querySelector('.modal2-profile-preview').querySelector('.frame-front');
                         const frameContainerDivback = modalInner.querySelector('.modal2-profile-preview').querySelector('.frame-back');
-                        const layers = product.items[0].layers;
+                        const item = product.items[0];
+                        const layers = item.layers;
+                        const vars = {
+                            '--custom-profile-frame-container-width': item.inner_width,
+                            '--custom-profile-frame-overflow-top': item.overflow_top,
+                            '--custom-profile-frame-overflow-bottom': item.overflow_bottom,
+                            '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal,
+                        };
+                        Object.entries(vars).forEach(([property, value]) => {
+                            modalInner.querySelector('.modal2-profile-preview').style.setProperty(property, value);
+                        });
                         layers.forEach(layer => {
                             const src = `https://cdn.discordapp.com/media/v1/collectibles-shop/${product.sku_id}/${layer.id}/static`;
                             let img = document.createElement("img");
@@ -1832,7 +1842,17 @@ async function loadSite() {
                                 const frameContainerDivback = modalInner.querySelector('.modal2-profile-preview').querySelector('.frame-back');
                                 frameContainerDiv.innerHTML = ``;
                                 frameContainerDivback.innerHTML = ``;
-                                const layers = selectedVariant.items[0].layers;
+                                const item = selectedVariant.items[0];
+                                const layers = item.layers;
+                                const vars = {
+                                    '--custom-profile-frame-container-width': item.inner_width,
+                                    '--custom-profile-frame-overflow-top': item.overflow_top,
+                                    '--custom-profile-frame-overflow-bottom': item.overflow_bottom,
+                                    '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal,
+                                };
+                                Object.entries(vars).forEach(([property, value]) => {
+                                    modalInner.querySelector('.modal2-profile-preview').style.setProperty(property, value);
+                                });
                                 layers.forEach(layer => {
                                     const src = `https://cdn.discordapp.com/media/v1/collectibles-shop/${selectedVariant.sku_id}/${layer.id}/static`;
                                     let img = document.createElement("img");
@@ -2506,6 +2526,10 @@ async function loadSite() {
                     });
                     
                     const reviewsTab = modal.querySelector('#category-modal-tab-4');
+                    if (settingsStore.staff_force_viewable_reviews_tab === 0) {
+                        reviewsTab.classList.add('has-tooltip');
+                        reviewsTab.setAttribute('data-tooltip', 'Reviews have been temporarily disabled');
+                    } else
                     if (categoryModalInfo.reviews_disabled != true || settingsStore.staff_force_viewable_reviews_tab === 1) {
                         reviewsTab.classList.remove('disabled');
                         reviewsTab.addEventListener("click", function () {
@@ -7107,7 +7131,17 @@ async function loadSite() {
 
             const frameContainerDiv = frameContainer.querySelector('.frameContainerDiv');
             const frameContainerDivback = frameContainer.querySelector('.frameContainerDivback');
-            const layers = product.items[0].layers;
+            const item = product.items[0];
+            const layers = item.layers;
+            const vars = {
+                '--custom-profile-frame-container-width': item.inner_width,
+                '--custom-profile-frame-overflow-top': item.overflow_top,
+                '--custom-profile-frame-overflow-bottom': item.overflow_bottom,
+                '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal,
+            };
+            Object.entries(vars).forEach(([property, value]) => {
+                frameContainer.style.setProperty(property, value);
+            });
             layers.forEach(layer => {
                 const src = `https://cdn.discordapp.com/media/v1/collectibles-shop/${product.sku_id}/${layer.id}/static`;
                 let img = document.createElement("img");
@@ -7428,7 +7462,17 @@ async function loadSite() {
 
                     const frameContainerDiv = frameContainer.querySelector('.frameContainerDiv');
                     const frameContainerDivback = frameContainer.querySelector('.frameContainerDivback');
-                    const layers = selectedVariant.items[0].layers;
+                    const item = selectedVariant.items[0];
+                    const layers = item.layers;
+                    const vars = {
+                        '--custom-profile-frame-container-width': item.inner_width,
+                        '--custom-profile-frame-overflow-top': item.overflow_top,
+                        '--custom-profile-frame-overflow-bottom': item.overflow_bottom,
+                        '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal,
+                    };
+                    Object.entries(vars).forEach(([property, value]) => {
+                        frameContainer.style.setProperty(property, value);
+                    });
                     layers.forEach(layer => {
                         const src = `https://cdn.discordapp.com/media/v1/collectibles-shop/${selectedVariant.sku_id}/${layer.id}/static`;
                         let img = document.createElement("img");

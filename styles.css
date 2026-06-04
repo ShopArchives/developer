@@ -1611,6 +1611,7 @@ hr {
     overflow: visible;
 }
 
+
 .type-3-preview-container .frameContainer {
     position: relative;
     display: flex;
@@ -1619,6 +1620,12 @@ hr {
     width: 200px;
     height: 430px;
     top: 70px;
+
+    --static-target-width: 200px;
+
+    --custom-profile-frame-layer-scale: calc(var(--static-target-width) / var(--custom-profile-frame-container-width));
+    --custom-profile-frame-scaled-overflow-top: calc(var(--custom-profile-frame-overflow-top) * var(--custom-profile-frame-layer-scale));
+    --custom-profile-frame-scaled-overflow-bottom: calc(var(--custom-profile-frame-overflow-bottom) * var(--custom-profile-frame-layer-scale));
 }
 
 .type-3-preview-container svg {
@@ -1633,24 +1640,35 @@ hr {
 .type-3-preview-container .frameContainerDiv {
     z-index: 3;
 }
+
 .type-3-preview-container .frameContainerDivback {
     z-index: 1;
 }
-.type-3-preview-container .frameContainerDiv img, .type-3-preview-container .frameContainerDivback img {
+
+.type-3-preview-container .frameContainerDiv img, 
+.type-3-preview-container .frameContainerDivback img {
     position: absolute;
     width: 100%;
-    scale: 110%;
+    scale: 108%;
 }
-.type-3-preview-container .frameContainerDiv img.a-top, .type-3-preview-container .frameContainerDivback img.a-top {
-    top: -45px;
+
+.type-3-preview-container .frameContainerDiv img.a-top, 
+.type-3-preview-container .frameContainerDivback img.a-top {
+    top: calc(var(--custom-profile-frame-scaled-overflow-top) * -1);
 }
-.type-3-preview-container .frameContainerDiv img.t-rail, .type-3-preview-container .frameContainerDivback img.t-rail,
-.type-3-preview-container .frameContainerDiv img.t-border, .type-3-preview-container .frameContainerDivback img.t-border {
+
+.type-3-preview-container .frameContainerDiv img.a-bottom, 
+.type-3-preview-container .frameContainerDivback img.a-bottom {
+    bottom: calc(var(--custom-profile-frame-scaled-overflow-bottom) * -1);
+}
+
+.type-3-preview-container .frameContainerDiv img.t-rail, 
+.type-3-preview-container .frameContainerDivback img.t-rail,
+.type-3-preview-container .frameContainerDiv img.t-border, 
+.type-3-preview-container .frameContainerDivback img.t-border {
     top: 20px;
 }
-.type-3-preview-container .frameContainerDiv img.a-bottom, .type-3-preview-container .frameContainerDivback img.a-bottom {
-    bottom: -40px;
-}
+
 
 
 
@@ -2518,28 +2536,45 @@ hr {
     z-index: 2;
 }
 
+.modal2-profile-preview {
+    position: relative;
+    --static-target-width: 308px;
+    --custom-profile-frame-layer-scale: calc(var(--static-target-width) / var(--custom-profile-frame-container-width));
+    --custom-profile-frame-scaled-overflow-top: calc(var(--custom-profile-frame-overflow-top) * var(--custom-profile-frame-layer-scale));
+    --custom-profile-frame-scaled-overflow-bottom: calc(var(--custom-profile-frame-overflow-bottom) * var(--custom-profile-frame-layer-scale));
+}
+
 .modal2-profile-preview .frame-back {
     position: absolute;
     z-index: 1;
-    width: 0px;
-    height: 300px;
+    width: 100%;
+    margin-top: 10px;
+    height: 280px;
     overflow: visible;
 }
+
 .modal2-profile-preview .frame-front {
     position: absolute;
     z-index: 3;
-    width: 0px;
-    height: 300px;
+    width: 100%;
+    margin-top: 10px;
+    height: 280px;
     overflow: visible;
 }
+
 .modal2-profile-preview .frame-front img, .modal2-profile-preview .frame-back img {
     position: absolute;
     width: 300px;
-    scale: 110%;
+    scale: 107%;
 }
+
 .modal2-profile-preview .frame-front img.a-top, .modal2-profile-preview .frame-back img.a-top {
-    top: -65px;
+    top: calc(var(--custom-profile-frame-scaled-overflow-top) * -1);
 }
+.modal2-profile-preview .frame-front img.a-bottom, .modal2-profile-preview .frame-back img.a-bottom {
+    bottom: calc(var(--custom-profile-frame-scaled-overflow-bottom) * -1);
+}
+
 .modal2-profile-preview .frame-front img.t-rail, .modal2-profile-preview .frame-back img.t-rail,
 .modal2-profile-preview .frame-front img.t-border, .modal2-profile-preview .frame-back img.t-border {
     top: 20px;
@@ -2548,9 +2583,6 @@ hr {
     object-position: top;
     -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
     mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-}
-.modal2-profile-preview .frame-front img.a-bottom, .modal2-profile-preview .frame-back img.a-bottom {
-    bottom: -40px;
 }
 
 .modal-preview-profile2 .profile-effect-div {
