@@ -1,5 +1,5 @@
 
-const appVersion = "7.5.2";
+const appVersion = "7.5.3";
 const appType = "Dev";
 
 const endpoints = {
@@ -42,6 +42,8 @@ const endpnts = {
 
     PRODUCT: "/product/",
     PRODUCTS: "/products",
+    SYNCED: "/synced",
+    SYNC: "/sync",
 
     DISCORD_QUESTS: "/discord-quests",
 }

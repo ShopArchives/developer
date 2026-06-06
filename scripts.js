@@ -172,6 +172,48 @@ function updateToggleStates() {
 }
 
 
+function formatDate(timeat) {
+    const date = new Date(timeat ?? null);
+    const now = new Date();
+
+    const diffMs = now - date;
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+
+    let output;
+
+    // Less than 1 minute
+    if (diffSeconds < 60) {
+        output = `${diffSeconds} second${diffSeconds !== 1 ? 's' : ''} ago`;
+    
+    // Less than 1 hour
+    } else if (diffMinutes < 60) {
+        output = `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+    
+    // Less than 24 hours
+    } else if (diffHours < 24) {
+        output = `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    
+    // 24 hours or more → show date
+    } else {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+    
+        let formatted = `${day}/${month}/${year}`;
+    
+        if (settingsStore.us_time_format === 1) {
+            formatted = `${month}/${day}/${year}`;
+        }
+    
+        output = formatted;
+    }
+
+    return output;
+}
+
+
 var showLoadingDots = function() {
     var d = document.getElementById("loadingDots");
     if (!d) return;
@@ -1619,10 +1661,10 @@ async function loadSite() {
                         const item = product.items[0];
                         const layers = item.layers;
                         const vars = {
-                            '--custom-profile-frame-container-width': item.inner_width,
-                            '--custom-profile-frame-overflow-top': item.overflow_top,
-                            '--custom-profile-frame-overflow-bottom': item.overflow_bottom,
-                            '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal,
+                            '--custom-profile-frame-container-width': item.inner_width ?? 1200,
+                            '--custom-profile-frame-overflow-top': item.overflow_top ?? 300,
+                            '--custom-profile-frame-overflow-bottom': item.overflow_bottom ?? 200,
+                            '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal ?? 50,
                         };
                         Object.entries(vars).forEach(([property, value]) => {
                             modalInner.querySelector('.modal2-profile-preview').style.setProperty(property, value);
@@ -1845,10 +1887,10 @@ async function loadSite() {
                                 const item = selectedVariant.items[0];
                                 const layers = item.layers;
                                 const vars = {
-                                    '--custom-profile-frame-container-width': item.inner_width,
-                                    '--custom-profile-frame-overflow-top': item.overflow_top,
-                                    '--custom-profile-frame-overflow-bottom': item.overflow_bottom,
-                                    '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal,
+                                    '--custom-profile-frame-container-width': item.inner_width ?? 1200,
+                                    '--custom-profile-frame-overflow-top': item.overflow_top ?? 300,
+                                    '--custom-profile-frame-overflow-bottom': item.overflow_bottom ?? 200,
+                                    '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal ?? 50,
                                 };
                                 Object.entries(vars).forEach(([property, value]) => {
                                     modalInner.querySelector('.modal2-profile-preview').style.setProperty(property, value);
@@ -1899,112 +1941,150 @@ async function loadSite() {
                     modalInner.innerHTML = `
                         <div class="view-raw-modalv2-inner">
                             <div class="product-discord-sa-sync">
-                                <div class="product">
-                                    <div class="top">
-                                        <p class="sub1">Discord</p>
+                                <div class="discord-section">
+                                    <div class="product">
+                                        <div class="top">
+                                            <p class="sub1">Discord Product</p>
+                                        </div>
+                                        <div class="bottom" id="discord">
+                                            <p class="sub2">Loading...</p>
+                                        </div>
                                     </div>
-                                    <div class="bottom" id="discord">
-                                        <p class="sub2">Loading...</p>
+                                    <div class="product">
+                                        <div class="top">
+                                            <p class="sub1">Discord Collectible</p>
+                                        </div>
+                                        <div class="bottom" id="discord2">
+                                            <p class="sub2">Loading...</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="synced" id="sync">
-                                </div>
-                                <div class="product">
-                                    <div class="top">
-                                        <p class="sub1">Shop Archives</p>
-                                    </div>
-                                    <div class="bottom" id="shop-archives">
-                                        <p class="sub2">Loading...</p>
+                                <div class="sync-section">
+                                    <div class="synced" id="sync">
                                     </div>
                                 </div>
+                                <div class="sa-section">
+                                    <div class="product">
+                                        <div class="top">
+                                            <p class="sub1">Shop Archives</p>
+                                        </div>
+                                        <div class="bottom" id="shop-archives">
+                                            <p class="sub2">Loading...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="setting">
+                                    <div class="setting-info">
+                                        <p class="setting-title">Use Popular Endpoint For Syncing</p>
+                                    </div>
+                                    <div class="toggle-container">
+                                        <div class="toggle" id="primary_endpoint_noconflict_toggle">
+                                            <div class="toggle-circle"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="generic-button brand" id="sync-product">Sync Items</button>
                             </div>
                         </div>
                     `;
                     const disDiv = modalInner.querySelector('#discord');
+                    const disDiv2 = modalInner.querySelector('#discord2');
                     const syncDiv = modalInner.querySelector('#sync');
                     const saDiv = modalInner.querySelector('#shop-archives');
-                    let unsynced = false;
+                    const btn = modalInner.querySelector("#sync-product");
+                    let synced;
+                    let cuteStore = {
+                        "primary_endpoint_noconflict": 0,
+                    };
 
-                    const res1 = await fetch(APIV4 + '/product/' + product.sku_id + '?source=discord',{
-                        method: 'GET',
-                        headers: {
-                            "Authorization": localStorage.token
-                        }
+                    modalInner.querySelector('#primary_endpoint_noconflict_toggle').addEventListener("click", () => {
+                        toggleSettingCute('primary_endpoint_noconflict');
                     });
-                    if (!res1.ok) {
-                        disDiv.innerHTML = `
-                            <p class="sub2">This collectible doesn't exist on Discord</p>
-                        `;
-                        unsynced = true;
-                    } else {
-                        const disdata = await res1.json();
-                        disDiv.innerHTML = `
-                            <div class="item-info">
-                                <p class="sub3">${disdata.name}</p>
-                            </div>
-                        `;
-                    }
-                    
 
-                    const res2 = await fetch(APIV4 + '/product/' + product.sku_id);
-                    if (!res2.ok) {
-                        saDiv.innerHTML = `
-                            <p class="sub2">This collectible isn't on the Shop Archives Database</p>
-                            <button class="generic-button brand" id="sync-product">Sync Items</button>
-                        `;
-                        const btn = saDiv.querySelector("#sync-product");
-                        btn.addEventListener("click", async function () {
-                            btn.disabled = true;
-                            try {
-                                const data = await fetchAPI.post(endpnts.PRODUCT + product.sku_id);
-                            } catch(err) {
-                                console.error(err);
+                    function toggleSettingCute(key) {
+                        if (key in cuteStore) {
+                            cuteStore[key] = cuteStore[key] === 0 ? 1 : 0;
+                            updateToggleStatesCute();
+                        }
+                    }
+                    function updateToggleStatesCute() {
+                        Object.keys(cuteStore).forEach(key => {
+                            const toggle = document.getElementById(`${key}_toggle`);
+                            if (toggle) {
+                                toggle.classList.toggle('active', cuteStore[key] === 1);
                             }
-                            changeModalTab('3');
                         });
-                        unsynced = true;
-                        if (!res1.ok) {
-                            saDiv.innerHTML = `
-                                <p class="sub2">This collectible isn't on the Shop Archives Database</p>
-                                <p class="sub2">You cannot add this item, it doesn't exist on Discord</p>
+                    }
+
+                    try {
+                        const data = await fetchAPI.get(endpnts.PRODUCT + product.sku_id + endpnts.SYNCED);
+
+                        if (data.discord_product.exists === false) {
+                            disDiv.innerHTML = `
+                                <p class="sub2">This sku doesn't exist on Discord</p>
+                            `;
+                            btn.disabled = true;
+                        } else {
+                            disDiv.innerHTML = `
+                                <div class="item-info">
+                                    <p class="sub3">${data.discord_product.name}</p>
+                                    <p class="sub2">Last Updated ${formatDate(data.discord_product.updated_at)}</p>
+                                </div>
                             `;
                         }
-                    } else {
-                        const sadata = await res2.json();
-                        saDiv.innerHTML = `
-                            <div class="item-info">
-                                <p class="sub3">${sadata.name}</p>
-                            </div>
-                            <button class="generic-button brand" id="sync-product">Sync Items</button>
-                        `;
-                        if (!res1.ok) {
+
+                        if (data.discord_collectible.exists === false) {
+                            disDiv2.innerHTML = `
+                                <p class="sub2">This collectible doesn't exist on Discord</p>
+                            `;
+                        } else {
+                            disDiv2.innerHTML = `
+                                <div class="item-info">
+                                    <p class="sub3">${data.discord_collectible.name}</p>
+                                </div>
+                            `;
+                        }
+
+                        if (data.shop_archives.exists === false) {
                             saDiv.innerHTML = `
                                 <div class="item-info">
-                                    <p class="sub3">${sadata.name}</p>
+                                    <p class="sub2">This collectible doesn't exist on Shop Archives</p>
                                 </div>
-                                <p class="sub2">You cannot sync this item, it doesn't exist on Discord</p>
+                            `;
+                        } else {
+                            saDiv.innerHTML = `
+                                <div class="item-info">
+                                    <p class="sub3">${data.shop_archives.name}</p>
+                                    <p class="sub2">Last Updated ${formatDate(data.shop_archives.updated_at)}</p>
+                                </div>
                             `;
                         }
-                        const btn = saDiv.querySelector("#sync-product");
-                        if (btn) btn.addEventListener("click", async function () {
-                            btn.disabled = true;
-                            try {
-                                const data = await fetchAPI.post(endpnts.PRODUCT + product.sku_id);
-                            } catch(err) {
-                                console.error(err);
-                            }
-                            changeModalTab('3');
-                        });
+
+                        synced = data.synced;
+                    } catch(err) {
+                        console.error(err);
                     }
 
-                    if (unsynced === true) {
+                    btn.addEventListener("click", async function () {
+                        btn.disabled = true;
+                        try {
+                            let othershi = "";
+                            if (cuteStore.primary_endpoint_noconflict === 1) othershi = "?get=yeah"
+                            const data = await fetchAPI.post(endpnts.PRODUCT + product.sku_id + endpnts.SYNC + othershi);
+                        } catch(err) {
+                            console.error(err);
+                        }
+                        changeModalTab('3');
+                    });
+
+                    if (synced !== true) {
                         syncDiv.classList.remove("sy");
                         syncDiv.classList.add("un");
                         syncDiv.innerHTML = `
                             <svg aria-hidden="true" role="img" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path fill="currentColor" d="M17.3 18.7a1 1 0 0 0 1.4-1.4L13.42 12l5.3-5.3a1 1 0 0 0-1.42-1.4L12 10.58l-5.3-5.3a1 1 0 0 0-1.4 1.42L10.58 12l-5.3 5.3a1 1 0 1 0 1.42 1.4L12 13.42l5.3 5.3Z" class=""></path></svg>
                             <p>Unsynced</p>
                         `;
-                    } else if (unsynced === false) {
+                    } else {
                         syncDiv.classList.remove("un");
                         syncDiv.classList.add("sy");
                         syncDiv.innerHTML = `
@@ -7134,10 +7214,10 @@ async function loadSite() {
             const item = product.items[0];
             const layers = item.layers;
             const vars = {
-                '--custom-profile-frame-container-width': item.inner_width,
-                '--custom-profile-frame-overflow-top': item.overflow_top,
-                '--custom-profile-frame-overflow-bottom': item.overflow_bottom,
-                '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal,
+                '--custom-profile-frame-container-width': item.inner_width ?? 1200,
+                '--custom-profile-frame-overflow-top': item.overflow_top ?? 300,
+                '--custom-profile-frame-overflow-bottom': item.overflow_bottom ?? 200,
+                '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal ?? 50,
             };
             Object.entries(vars).forEach(([property, value]) => {
                 frameContainer.style.setProperty(property, value);
@@ -7465,10 +7545,10 @@ async function loadSite() {
                     const item = selectedVariant.items[0];
                     const layers = item.layers;
                     const vars = {
-                        '--custom-profile-frame-container-width': item.inner_width,
-                        '--custom-profile-frame-overflow-top': item.overflow_top,
-                        '--custom-profile-frame-overflow-bottom': item.overflow_bottom,
-                        '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal,
+                        '--custom-profile-frame-container-width': item.inner_width ?? 1200,
+                        '--custom-profile-frame-overflow-top': item.overflow_top ?? 300,
+                        '--custom-profile-frame-overflow-bottom': item.overflow_bottom ?? 200,
+                        '--custom-profile-frame-overflow-horizontal': item.overflow_horizontal ?? 50,
                     };
                     Object.entries(vars).forEach(([property, value]) => {
                         frameContainer.style.setProperty(property, value);

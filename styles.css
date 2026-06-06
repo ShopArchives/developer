@@ -1615,6 +1615,7 @@ hr {
 .type-3-preview-container .frameContainer {
     position: relative;
     display: flex;
+    justify-content: center;
     margin-left: auto;
     margin-right: auto;
     width: 200px;
@@ -1626,6 +1627,7 @@ hr {
     --custom-profile-frame-layer-scale: calc(var(--static-target-width) / var(--custom-profile-frame-container-width));
     --custom-profile-frame-scaled-overflow-top: calc(var(--custom-profile-frame-overflow-top) * var(--custom-profile-frame-layer-scale));
     --custom-profile-frame-scaled-overflow-bottom: calc(var(--custom-profile-frame-overflow-bottom) * var(--custom-profile-frame-layer-scale));
+    --custom-profile-frame-scaled-overflow-horizontal: calc(var(--custom-profile-frame-overflow-horizontal) * var(--custom-profile-frame-layer-scale));
 }
 
 .type-3-preview-container svg {
@@ -1638,18 +1640,29 @@ hr {
 }
 
 .type-3-preview-container .frameContainerDiv {
+    position: absolute;
     z-index: 3;
+    width: calc(100% + var(--custom-profile-frame-scaled-overflow-horizontal) * 2);
+    height: 300px;
+    overflow: visible;
+    display: flex;
+    justify-content: center;
 }
 
 .type-3-preview-container .frameContainerDivback {
+    position: absolute;
     z-index: 1;
+    width: calc(100% + var(--custom-profile-frame-scaled-overflow-horizontal) * 2);
+    height: 300px;
+    overflow: visible;
+    display: flex;
+    justify-content: center;
 }
 
 .type-3-preview-container .frameContainerDiv img, 
 .type-3-preview-container .frameContainerDivback img {
     position: absolute;
     width: 100%;
-    scale: 108%;
 }
 
 .type-3-preview-container .frameContainerDiv img.a-top, 
@@ -2480,7 +2493,8 @@ hr {
     width: 50%;
     padding: 20px;
     box-sizing: border-box;
-    background-color: var(--background-tertiary);
+    background-color: white;
+    /* background-color: var(--background-tertiary); */
     border-radius: 0px 10px 10px 0px;
 }
 
@@ -2538,34 +2552,38 @@ hr {
 
 .modal2-profile-preview {
     position: relative;
+    display: flex;
+    justify-content: center;
     --static-target-width: 308px;
     --custom-profile-frame-layer-scale: calc(var(--static-target-width) / var(--custom-profile-frame-container-width));
     --custom-profile-frame-scaled-overflow-top: calc(var(--custom-profile-frame-overflow-top) * var(--custom-profile-frame-layer-scale));
     --custom-profile-frame-scaled-overflow-bottom: calc(var(--custom-profile-frame-overflow-bottom) * var(--custom-profile-frame-layer-scale));
+    --custom-profile-frame-scaled-overflow-horizontal: calc(var(--custom-profile-frame-overflow-horizontal) * var(--custom-profile-frame-layer-scale));
 }
 
 .modal2-profile-preview .frame-back {
     position: absolute;
     z-index: 1;
-    width: 100%;
-    margin-top: 10px;
-    height: 280px;
+    width: calc(100% + var(--custom-profile-frame-scaled-overflow-horizontal) * 2);
+    height: 300px;
     overflow: visible;
+    display: flex;
+    justify-content: center;
 }
 
 .modal2-profile-preview .frame-front {
     position: absolute;
     z-index: 3;
-    width: 100%;
-    margin-top: 10px;
-    height: 280px;
+    width: calc(100% + var(--custom-profile-frame-scaled-overflow-horizontal) * 2);
+    height: 300px;
     overflow: visible;
+    display: flex;
+    justify-content: center;
 }
 
 .modal2-profile-preview .frame-front img, .modal2-profile-preview .frame-back img {
     position: absolute;
-    width: 300px;
-    scale: 107%;
+    width: 100%;
 }
 
 .modal2-profile-preview .frame-front img.a-top, .modal2-profile-preview .frame-back img.a-top {
@@ -2945,8 +2963,13 @@ hr {
 }
 
 .product-discord-sa-sync {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.product-discord-sa-sync .discord-section {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
 }
 .product-discord-sa-sync .product {
