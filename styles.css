@@ -2549,6 +2549,10 @@ hr {
     z-index: 2;
 }
 
+.modal2-profile-preview:has([class="modal-preview-profile-and-nameplate"]) {
+    flex-direction: column;
+}
+
 .modal2-profile-preview {
     position: relative;
     display: flex;
