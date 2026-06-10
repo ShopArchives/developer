@@ -1926,6 +1926,7 @@ hr {
 
 .shop-card-tag {
     font-size: 15px;
+    text-transform: uppercase;
 }
 .shop-card-tag-container:not(:has(.shop-card-tag)) {
     display: none;

@@ -2535,6 +2535,8 @@ async function loadSite() {
                                         type1count += 1;
                                     } else if (variant.type === 2) {
                                         type2count += 1;
+                                    } else if (variant.type === 3) {
+                                        type3count += 1;
                                     }
                                 });
                             }
@@ -6845,6 +6847,20 @@ async function loadSite() {
 
         const cardTag = card.querySelector("[data-shop-card-tag-container]");
 
+
+        const unpublishedAt = new Date(category.unpublished_at);
+                                
+        if (category.unpublished_at && !isNaN(unpublishedAt.getTime())) {
+            createCardTag(null, 1, unpublishedAt)
+        }
+
+        const expiresAt = new Date(product.expires_at);
+                                
+        if (product.expires_at && !isNaN(expiresAt.getTime())) {
+            createCardTag(null, 2, expiresAt)
+        }
+
+
         const priceContainer = card.querySelector("[data-shop-price-container]");
 
         if (product.prices) {
@@ -6969,7 +6985,9 @@ async function loadSite() {
                 orbsExclusive = false;
             }
 
-            if (orbsExclusive) {
+            if (product.badge_override) {
+                createCardTag(product.badge_override)
+            } else if (orbsExclusive) {
                 createCardTag('ORBS EXCLUSIVE')
             } else if (product.premium_type === 2) {
                 createCardTag('NITRO EXCLUSIVE')
@@ -7062,18 +7080,6 @@ async function loadSite() {
                 const timerInterval = setInterval(updateTimer, 1000);
                 updateTimer();
             }
-        }
-
-        const unpublishedAt = new Date(category.unpublished_at);
-                                
-        if (category.unpublished_at && !isNaN(unpublishedAt.getTime())) {
-            createCardTag(null, 1, unpublishedAt)
-        }
-
-        const expiresAt = new Date(product.expires_at);
-                                
-        if (product.expires_at && !isNaN(expiresAt.getTime())) {
-            createCardTag(null, 2, expiresAt)
         }
 
         const previewContainer = card.querySelector('[data-shop-card-preview-container]');
@@ -7586,7 +7592,7 @@ async function loadSite() {
                     card.querySelector("#orb-profile-badge-card-video").pause();
                     card.querySelector("#orb-profile-badge-card-video").currentTime = 0;
                 });
-            } else if (product.sku_id === external_skus.NITRO_CREDITS_3_DAYS || product.sku_id === external_skus.NITRO_CREDITS_1_DAY) {
+            } else if (product.sku_id === external_skus.NITRO_CREDITS_1_DAY) {
                 previewContainer.classList.add('type-3000-card-preview-container');
                     
                 previewContainer.innerHTML = `
@@ -7595,6 +7601,26 @@ async function loadSite() {
                 const runtime = new rive.Rive({
                     src: "https://cdn.yapper.shop/discord-assets/67.riv", 
                     canvas: previewContainer.querySelector("#rive-canvas"),
+                    artboard: "SINGLE COIN",
+                    autoplay: true,
+                    stateMachines: "State Machine 1", 
+
+                    onLoad: () => {
+                        // Fires immediately when the asset successfully loads
+                        console.log("Rive animation loaded successfully!");
+                        runtime.resizeDrawingSurfaceToCanvas();
+                    }
+                });
+            } else if (product.sku_id === external_skus.NITRO_CREDITS_3_DAYS) {
+                previewContainer.classList.add('type-3000-card-preview-container');
+                    
+                previewContainer.innerHTML = `
+                    <canvas id="rive-canvas"></canvas>
+                `;
+                const runtime = new rive.Rive({
+                    src: "https://cdn.yapper.shop/discord-assets/67.riv", 
+                    canvas: previewContainer.querySelector("#rive-canvas"),
+                    artboard: "STACKED COINS",
                     autoplay: true,
                     stateMachines: "State Machine 1", 
 
