@@ -1,5 +1,5 @@
 
-const appVersion = "7.5.6";
+const appVersion = "7.5.7";
 const appType = "Dev";
 
 const endpoints = {
@@ -264,6 +264,10 @@ const nameplate_palettes = {
     white: {
         "darkBackground": "#FFFFFF",
         "lightBackground": "#FFFFFF"
+    },
+    black: {
+        "darkBackground": "#000000",
+        "lightBackground": "#000000"
     }
 };
 
@@ -1285,10 +1289,15 @@ const fetchAPI = {
     async request(endpoint, options = {}) {
         const baseUrl = "https://api.yapper.dev/v4";
         const url = `${baseUrl}${endpoint}`;
+
+        const appProperties = { app_version: appVersion, app_type: appType };
+        const appPropertiesString = JSON.stringify(appProperties);
+        const appPropertiesEncoded = btoa(appPropertiesString);
         
         const headers = {
             "Content-Type": "application/json",
             "Authorization": localStorage.token ?? "bazinga",
+            "App-Properties": appPropertiesEncoded,
             ...options.headers,
         };
 

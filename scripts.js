@@ -289,64 +289,59 @@ if (params.get("scrollTo")) {
 
 async function verifyOrigin() {
     try {
-        const rawData = await fetch(APIV4 + endpnts.HEARTBEAT);
-        if (!rawData.ok) {
-            return triggerSafetyBlock();
-        } else {
-            const data = await rawData.json();
-            originData = data;
+        const data = await fetchAPI.get(endpnts.HEARTBEAT);
+        originData = data;
 
-            const brickWall = document.getElementById('brick-wall');
+        const brickWall = document.getElementById('brick-wall');
 
-            // Fetch User data
-            const loginToken = params.get("login");
-            if (loginToken) {
-                try {
-                    const data = await fetchAPI.post(endpnts.LOGIN + `?token=` + loginToken);
-
-                    localStorage.token = data.token
-                } catch(err) {
-                    console.error(err);
-                    return triggerSafetyBlock();
-                }
-            }
-
-            if (localStorage.token) {
-                try {
-                    const data = await fetchAPI.get(endpnts.USER);
-
-                    localStorage.setItem('currentUser', JSON.stringify(data));
-                    currentUserData = data;
-                } catch(err) {
-                    console.error(err);
-                    return triggerSessionExpiredBlock(err);
-                }
-            }
-            if (currentUserData && currentUserData.admin_level >= 1) {
-                changeSetting('dev', 1);
-            }
-
-            // Fetch & Sync Server experiments
+        // Fetch User data
+        const loginToken = params.get("login");
+        if (loginToken) {
             try {
-                const data = await fetchAPI.get(endpnts.EXPERIMENTS);
+                const data = await fetchAPI.post(endpnts.LOGIN + `?token=` + loginToken);
 
-                localStorage.setItem('serverExperiments', JSON.stringify(data));
-                syncOverridesWithServer();
+                localStorage.token = data.token
             } catch(err) {
                 console.error(err);
                 return triggerSafetyBlock();
             }
-
-
-            await loadSite();
-
-            setTimeout(() => {
-                brickWall.classList.add('hide');
-                setTimeout(() => {
-                    brickWall.remove();
-                }, 200);
-            }, 200);
         }
+
+        if (localStorage.token) {
+            try {
+                const data = await fetchAPI.get(endpnts.USER);
+
+                localStorage.setItem('currentUser', JSON.stringify(data));
+                currentUserData = data;
+            } catch(err) {
+                console.error(err);
+                return triggerSessionExpiredBlock(err);
+            }
+        }
+        if (currentUserData && currentUserData.admin_level >= 1) {
+            changeSetting('dev', 1);
+        }
+
+        // Fetch & Sync Server experiments
+        try {
+            const data = await fetchAPI.get(endpnts.EXPERIMENTS);
+
+            localStorage.setItem('serverExperiments', JSON.stringify(data));
+            syncOverridesWithServer();
+        } catch(err) {
+            console.error(err);
+            return triggerSafetyBlock();
+        }
+
+
+        await loadSite();
+
+        setTimeout(() => {
+            brickWall.classList.add('hide');
+            setTimeout(() => {
+                brickWall.remove();
+            }, 200);
+        }, 200);
     } catch(err) {
         console.error(err);
         triggerSafetyBlock(err.message);
@@ -7053,8 +7048,8 @@ async function loadSite() {
                         const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                         const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
                         const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-                        tagText.textContent = `${days} DAYS LEFT IN SHOP`;
-                        if (days === 0) tagText.textContent = `LAST DAY IN SHOP`;
+                        tagText.textContent = `${days} DAYS`;
+                        if (days === 0) tagText.textContent = `LAST DAY`;
                         cardTag.setAttribute('data-tooltip', `Leaves the Discord shop in ${days} Days, ${hours} Hours, ${minutes} Minutes and ${seconds} Seconds`);
                     }
                 }
@@ -7896,7 +7891,7 @@ async function loadSite() {
                                     const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
                                     const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                                     const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / 1000);
-                                    tag.textContent = `${days} DAYS LEFT IN SHOP`;
+                                    tag.textContent = `${days} DAYS`;
                                 }
                             }
                         
