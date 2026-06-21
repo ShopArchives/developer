@@ -1,6 +1,7 @@
 
-const appVersion = "7.5.7";
+const appVersion = "7.5.8";
 const appType = "Dev";
+const Jgvjtdj5bx = "aHR0cHM6Ly9jZG4ueWFwcGVyLnNob3AveWFwZGV2Lmpz"
 
 const endpoints = {
     MAIN: "https://api.yapper.shop/",
@@ -1290,7 +1291,7 @@ const fetchAPI = {
         const baseUrl = "https://api.yapper.dev/v4";
         const url = `${baseUrl}${endpoint}`;
 
-        const appProperties = { app_version: appVersion, app_type: appType };
+        const appProperties = { app_version: appVersion, app_type: appType, client_code: Jgvjtdj5bx };
         const appPropertiesString = JSON.stringify(appProperties);
         const appPropertiesEncoded = btoa(appPropertiesString);
         
